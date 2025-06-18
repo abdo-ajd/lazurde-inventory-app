@@ -4,7 +4,6 @@ import ProductList from '@/components/products/ProductList';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { PlusCircle, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -17,15 +16,10 @@ export default function DashboardHomePage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight font-headline">قائمة المنتجات</h1>
-        {/* النص الوصفي تم إزالته */}
       </div>
       
-      <Card>
-        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            {/* CardTitle and CardDescription for total products count will be handled within ProductList or a summary component */}
-          </div>
-          <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-4">
+        <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
             <div className="relative w-full md:w-64">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -44,9 +38,8 @@ export default function DashboardHomePage() {
                 </Link>
               </Button>
             )}
-          </div>
-        </CardHeader>
-      </Card>
+        </div>
+      </div>
 
       <ProductList searchTerm={searchTerm} />
     </div>
