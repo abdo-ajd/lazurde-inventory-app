@@ -13,7 +13,7 @@ import { CalendarIcon, Undo2, Search } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format, parseISO, startOfDay, endOfDay, isEqual, isValid } from 'date-fns';
-import { enGB } from 'date-fns/locale'; // Use English locale for date formatting
+import { enGB, arSA } from 'date-fns/locale'; // arSA for Arabic numerals in calendar if needed, enGB for formatting
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription as ShadcnDialogDescription, DialogClose } from '@/components/ui/dialog';
@@ -48,7 +48,7 @@ export default function SalesReportPage() {
 
   const formatSaleTime = (isoString: string) => {
     if (!isoString || !isValid(parseISO(isoString))) return 'N/A';
-    return format(parseISO(isoString), 'p', { locale: enGB }); // 'p' for localized time
+    return format(parseISO(isoString), 'hh:mm a', { locale: enGB }); // Changed to hh:mm a for 12-hour format
   };
   
   const handleReturnSale = async (saleId: string) => {
@@ -99,7 +99,7 @@ export default function SalesReportPage() {
                   className="w-full md:w-[280px] justify-start text-right font-normal"
                 >
                   <CalendarIcon className="ml-2 h-4 w-4" />
-                  {selectedDate ? format(selectedDate, 'PPP', { locale: enGB }) : <span>اختر تاريخًا</span>}
+                  {selectedDate ? format(selectedDate, 'PPP', { locale: arSA }) : <span>اختر تاريخًا</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
@@ -108,8 +108,8 @@ export default function SalesReportPage() {
                   selected={selectedDate}
                   onSelect={setSelectedDate}
                   initialFocus
-                  locale={enGB} // Use English locale for calendar
-                  dir="rtl" // Keep RTL for calendar layout if elements support it
+                  locale={arSA} 
+                  dir="rtl" 
                 />
               </PopoverContent>
             </Popover>
@@ -124,19 +124,19 @@ export default function SalesReportPage() {
                 </TableCaption>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>وقت البيع</TableHead>
-                    <TableHead>المنتجات</TableHead>
-                    <TableHead className="text-center">الإجمالي</TableHead>
-                    <TableHead>البائع</TableHead>
-                    <TableHead className="text-center">الحالة</TableHead>
-                    {hasRole(['admin', 'employee_return']) && <TableHead className="text-center">إرجاع</TableHead>}
+                    <TableHead className="px-2 py-3">وقت البيع</TableHead>
+                    <TableHead className="px-2 py-3">المنتجات</TableHead>
+                    <TableHead className="text-center px-2 py-3">الإجمالي</TableHead>
+                    <TableHead className="px-2 py-3">البائع</TableHead>
+                    <TableHead className="text-center px-2 py-3">الحالة</TableHead>
+                    {hasRole(['admin', 'employee_return']) && <TableHead className="text-center px-2 py-3">إرجاع</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredSales.map((sale) => (
                     <TableRow key={sale.id}>
-                      <TableCell>{formatSaleTime(sale.saleDate)}</TableCell>
-                      <TableCell>
+                      <TableCell className="px-2 py-3">{formatSaleTime(sale.saleDate)}</TableCell>
+                      <TableCell className="px-2 py-3">
                         <ul className="list-disc list-inside">
                           {sale.items.map(item => (
                             <li key={item.productId}>
@@ -145,15 +145,15 @@ export default function SalesReportPage() {
                           ))}
                         </ul>
                       </TableCell>
-                      <TableCell className="text-center font-semibold">{sale.totalAmount.toFixed(2)}</TableCell>
-                      <TableCell>{sale.sellerUsername}</TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center font-semibold px-2 py-3">{sale.totalAmount.toFixed(2)}</TableCell>
+                      <TableCell className="px-2 py-3">{sale.sellerUsername}</TableCell>
+                      <TableCell className="text-center px-2 py-3">
                         <Badge variant={sale.status === 'active' ? 'success' : 'destructive'} className={sale.status === 'active' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'}>
                           {sale.status === 'active' ? 'نشط' : 'مرجع'}
                         </Badge>
                       </TableCell>
                       {hasRole(['admin', 'employee_return']) && (
-                        <TableCell className="text-center">
+                        <TableCell className="text-center px-2 py-3">
                           {sale.status === 'active' ? (
                              <Dialog>
                                 <DialogTrigger asChild>
@@ -186,8 +186,8 @@ export default function SalesReportPage() {
                 </TableBody>
                  <TableFooter>
                     <TableRow>
-                        <TableCell colSpan={hasRole(['admin', 'employee_return']) ? 3 : 2} className="font-bold text-lg">الإجمالي النشط لليوم</TableCell>
-                        <TableCell colSpan={hasRole(['admin', 'employee_return']) ? 3 : 3} className="text-left font-bold text-lg">{totalActiveSalesAmount.toFixed(2)} LYD</TableCell>
+                        <TableCell colSpan={hasRole(['admin', 'employee_return']) ? 3 : 2} className="font-bold text-lg px-2 py-3">الإجمالي النشط لليوم</TableCell>
+                        <TableCell colSpan={hasRole(['admin', 'employee_return']) ? 3 : 3} className="text-left font-bold text-lg px-2 py-3">{totalActiveSalesAmount.toFixed(2)} LYD</TableCell>
                     </TableRow>
                 </TableFooter>
               </Table>
