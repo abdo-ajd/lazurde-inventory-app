@@ -48,11 +48,11 @@ export default function ProductDetailsPage() {
         JsBarcode(barcodeRef.current, barcodeValue, {
           format: "CODE128",
           displayValue: true, 
-          fontSize: 16,
-          textMargin: 5,
-          margin: 10,
-          height: 70, 
-          width: 1.2, // Reduced width for thinner lines
+          fontSize: 12, // Reduced font size
+          textMargin: 2, // Reduced text margin
+          margin: 5, // Reduced overall margin
+          height: 30, // Significantly reduced height
+          width: 1.2, 
         });
       } catch (e) {
         console.error("Barcode generation failed:", e);
@@ -93,7 +93,7 @@ export default function ProductDetailsPage() {
 
     const svgString = new XMLSerializer().serializeToString(barcodeRef.current);
 
-    const printWindow = window.open('', '_blank', 'height=350,width=450');
+    const printWindow = window.open('', '_blank', 'height=300,width=400'); // Adjusted window size if needed
     if (printWindow) {
         printWindow.document.write('<html><head><title>طباعة باركود المنتج</title>');
         
@@ -112,16 +112,16 @@ export default function ProductDetailsPage() {
             '}' +
             '.barcode-area { ' +
             '    display: inline-block; ' +
-            '    padding: 3mm; ' +
+            '    padding: 2mm; ' + // Reduced padding
             '    border: 1px dashed #ccc; ' +
             '    width: 90%;' +
-            '    max-width: 70mm;' +
+            '    max-width: 60mm;' + // Reduced max width
             '}' +
-            '.product-name-print { font-size: 10pt; margin-bottom: 2mm; font-weight: bold; word-break: break-word; }' +
+            '.product-name-print { font-size: 8pt; margin-bottom: 1mm; font-weight: bold; word-break: break-word; }' + // Smaller font for product name
             'svg { ' +
             '    width: 100% !important; ' +
             '    height: auto !important; ' +
-            '    max-height: 40mm;' +
+            '    max-height: 20mm;' + // Reduced max-height for SVG
             '}' +
             '@media print {' +
             '    body { margin: 0; padding: 0; width: 100%; height: 100%; }' +
@@ -260,7 +260,7 @@ export default function ProductDetailsPage() {
                 </CardHeader>
 
                 <div className="px-6 pb-4 flex flex-col items-center">
-                  <svg ref={barcodeRef} className="w-full max-w-sm h-auto mb-2"></svg>
+                  <svg ref={barcodeRef} className="w-full max-w-xs h-auto mb-2"></svg> {/* max-w-xs to control width */}
                   <Button variant="outline" size="sm" onClick={handlePrintBarcode} className="mt-2">
                       <Printer className="ml-2 h-4 w-4" /> طباعة الباركود
                   </Button>
