@@ -1,7 +1,7 @@
 // src/components/products/ProductList.tsx
 "use client";
 
-import { useState, useMemo, useEffect }fsrom 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useProducts } from '@/contexts/ProductContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,6 +14,7 @@ import { PlusCircle, Search, Edit3, Trash2, ShoppingCart, Eye } from 'lucide-rea
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label'; // Added import for Label
 
 export default function ProductList() {
   const { products, deleteProduct } = useProducts();
