@@ -168,7 +168,7 @@ export default function ProductsManagementPage() {
                           {product.name}
                         </Link>
                       </TableCell>
-                      <TableCell className="text-right">{product.price.toFixed(2)} LYD</TableCell>
+                      <TableCell className="text-right">{product.price} LYD</TableCell>
                       <TableCell className="text-center">
                         <Badge variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}>
                             {product.quantity}
@@ -229,3 +229,4 @@ export default function ProductsManagementPage() {
     </div>
   );
 }
+

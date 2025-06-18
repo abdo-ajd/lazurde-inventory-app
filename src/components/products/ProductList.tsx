@@ -88,7 +88,7 @@ export default function ProductList({ searchTerm }: ProductListProps) {
               </Link>
               <CardContent className="pt-2 pb-1.5 px-2 flex-grow flex flex-col">
                 <h3 className="font-semibold text-xs truncate flex-grow" title={product.name}>{product.name}</h3>
-                <p className="text-[11px] text-muted-foreground mt-0.5">السعر: {product.price.toFixed(2)} LYD</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">السعر: {product.price} LYD</p>
                 <div className="flex justify-between items-center mt-1">
                   <Badge 
                     variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}
@@ -127,3 +127,4 @@ export default function ProductList({ searchTerm }: ProductListProps) {
     </>
   );
 }
+

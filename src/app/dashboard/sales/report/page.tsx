@@ -120,7 +120,7 @@ export default function SalesReportPage() {
             <div className="overflow-x-auto">
               <Table>
                 <TableCaption>
-                  إجمالي المبيعات النشطة لليوم المحدد: {totalActiveSalesAmount.toFixed(2)} LYD
+                  إجمالي المبيعات النشطة لليوم المحدد: {totalActiveSalesAmount} LYD
                 </TableCaption>
                 <TableHeader>
                   <TableRow>
@@ -145,7 +145,7 @@ export default function SalesReportPage() {
                           ))}
                         </ul>
                       </TableCell>
-                      <TableCell className="text-center font-semibold px-2 py-3">{sale.totalAmount.toFixed(2)}</TableCell>
+                      <TableCell className="text-center font-semibold px-2 py-3">{sale.totalAmount}</TableCell>
                       <TableCell className="px-2 py-3">{sale.sellerUsername}</TableCell>
                       <TableCell className="text-center px-2 py-3">
                         <Badge variant={sale.status === 'active' ? 'success' : 'destructive'} className={sale.status === 'active' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'}>
@@ -187,7 +187,7 @@ export default function SalesReportPage() {
                  <TableFooter>
                     <TableRow>
                         <TableCell colSpan={hasRole(['admin', 'employee_return']) ? 3 : 2} className="font-bold text-lg px-2 py-3">الإجمالي النشط لليوم</TableCell>
-                        <TableCell colSpan={hasRole(['admin', 'employee_return']) ? 3 : 3} className="text-left font-bold text-lg px-2 py-3">{totalActiveSalesAmount.toFixed(2)} LYD</TableCell>
+                        <TableCell colSpan={hasRole(['admin', 'employee_return']) ? 3 : 3} className="text-left font-bold text-lg px-2 py-3">{totalActiveSalesAmount} LYD</TableCell>
                     </TableRow>
                 </TableFooter>
               </Table>
