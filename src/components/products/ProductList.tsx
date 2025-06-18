@@ -77,7 +77,7 @@ export default function ProductList({ searchTerm }: ProductListProps) {
               <Link href={`/dashboard/products/${product.id}`} passHref aria-label={`عرض تفاصيل ${product.name}`}>
                 <CardHeader className="p-0 relative aspect-[3/4] w-full cursor-pointer group">
                   <Image
-                    src={product.imageUrl || 'https://placehold.co/300x450.png'} 
+                    src={product.imageUrl || 'https://placehold.co/200x266.png'} 
                     alt={product.name}
                     layout="fill"
                     objectFit="cover"
@@ -128,3 +128,4 @@ export default function ProductList({ searchTerm }: ProductListProps) {
     </>
   );
 }
+
