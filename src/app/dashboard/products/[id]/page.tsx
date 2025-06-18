@@ -44,14 +44,15 @@ export default function ProductDetailsPage() {
   useEffect(() => {
     if (product && product.id && barcodeRef.current) {
       try {
-        JsBarcode(barcodeRef.current, product.id, {
+        const barcodeValue = product.id.replace(/^prod_/, ''); // Remove "prod_" prefix
+        JsBarcode(barcodeRef.current, barcodeValue, {
           format: "CODE128",
           displayValue: true, 
           fontSize: 16,
           textMargin: 5,
           margin: 10,
           height: 70, 
-          width: 1.8, 
+          width: 1.2, // Reduced width for thinner lines
         });
       } catch (e) {
         console.error("Barcode generation failed:", e);
