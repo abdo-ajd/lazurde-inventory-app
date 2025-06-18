@@ -1,3 +1,4 @@
+
 // src/components/layout/Header.tsx
 "use client";
 
@@ -5,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
-import { LogOut, Settings, Users, BarChart3, Sun, Moon, PlusCircle, Search as SearchIcon, ListOrdered, Package } from 'lucide-react';
+import { LogOut, Settings, Users, BarChart3, Sun, Moon, PlusCircle, Search as SearchIcon, ListOrdered, Package, Barcode as BarcodeIcon } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,10 +17,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTheme } from "next-themes";
-import { useState, useEffect, ChangeEvent } from 'react';
+import { useState, useEffect, ChangeEvent, KeyboardEvent, useRef } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useProducts } from '@/contexts/ProductContext';
+import { useSales } from '@/contexts/SalesContext';
+import { useToast } from '@/hooks/use-toast';
 
 
 export default function Header() {
@@ -32,14 +36,33 @@ export default function Header() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
+  const { getProductByBarcode } = useProducts();
+  const { addSale } = useSales();
+  const { toast } = useToast();
+
   const [headerSearchValue, setHeaderSearchValue] = useState(searchParams.get('q') || '');
+  const [scannedBarcode, setScannedBarcode] = useState('');
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
+
 
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    // Sync header input with URL q param if it changes (e.g. back/forward navigation or page-specific search update)
+    // Sync header input with URL q param if it changes
     setHeaderSearchValue(searchParams.get('q') || '');
   }, [searchParams]);
+
+  // Auto-focus barcode input on /dashboard
+  useEffect(() => {
+    if (pathname === '/dashboard' && hasRole(['admin', 'employee', 'employee_return']) && currentUser) {
+      const timer = setTimeout(() => {
+        if (barcodeInputRef.current) {
+          barcodeInputRef.current.focus();
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [pathname, currentUser, hasRole]);
 
   const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newSearchTerm = e.target.value;
@@ -54,9 +77,37 @@ export default function Header() {
     const search = current.toString();
     const query = search ? `?${search}` : '';
     
-    // Push to router if current page is one that uses the search functionality
-    if (pathname === '/dashboard' || pathname.startsWith('/dashboard/products')) { // Covers grid and list views
+    if (pathname === '/dashboard' || pathname.startsWith('/dashboard/products')) {
         router.push(`${pathname}${query}`, { scroll: false });
+    }
+  };
+
+  const handleBarcodeScan = async () => {
+    if (!scannedBarcode.trim()) return;
+    const product = getProductByBarcode(scannedBarcode.trim());
+
+    if (product) {
+      if (product.quantity > 0) {
+        if (currentUser) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const saleResult = await addSale([{ productId: product.id, quantity: 1 }]);
+          // Toast for successful sale is handled by addSale now
+        } else {
+          toast({ variant: "destructive", title: "خطأ", description: "يجب تسجيل الدخول لإتمام عملية البيع." });
+        }
+      } else {
+        toast({ variant: "destructive", title: "نفذت الكمية", description: `المنتج "${product.name}" غير متوفر حالياً.` });
+      }
+    } else {
+      toast({ variant: "destructive", title: "لم يتم العثور على المنتج", description: "الباركود المدخل غير صحيح أو المنتج غير موجود." });
+    }
+    setScannedBarcode(''); 
+  };
+
+  const handleBarcodeKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault(); 
+      handleBarcodeScan();
     }
   };
 
@@ -89,8 +140,9 @@ export default function Header() {
     { href: '/dashboard/settings', label: 'إعدادات التطبيق', icon: Settings, roles: ['admin'] },
   ];
 
-  const showHeaderSearch = pathname === '/dashboard' || pathname.startsWith('/dashboard/products'); // Show search for grid and list/table
-  const showHeaderAddProduct = pathname === '/dashboard'; // Show header Add Product button only for grid view page
+  const showHeaderProductSearch = pathname === '/dashboard' || pathname.startsWith('/dashboard/products');
+  const showDashboardBarcodeScanner = pathname === '/dashboard' && hasRole(['admin', 'employee', 'employee_return']);
+  const showHeaderAddProduct = pathname === '/dashboard' && hasRole(['admin']);
 
   return (
     <TooltipProvider delayDuration={100}>
@@ -129,7 +181,7 @@ export default function Header() {
 
 
         <div className="flex items-center gap-2 sm:gap-3">
-          {showHeaderSearch && (
+          {showHeaderProductSearch && (
             <div className="relative hidden md:flex items-center">
               <SearchIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -142,7 +194,22 @@ export default function Header() {
               />
             </div>
           )}
-          {showHeaderAddProduct && hasRole(['admin']) && (
+          {showDashboardBarcodeScanner && (
+            <div className="relative hidden md:flex items-center">
+              <BarcodeIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                ref={barcodeInputRef}
+                type="text"
+                placeholder="امسح باركود للبيع..."
+                value={scannedBarcode}
+                onChange={(e) => setScannedBarcode(e.target.value)}
+                onKeyDown={handleBarcodeKeyDown}
+                className="h-9 w-full md:w-40 lg:w-48 pr-10 pl-4 py-2 text-sm"
+                aria-label="إدخال الباركود للبيع السريع"
+              />
+            </div>
+          )}
+          {showHeaderAddProduct && (
             <Button asChild size="sm" className="hidden md:inline-flex">
               <Link href="/dashboard/products/add">
                 <PlusCircle className="ml-1 h-4 w-4" /> إضافة
