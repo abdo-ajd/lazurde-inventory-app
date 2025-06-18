@@ -8,20 +8,28 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 98%; /* Very Light Gray - Almost White */
+    /* Default HSL values for light theme, customizable via AppSettingsContext */
+    --theme-primary-hsl: 207 89% 61%; /* Saturated Cyan #42A5F5 from PRD/DEFAULT_APP_SETTINGS */
+    --theme-background-hsl: 0 0% 98%; /* Very Light Gray - Almost White from DEFAULT_APP_SETTINGS */
+    --theme-accent-hsl: 233 48% 59%; /* Blue-violet #5C6BC0 from PRD/DEFAULT_APP_SETTINGS */
+
+    /* Main theme variables for light mode, derived from customizable HSL variables */
+    --primary: var(--theme-primary-hsl);
+    --primary-foreground: 0 0% 100%; /* White */
+    --background: var(--theme-background-hsl);
     --foreground: 210 10% 23%; /* Dark Gray for text */
+    --accent: var(--theme-accent-hsl);
+    --accent-foreground: 0 0% 100%; /* White */
+
+    /* Other light theme variables */
     --card: 0 0% 100%; /* White */
     --card-foreground: 210 10% 23%;
     --popover: 0 0% 100%; /* White */
     --popover-foreground: 210 10% 23%;
-    --primary: 207 89% 61%; /* Saturated Cyan #42A5F5 */
-    --primary-foreground: 0 0% 100%; /* White */
     --secondary: 207 70% 75%;
     --secondary-foreground: 210 10% 23%;
     --muted: 210 20% 94%; /* Adjusted Muted */
     --muted-foreground: 210 10% 40%;
-    --accent: 233 48% 59%; /* Blue-violet #5C6BC0 */
-    --accent-foreground: 0 0% 100%; /* White */
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
     --border: 210 20% 85%; /* Adjusted Border */
@@ -33,6 +41,7 @@ body {
     --chart-4: 30 80% 60%;
     --chart-5: 0 0% 50%;
     --radius: 0.5rem;
+    
     /* Sidebar variables are no longer primary for layout but kept for potential minor components */
     --sidebar-background: 0 0% 96%; 
     --sidebar-foreground: 210 10% 23%;
@@ -45,20 +54,23 @@ body {
   }
 
   .dark {
+    /* Main theme variables for dark mode, defined directly */
+    --primary: 207 80% 55%; 
+    --primary-foreground: 0 0% 10%; 
     --background: 220 15% 10%; 
     --foreground: 0 0% 98%; 
+    --accent: 233 55% 65%; 
+    --accent-foreground: 0 0% 10%; 
+
+    /* Other dark theme variables */
     --card: 220 15% 15%;
     --card-foreground: 0 0% 98%;
     --popover: 220 15% 15%;
     --popover-foreground: 0 0% 98%;
-    --primary: 207 80% 55%; 
-    --primary-foreground: 0 0% 10%; 
     --secondary: 220 10% 25%;
     --secondary-foreground: 0 0% 98%;
     --muted: 220 10% 20%;
     --muted-foreground: 0 0% 60%;
-    --accent: 233 55% 65%; 
-    --accent-foreground: 0 0% 10%; 
     --destructive: 0 60% 45%;
     --destructive-foreground: 0 0% 98%;
     --border: 220 10% 30%;
@@ -69,6 +81,8 @@ body {
     --chart-3: 180 50% 40%;
     --chart-4: 30 70% 55%;
     --chart-5: 0 0% 70%;
+
+    /* Sidebar variables for dark mode */
     --sidebar-background: 220 15% 12%;
     --sidebar-foreground: 0 0% 95%;
     --sidebar-primary: 207 80% 55%;

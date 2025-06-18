@@ -20,6 +20,17 @@ export const AppSettingsProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettings] = useLocalStorage<AppSettings>(LOCALSTORAGE_KEYS.APP_SETTINGS, DEFAULT_APP_SETTINGS);
   const { toast } = useToast();
 
+  const applyTheme = (colors: AppSettings['themeColors']) => {
+    if (typeof document !== 'undefined') {
+      const root = document.documentElement;
+      // These set the HSL values that the light theme's --primary, --background, --accent derive from.
+      // The .dark block in globals.css will directly set --primary, --background, --accent for dark mode.
+      root.style.setProperty('--theme-primary-hsl', colors.primary);
+      root.style.setProperty('--theme-background-hsl', colors.background);
+      root.style.setProperty('--theme-accent-hsl', colors.accent);
+    }
+  };
+
   const updateSettings = (newSettings: Partial<AppSettings>) => {
     setSettings(prev => {
       const updatedSettings = { ...prev, ...newSettings };
@@ -38,19 +49,6 @@ export const AppSettingsProvider = ({ children }: { children: ReactNode }) => {
     toast({ title: "تم استعادة الإعدادات الافتراضية" });
   };
 
-  const applyTheme = (colors: AppSettings['themeColors']) => {
-    if (typeof document !== 'undefined') {
-      const root = document.documentElement;
-      root.style.setProperty('--primary', colors.primary);
-      root.style.setProperty('--background', colors.background);
-      root.style.setProperty('--accent', colors.accent);
-
-      // Potentially update related theme variables in globals.css if they are derived.
-      // For simplicity, this example directly sets the main HSL values.
-      // For a more robust solution, you might need to update a larger set of CSS variables
-      // or recompile/re-evaluate CSS if using a preprocessor that can handle dynamic HSL.
-    }
-  };
 
   useEffect(() => {
     // Apply theme on initial load and when settings change
