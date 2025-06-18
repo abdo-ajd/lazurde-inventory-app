@@ -2,7 +2,7 @@
 // src/app/dashboard/products/[id]/page.tsx
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { useProducts } from '@/contexts/ProductContext';
 import { useParams, useRouter } from 'next/navigation';
@@ -10,15 +10,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowRight, Edit3, Package, Tag, DollarSign, Layers, CalendarDays, History, Trash2 } from 'lucide-react';
+import { ArrowRight, Edit3, Package, Tag, DollarSign, Layers, CalendarDays, History, Trash2, ShoppingBag } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Product } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as ShadcnDialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useSales } from '@/contexts/SalesContext'; // Import useSales
 
 export default function ProductDetailsPage() {
   const { getProductById, deleteProduct } = useProducts();
+  const { sales } = useSales(); // Get sales data
   const params = useParams();
   const router = useRouter();
   const { hasRole } = useAuth();
@@ -36,6 +38,20 @@ export default function ProductDetailsPage() {
     }
     setIsFetching(false);
   }, [productId, getProductById]);
+
+  const quantitySold = useMemo(() => {
+    if (!product || !sales) return 0;
+    return sales.reduce((total, sale) => {
+      if (sale.status === 'active') { // Consider only active sales for sold quantity
+        sale.items.forEach(item => {
+          if (item.productId === product.id) {
+            total += item.quantity;
+          }
+        });
+      }
+      return total;
+    }, 0);
+  }, [product, sales]);
 
   const handleDeleteProduct = async () => {
     if (!product) return;
@@ -61,7 +77,7 @@ export default function ProductDetailsPage() {
             <Skeleton className="h-4 w-1/4" />
           </CardHeader>
           <CardContent className="space-y-4">
-            {[...Array(4)].map((_, i) => (
+            {[...Array(5)].map((_, i) => ( // Increased to 5 for the new field
               <div key={i} className="flex items-center space-x-reverse space-x-3">
                 <Skeleton className="h-6 w-6 rounded-full" />
                 <Skeleton className="h-6 w-1/3" />
@@ -171,6 +187,13 @@ export default function ProductDetailsPage() {
                     </div>
                 </div>
                 <div className="flex items-start space-x-3 space-x-reverse">
+                    <ShoppingBag className="h-5 w-5 mt-1 text-primary shrink-0" />
+                    <div>
+                    <p className="text-sm text-muted-foreground">الكمية المباعة</p>
+                    <p className="font-semibold text-lg">{quantitySold}</p>
+                    </div>
+                </div>
+                <div className="flex items-start space-x-3 space-x-reverse">
                     <CalendarDays className="h-5 w-5 mt-1 text-primary shrink-0" />
                     <div>
                     <p className="text-sm text-muted-foreground">تاريخ الإنشاء</p>
@@ -223,3 +246,4 @@ export default function ProductDetailsPage() {
     </div>
   );
 }
+
