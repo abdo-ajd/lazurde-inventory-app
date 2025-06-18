@@ -48,11 +48,11 @@ export default function ProductDetailsPage() {
         JsBarcode(barcodeRef.current, barcodeValue, {
           format: "CODE128",
           displayValue: true, 
-          fontSize: 12, // Reduced font size
-          textMargin: 2, // Reduced text margin
-          margin: 5, // Reduced overall margin
-          height: 30, // Significantly reduced height
-          width: 1.2, 
+          fontSize: 12, 
+          textMargin: 2, 
+          margin: 5, 
+          height: 30, 
+          width: 2, // Increased width for thicker lines
         });
       } catch (e) {
         console.error("Barcode generation failed:", e);
@@ -93,7 +93,7 @@ export default function ProductDetailsPage() {
 
     const svgString = new XMLSerializer().serializeToString(barcodeRef.current);
 
-    const printWindow = window.open('', '_blank', 'height=300,width=400'); // Adjusted window size if needed
+    const printWindow = window.open('', '_blank', 'height=300,width=400'); 
     if (printWindow) {
         printWindow.document.write('<html><head><title>طباعة باركود المنتج</title>');
         
@@ -112,16 +112,16 @@ export default function ProductDetailsPage() {
             '}' +
             '.barcode-area { ' +
             '    display: inline-block; ' +
-            '    padding: 2mm; ' + // Reduced padding
+            '    padding: 2mm; ' + 
             '    border: 1px dashed #ccc; ' +
             '    width: 90%;' +
-            '    max-width: 60mm;' + // Reduced max width
+            '    max-width: 60mm;' + 
             '}' +
-            '.product-name-print { font-size: 8pt; margin-bottom: 1mm; font-weight: bold; word-break: break-word; }' + // Smaller font for product name
+            '.product-name-print { font-size: 8pt; margin-bottom: 1mm; font-weight: bold; word-break: break-word; }' + 
             'svg { ' +
             '    width: 100% !important; ' +
             '    height: auto !important; ' +
-            '    max-height: 20mm;' + // Reduced max-height for SVG
+            '    max-height: 20mm;' + 
             '}' +
             '@media print {' +
             '    body { margin: 0; padding: 0; width: 100%; height: 100%; }' +
