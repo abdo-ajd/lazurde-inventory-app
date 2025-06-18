@@ -27,13 +27,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useLocalStorage<User | null>(LOCALSTORAGE_KEYS.AUTH_USER, null);
 
   const initialUsersCreator = useCallback(() => {
-    // This function is called by getValueFromLocalStorage if:
-    // 1. SSR (window is undefined) -> we want [] for SSR.
-    // 2. Client-side, and localStorage.getItem(key) is null -> we want [DEFAULT_ADMIN_USER].
     if (typeof window === 'undefined') {
-      return [];
+      return []; 
     }
-    // If on client and this function is called, it means item was null.
     return [DEFAULT_ADMIN_USER];
   }, []);
 
@@ -47,19 +43,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // This effect runs on the client after useLocalStorage has initialized 'users'.
-    // It ensures the default admin exists if 'users' array is empty (e.g., localStorage had "[]" or was cleared and initialUsersCreator ran on SSR then client).
-    if (users.length === 0 && typeof window !== 'undefined') {
-      setUsers([DEFAULT_ADMIN_USER]);
+    // This effect runs on the client.
+    // Its main purpose is to finalize the `isLoading` state and ensure default admin exists if necessary.
+    if (typeof window !== 'undefined') {
+      if (users && users.length === 0) {
+        // This case handles if localStorage somehow got an empty array "[]" stored,
+        // or if initial hydration resulted in an empty users array.
+        // We ensure the default admin is present.
+        setUsers([DEFAULT_ADMIN_USER]);
+        // setIsLoading(false) will be called in the next run of this effect after users update.
+      } else {
+        // If users array is populated (or was just populated by setUsers above),
+        // then we can consider auth initialization complete.
+        setIsLoading(false);
+      }
     }
-    setIsLoading(false);
+    // Do not set isLoading to false on SSR, as client-side checks are needed.
   }, [users, setUsers]);
 
 
   const login = async (username: string, password?: string): Promise<boolean> => {
     setIsLoading(true);
-    // In a real app, password would be sent to a backend for verification.
-    // Here, we check against locally stored users.
     const user = users.find(u => u.username === username && u.password === password);
     if (user) {
       setCurrentUser(user);
@@ -99,19 +103,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
 
-    // Prevent changing the role of the sole admin
     const currentAdmins = users.filter(u => u.role === 'admin');
     if (users[userIndex].role === 'admin' && currentAdmins.length === 1 && updates.role && updates.role !== 'admin') {
         toast({ title: "خطأ", description: "لا يمكن تغيير دور المدير الوحيد.", variant: "destructive" });
         return false;
     }
     
-    // Prevent changing username to an existing one
     if (updates.username && users.some(u => u.username === updates.username && u.id !== userId)) {
       toast({ title: "خطأ", description: "اسم المستخدم الجديد موجود بالفعل.", variant: "destructive" });
       return false;
     }
-
 
     setUsers(prevUsers => prevUsers.map(u => u.id === userId ? { ...u, ...updates, password: updates.password || u.password } : u));
     toast({ title: "نجاح", description: `تم تحديث بيانات المستخدم.` });
