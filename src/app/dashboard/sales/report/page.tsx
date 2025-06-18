@@ -16,7 +16,7 @@ import { format, parseISO, startOfDay, endOfDay, isEqual, isValid } from 'date-f
 import { enGB } from 'date-fns/locale'; // Use English locale for date formatting
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription as ShadcnDialogDescription, DialogClose } from '@/components/ui/dialog';
 import type { Sale } from '@/lib/types';
 
 export default function SalesReportPage() {
@@ -46,9 +46,9 @@ export default function SalesReportPage() {
       .reduce((sum, sale) => sum + sale.totalAmount, 0);
   }, [filteredSales]);
 
-  const formatDateTime = (isoString: string) => {
+  const formatSaleTime = (isoString: string) => {
     if (!isoString || !isValid(parseISO(isoString))) return 'N/A';
-    return format(parseISO(isoString), 'Pp', { locale: enGB });
+    return format(parseISO(isoString), 'p', { locale: enGB }); // 'p' for localized time
   };
   
   const handleReturnSale = async (saleId: string) => {
@@ -135,12 +135,12 @@ export default function SalesReportPage() {
                 <TableBody>
                   {filteredSales.map((sale) => (
                     <TableRow key={sale.id}>
-                      <TableCell>{formatDateTime(sale.saleDate)}</TableCell>
+                      <TableCell>{formatSaleTime(sale.saleDate)}</TableCell>
                       <TableCell>
                         <ul className="list-disc list-inside">
                           {sale.items.map(item => (
                             <li key={item.productId}>
-                              {item.productName} (الكمية: {item.quantity}, السعر: {item.pricePerUnit.toFixed(2)})
+                              {item.productName}
                             </li>
                           ))}
                         </ul>
@@ -164,9 +164,9 @@ export default function SalesReportPage() {
                                 <DialogContent>
                                 <DialogHeader>
                                     <DialogTitle>تأكيد الإرجاع</DialogTitle>
-                                    <DialogDescription>
+                                    <ShadcnDialogDescription>
                                     هل أنت متأكد أنك تريد إرجاع هذه العملية؟ سيتم إعادة المنتجات إلى المخزون.
-                                    </DialogDescription>
+                                    </ShadcnDialogDescription>
                                 </DialogHeader>
                                 <DialogFooter className="gap-2 sm:justify-start">
                                     <DialogClose asChild>
@@ -210,3 +210,4 @@ declare module "@/components/ui/badge" {
     variant?: "default" | "secondary" | "destructive" | "outline" | "success";
   }
 }
+
