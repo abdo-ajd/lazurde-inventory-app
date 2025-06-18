@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,8 +43,11 @@ interface BackupData {
 
 export default function AppSettingsPage() {
   const { settings, updateSettings, resetToDefaults } = useAppSettings();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { users, replaceAllUsers, hasRole } = useAuth();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { products, replaceAllProducts } = useProducts();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { sales, replaceAllSales } = useSales();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -261,13 +264,14 @@ export default function AppSettingsPage() {
                 onChange={handleRestoreBackup}
             />
            </div>
-           <FormDescription>
+           <p className="text-sm text-muted-foreground mt-2">
             سيتم تنزيل النسخة الاحتياطية كملف JSON. عند الاستعادة، تأكد من اختيار ملف JSON صحيح تم إنشاؤه بواسطة هذا التطبيق.
             <br/>
             <strong className="text-destructive">تحذير:</strong> استعادة نسخة احتياطية سيقوم بالكتابة فوق جميع البيانات الحالية.
-           </FormDescription>
+           </p>
         </CardContent>
       </Card>
     </div>
   );
 }
+
