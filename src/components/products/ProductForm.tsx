@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import type { Product } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadcnCardDescription } from '@/components/ui/card';
-import { Save, Camera, XCircle, FileImage } from 'lucide-react';
+import { Save, Camera, XCircle, FileImage, Barcode } from 'lucide-react';
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
@@ -19,7 +19,8 @@ const productSchema = z.object({
   name: z.string().min(1, { message: "اسم المنتج مطلوب" }),
   price: z.coerce.number().min(0, { message: "السعر يجب أن يكون رقمًا موجبًا" }),
   quantity: z.coerce.number().int().min(0, { message: "الكمية يجب أن تكون رقمًا صحيحًا موجبًا" }),
-  imageUrl: z.string().optional().or(z.literal('')), // Can be a data URI or empty
+  imageUrl: z.string().optional().or(z.literal('')),
+  barcodeValue: z.string().optional().or(z.literal('')), // Allow empty string for barcode
 });
 
 export type ProductFormValues = z.infer<typeof productSchema>;
@@ -39,6 +40,7 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
       price: initialData?.price || 0,
       quantity: initialData?.quantity || 0,
       imageUrl: initialData?.imageUrl || '',
+      barcodeValue: initialData?.barcodeValue || '',
     },
   });
   const { toast } = useToast();
@@ -53,10 +55,10 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
 
   useEffect(() => {
-    // Update preview if initialData changes
     setImagePreview(initialData?.imageUrl || null);
     form.setValue('imageUrl', initialData?.imageUrl || '');
-  }, [initialData?.imageUrl, form]);
+    form.setValue('barcodeValue', initialData?.barcodeValue || '');
+  }, [initialData, form]);
 
   const startCamera = async () => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -139,7 +141,7 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
       stopCamera();
     }
     if (fileInputRef.current) {
-        fileInputRef.current.value = ''; // Reset file input
+        fileInputRef.current.value = '';
     }
   };
 
@@ -154,7 +156,13 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
   const handleFormSubmit = async (data: ProductFormValues) => {
     await onSubmit(data);
     if (!isEditMode) {
-      form.reset(); 
+      form.reset({ 
+        name: '', 
+        price: 0, 
+        quantity: 0, 
+        imageUrl: '', 
+        barcodeValue: '' 
+      });
       setImagePreview(null); 
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -208,6 +216,25 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
                   <FormControl>
                     <Input id="quantity" type="number" placeholder="مثال: 10" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="barcodeValue"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel htmlFor="barcodeValue">قيمة الباركود (اختياري)</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                       <Barcode className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                       <Input id="barcodeValue" placeholder="مثال: 1234567890123" {...field} className="pr-10" />
+                    </div>
+                  </FormControl>
+                  <FormDescription>
+                    أدخل قيمة الباركود الفريدة للمنتج إذا كانت متوفرة.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

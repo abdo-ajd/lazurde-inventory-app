@@ -2,18 +2,20 @@
 "use client";
 
 import type { Product } from '@/lib/types';
-import { createContext, useContext, ReactNode, useCallback } from 'react'; // Added useCallback
+import { createContext, useContext, ReactNode, useCallback } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { LOCALSTORAGE_KEYS, INITIAL_PRODUCTS } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 
+type ProductUpdatePayload = Partial<Pick<Product, "name" | "price" | "quantity" | "imageUrl" | "barcodeValue">>;
+
 interface ProductContextType {
   products: Product[];
   addProduct: (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Product | null>;
-  updateProduct: (productId: string, updates: Partial<Omit<Product, 'id' | 'createdAt' | 'updatedAt' | 'imageUrl'>> & { imageUrl?: string | undefined }) => Promise<Product | null>;
+  updateProduct: (productId: string, updates: ProductUpdatePayload) => Promise<Product | null>;
   deleteProduct: (productId: string) => Promise<boolean>;
   getProductById: (productId: string) => Product | undefined;
-  updateProductQuantity: (productId: string, quantityChange: number) => Promise<boolean>; // Positive for adding, negative for subtracting
+  updateProductQuantity: (productId: string, quantityChange: number) => Promise<boolean>;
 }
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
@@ -32,7 +34,8 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     const newProduct: Product = {
       ...productData,
       id: `prod_${Date.now()}`,
-      imageUrl: productData.imageUrl || '', // Ensure imageUrl is at least an empty string
+      imageUrl: productData.imageUrl || '',
+      barcodeValue: productData.barcodeValue || '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -41,7 +44,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     return newProduct;
   };
 
-  const updateProduct = async (productId: string, updates: Partial<Omit<Product, 'id' | 'createdAt' | 'updatedAt' | 'imageUrl'>> & { imageUrl?: string | undefined }): Promise<Product | null> => {
+  const updateProduct = async (productId: string, updates: ProductUpdatePayload): Promise<Product | null> => {
     let updatedProduct: Product | null = null;
     let hasConflict = false;
     const currentProducts = products || [];
@@ -55,7 +58,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
              updatedProduct = p; 
              return p; 
           }
-          updatedProduct = { ...p, ...updates, imageUrl: updates.imageUrl !== undefined ? updates.imageUrl : p.imageUrl, updatedAt: new Date().toISOString() };
+          updatedProduct = { ...p, ...updates, updatedAt: new Date().toISOString() };
           return updatedProduct;
         }
         return p;
@@ -63,12 +66,11 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     );
 
     if (hasConflict) {
-        return updatedProduct; // Return the original product in case of conflict, update was effectively aborted
+        return updatedProduct; 
     }
 
     if (updatedProduct && updatedProduct.id === productId) {
         const originalProduct = currentProducts.find(p=> p.id === productId);
-        // Check if something actually changed to avoid unnecessary toast
         if (JSON.stringify(originalProduct) !== JSON.stringify(updatedProduct)) {
             toast({ title: "نجاح", description: `تم تحديث المنتج "${updatedProduct.name}".` });
         }
@@ -104,7 +106,8 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
     
-    await updateProduct(productId, { quantity: newQuantity });
+    // Cast to ProductUpdatePayload as updateProduct expects this
+    await updateProduct(productId, { quantity: newQuantity } as ProductUpdatePayload);
     return true;
   };
 

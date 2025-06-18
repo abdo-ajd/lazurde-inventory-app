@@ -13,6 +13,7 @@ export interface Product {
   price: number;
   quantity: number;
   imageUrl?: string; // Added for product image
+  barcodeValue?: string; // New field for editable barcode value
   createdAt: string;
   updatedAt: string;
 }
@@ -54,4 +55,3 @@ export interface NavItem {
   disabled?: boolean;
   external?: boolean;
 }
-

@@ -19,10 +19,6 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   storeName: 'متجر لازوردي للعبايات', // Updated store name
   themeColors: {
     primary: '207 89% 61%',
-    // Background and accent will be taken from globals.css defaults which were just updated
-    // Keeping them here in case of a reset to these specific values is ever needed,
-    // but applyTheme in AppSettingsContext will use the new --background from CSS.
-    // For consistency, I'll update them to match the new CSS for light theme.
     background: '0 0% 98%', 
     accent: '233 48% 59%',
   },
@@ -34,7 +30,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     name: 'عباية سوداء كلاسيكية',
     price: 350,
     quantity: 15,
-    imageUrl: 'https://placehold.co/300x450.png', // Placeholder for abaya
+    imageUrl: 'https://placehold.co/300x450.png',
+    barcodeValue: '123456789012', // Sample barcode value
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -43,7 +40,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     name: 'عباية بتطريز فضي',
     price: 420,
     quantity: 8,
-    imageUrl: 'https://placehold.co/300x450.png', // Placeholder for abaya
+    imageUrl: 'https://placehold.co/300x450.png',
+    barcodeValue: '', // Empty barcode value
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -52,7 +50,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     name: 'عباية يومية عملية',
     price: 280,
     quantity: 25,
-    imageUrl: 'https://placehold.co/300x450.png', // Placeholder for abaya
+    imageUrl: 'https://placehold.co/300x450.png',
+    barcodeValue: 'ABC987654321', // Another sample
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },

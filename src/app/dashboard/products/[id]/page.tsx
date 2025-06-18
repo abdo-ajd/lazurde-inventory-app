@@ -1,4 +1,3 @@
-
 // src/app/dashboard/products/[id]/page.tsx
 "use client";
 
@@ -42,17 +41,16 @@ export default function ProductDetailsPage() {
   }, [productId, getProductById]);
 
   useEffect(() => {
-    if (product && product.id && barcodeRef.current) {
+    if (product && product.barcodeValue && barcodeRef.current) {
       try {
-        const barcodeValue = product.id.replace(/^prod_/, ''); // Remove "prod_" prefix
-        JsBarcode(barcodeRef.current, barcodeValue, {
+        JsBarcode(barcodeRef.current, product.barcodeValue, {
           format: "CODE128",
           displayValue: true, 
           fontSize: 12, 
           textMargin: 2, 
           margin: 5, 
           height: 30, 
-          width: 2, // Increased width for thicker lines
+          width: 2,
         });
       } catch (e) {
         console.error("Barcode generation failed:", e);
@@ -83,13 +81,11 @@ export default function ProductDetailsPage() {
     if (success) {
       toast({title: "تم الحذف", description: `تم حذف المنتج "${product.name}" بنجاح.`});
       router.push('/dashboard/products');
-    } else {
-      // Error toast is handled by deleteProduct in context
     }
   };
 
   const handlePrintBarcode = () => {
-    if (!barcodeRef.current || !product) return;
+    if (!barcodeRef.current || !product || !product.barcodeValue) return;
 
     const svgString = new XMLSerializer().serializeToString(barcodeRef.current);
 
@@ -143,7 +139,6 @@ export default function ProductDetailsPage() {
         printWindow.onload = function() {
             printWindow.focus();
             printWindow.print();
-            // printWindow.close(); // Let user close manually
         };
     } else {
         toast({
@@ -153,7 +148,6 @@ export default function ProductDetailsPage() {
         });
     }
   };
-
 
   if (isFetching) {
     return (
@@ -256,14 +250,37 @@ export default function ProductDetailsPage() {
                     <Tag className="mr-2 text-accent" />
                     معلومات المنتج
                 </CardTitle>
-                {/* Product ID text removed, barcode will be below */}
                 </CardHeader>
 
                 <div className="px-6 pb-4 flex flex-col items-center">
-                  <svg ref={barcodeRef} className="w-full max-w-xs h-auto mb-2"></svg> {/* max-w-xs to control width */}
-                  <Button variant="outline" size="sm" onClick={handlePrintBarcode} className="mt-2">
-                      <Printer className="ml-2 h-4 w-4" /> طباعة الباركود
-                  </Button>
+                  {product.barcodeValue ? (
+                    <>
+                      <svg ref={barcodeRef} className="w-full max-w-xs h-auto mb-2"></svg>
+                      <div className="flex gap-2 mt-2">
+                        <Button variant="outline" size="sm" onClick={handlePrintBarcode}>
+                            <Printer className="ml-2 h-4 w-4" /> طباعة الباركود
+                        </Button>
+                        {hasRole(['admin']) && (
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`/dashboard/products/${product.id}/edit`}>
+                              <Edit3 className="ml-2 h-4 w-4" /> تعديل
+                            </Link>
+                          </Button>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-muted-foreground mb-2">لم يتم تعيين باركود لهذا المنتج.</p>
+                      {hasRole(['admin']) && (
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/dashboard/products/${product.id}/edit`}>
+                            <Edit3 className="ml-2 h-4 w-4" /> إضافة/تعديل الباركود
+                          </Link>
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
                 
                 <CardContent className="grid gap-6 sm:grid-cols-2 pt-0">
@@ -343,4 +360,3 @@ export default function ProductDetailsPage() {
     </div>
   );
 }
-
