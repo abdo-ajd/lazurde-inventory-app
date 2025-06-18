@@ -2,7 +2,7 @@
 "use client";
 
 import type { User, UserRole } from '@/lib/types';
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { LOCALSTORAGE_KEYS, DEFAULT_ADMIN_USER } from '@/lib/constants';
@@ -25,21 +25,31 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useLocalStorage<User | null>(LOCALSTORAGE_KEYS.AUTH_USER, null);
-  const [users, setUsers] = useLocalStorage<User[]>(LOCALSTORAGE_KEYS.USERS, () => {
-    // Initialize with default admin if no users exist
-    if (typeof window !== 'undefined' && !window.localStorage.getItem(LOCALSTORAGE_KEYS.USERS)) {
-      return [DEFAULT_ADMIN_USER];
+
+  const initialUsersCreator = useCallback(() => {
+    // This function is called by getValueFromLocalStorage if:
+    // 1. SSR (window is undefined) -> we want [] for SSR.
+    // 2. Client-side, and localStorage.getItem(key) is null -> we want [DEFAULT_ADMIN_USER].
+    if (typeof window === 'undefined') {
+      return [];
     }
-    return []; 
-  });
+    // If on client and this function is called, it means item was null.
+    return [DEFAULT_ADMIN_USER];
+  }, []);
+
+  const [users, setUsers] = useLocalStorage<User[]>(
+    LOCALSTORAGE_KEYS.USERS,
+    initialUsersCreator
+  );
+
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Ensure default admin exists on initial load if users array is empty
-    // This handles the case where localStorage might be cleared or this is the first run
-    if (users.length === 0) {
+    // This effect runs on the client after useLocalStorage has initialized 'users'.
+    // It ensures the default admin exists if 'users' array is empty (e.g., localStorage had "[]" or was cleared and initialUsersCreator ran on SSR then client).
+    if (users.length === 0 && typeof window !== 'undefined') {
       setUsers([DEFAULT_ADMIN_USER]);
     }
     setIsLoading(false);
