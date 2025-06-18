@@ -47,11 +47,11 @@ export default function ProductDetailsPage() {
         JsBarcode(barcodeRef.current, product.barcodeValue, {
           format: "CODE128",
           displayValue: true,
-          fontSize: 10, // Kept from "صغر كل شي"
-          textMargin: 0, // Kept
-          margin: 2,     // Kept
-          height: 30,    // Reverted from extreme shortening, this was from "صغر كل شي"
-          width: 2,      // Kept
+          fontSize: 10, 
+          textMargin: 0, 
+          margin: 2,     
+          height: 30,    
+          width: 2,      
         });
       } catch (e) {
         console.error("Barcode generation failed:", e);
@@ -95,8 +95,8 @@ export default function ProductDetailsPage() {
             '<style>' +
             'body { margin: 1mm; font-family: "Arial", sans-serif; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: calc(100vh - 2mm); overflow: hidden;}' +
             '.barcode-area { display: inline-block; padding: 0.25mm; border: 0.25px dashed #ccc; width: 98%; max-width: 40mm;}' +
-            '.product-name-print { font-size: 6pt; margin-bottom: 0.1mm; font-weight: bold; word-break: break-word; }' + // font-size was 8pt, reduced to 6pt
-            'svg { width: 100% !important; height: auto !important; max-height: 10mm; }' + // max-height was 20mm, reduced to 10mm
+            '.product-name-print { font-size: 6pt; margin-bottom: 0.1mm; font-weight: bold; word-break: break-word; }' + 
+            'svg { width: 100% !important; height: auto !important; max-height: 10mm; }' + 
             '@media print { body { margin: 0; padding: 0; width: 100%; height: 100%; } .barcode-area { border: none; padding:0; margin: 0 auto; page-break-after: always; width: 100%; }}' +
             '</style>';
         printWindow.document.write(styleContent);
@@ -124,7 +124,6 @@ export default function ProductDetailsPage() {
 
 
   if (isFetching) {
-    // Skeletons from "صغر كل شي" version
     return (
       <div className="space-y-1.5">
         <Skeleton className="h-5 w-1/3" />
@@ -153,7 +152,6 @@ export default function ProductDetailsPage() {
   }
 
   if (!product) {
-     // Sizes from "صغر كل شي" version
     return (
       <div className="text-center py-3">
         <Package size={28} className="mx-auto text-muted-foreground mb-0.5" />
@@ -184,7 +182,6 @@ export default function ProductDetailsPage() {
     }
   };
 
-  // Main layout from "صغر كل شي" version
   return (
     <div className="space-y-1.5">
         <div className="flex justify-between items-center">
@@ -218,34 +215,34 @@ export default function ProductDetailsPage() {
                     data-ai-hint="abaya product detail"
                 />
              </CardHeader>
-             <CardContent className="p-0.5"> {/* Further reduced padding for image card content */}
-                <h3 className="font-semibold text-[9px] text-center truncate" title={product.name}>{product.name}</h3> {/* Further reduced font size */}
+             <CardContent className="p-1"> 
+                <h3 className="font-semibold text-xs text-center truncate" title={product.name}>{product.name}</h3> 
              </CardContent>
            </Card>
         </div>
 
         <div className="md:col-span-2">
-            <Card className="shadow-sm h-full"> {/* This is the "toolbox" */}
-                <CardHeader className="pb-0 pt-1 px-1"> {/* Further reduced padding */}
-                <CardTitle className="flex items-center text-[10px]"> {/* Further reduced font size */}
-                    <Tag className="mr-0.5 text-accent h-2 w-2" /> {/* Further reduced icon size & margin */}
+            <Card className="shadow-sm h-full"> 
+                <CardHeader className="pb-0.5 pt-1.5 px-1.5"> 
+                <CardTitle className="flex items-center text-xs"> 
+                    <Tag className="mr-1 text-accent h-3 w-3" /> 
                     معلومات المنتج
                 </CardTitle>
                 </CardHeader>
 
-                <div className="px-1 pb-0 flex flex-col items-center mb-0.25"> {/* Further reduced padding and margin */}
+                <div className="px-1.5 pb-0.5 flex flex-col items-center mb-0.5"> 
                   {product.barcodeValue ? (
                     <>
-                      <svg ref={barcodeRef} className="w-full max-w-[70px] h-auto mb-0"></svg> {/* Further reduced max-width */}
-                      <div className="flex gap-px mt-0"> {/* Reduced gap */}
-                        <Button variant="outline" size="icon-xs" onClick={handlePrintBarcode} className="h-3.5 w-3.5"> {/* Further reduced button size */}
-                            <Printer className="h-1.5 w-1.5" /> {/* Further reduced icon size */}
+                      <svg ref={barcodeRef} className="w-full max-w-[120px] h-auto mb-0.5"></svg> 
+                      <div className="flex gap-0.5 mt-0.5"> 
+                        <Button variant="outline" size="xs" onClick={handlePrintBarcode} className="h-5 px-1 text-[9px]"> 
+                            <Printer className="ml-1 h-2.5 w-2.5" /> طباعة
                         </Button>
                         {hasRole(['admin']) && (
-                          <Button variant="outline" size="icon-xs" asChild className="h-3.5 w-3.5"> {/* Further reduced button size */}
+                          <Button variant="outline" size="xs" asChild className="h-5 px-1 text-[9px]"> 
                             <Link href={`/dashboard/products/${product.id}/edit`}>
                               <span className="flex items-center">
-                                <Edit3 className="h-1.5 w-1.5" /> {/* Further reduced icon size */}
+                                <Edit3 className="ml-1 h-2.5 w-2.5" /> تعديل
                                </span>
                             </Link>
                           </Button>
@@ -253,13 +250,13 @@ export default function ProductDetailsPage() {
                       </div>
                     </>
                   ) : (
-                    <div className="text-center py-0.25"> {/* Further reduced padding */}
-                      <p className="text-[7px] text-muted-foreground mb-0.25">لم يتم تعيين باركود.</p> {/* Further reduced font size */}
+                    <div className="text-center py-1"> 
+                      <p className="text-[9px] text-muted-foreground mb-0.5">لم يتم تعيين باركود.</p> 
                       {hasRole(['admin']) && (
-                        <Button variant="outline" size="xs" asChild className="h-3.5 px-0.5 text-[7px]"> {/* Further reduced button size and text */}
+                        <Button variant="outline" size="xs" asChild className="h-5 px-1 text-[9px]"> 
                           <Link href={`/dashboard/products/${product.id}/edit`}>
                             <span className="flex items-center">
-                                <Edit3 className="ml-0.5 h-1 w-1" /> إضافة/تعديل {/* Further reduced icon size */}
+                                <Edit3 className="ml-1 h-2.5 w-2.5" /> إضافة/تعديل
                             </span>
                           </Link>
                         </Button>
@@ -268,72 +265,72 @@ export default function ProductDetailsPage() {
                   )}
                 </div>
 
-                <CardContent className="grid gap-px sm:grid-cols-2 pt-0.25 px-1 pb-0.5"> {/* Further reduced padding and gap */}
-                <div className="flex items-start space-x-0.5 space-x-reverse">
-                    <DollarSign className="h-2 w-2 mt-px text-primary shrink-0" /> {/* Further reduced icon size */}
+                <CardContent className="grid gap-0.5 sm:grid-cols-2 pt-0.5 px-1.5 pb-1"> 
+                <div className="flex items-start space-x-1 space-x-reverse">
+                    <DollarSign className="h-3 w-3 mt-0.5 text-primary shrink-0" /> 
                     <div>
-                    <p className="text-[7px] text-muted-foreground">السعر</p> {/* Further reduced font size */}
-                    <p className="font-semibold text-[9px]">{product.price.toFixed(2)} LYD</p> {/* Further reduced font size */}
+                    <p className="text-[9px] text-muted-foreground">السعر</p> 
+                    <p className="font-semibold text-xs">{product.price.toFixed(2)} LYD</p> 
                     </div>
                 </div>
-                <div className="flex items-start space-x-0.5 space-x-reverse">
-                    <Layers className="h-2 w-2 mt-px text-primary shrink-0" />
+                <div className="flex items-start space-x-1 space-x-reverse">
+                    <Layers className="h-3 w-3 mt-0.5 text-primary shrink-0" />
                     <div>
-                    <p className="text-[7px] text-muted-foreground">الكمية المتوفرة</p>
-                    <Badge variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"} className="text-[8px] px-1 py-0 font-normal"> {/* Further reduced font size */}
+                    <p className="text-[9px] text-muted-foreground">الكمية المتوفرة</p>
+                    <Badge variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"} className="text-[9px] px-1.5 py-0 font-normal"> 
                         {product.quantity}
                     </Badge>
                     </div>
                 </div>
-                <div className="flex items-start space-x-0.5 space-x-reverse">
-                    <ShoppingBag className="h-2 w-2 mt-px text-primary shrink-0" />
+                <div className="flex items-start space-x-1 space-x-reverse">
+                    <ShoppingBag className="h-3 w-3 mt-0.5 text-primary shrink-0" />
                     <div>
-                    <p className="text-[7px] text-muted-foreground">الكمية المباعة</p>
-                    <p className="font-semibold text-[9px]">{quantitySold}</p>
+                    <p className="text-[9px] text-muted-foreground">الكمية المباعة</p>
+                    <p className="font-semibold text-xs">{quantitySold}</p>
                     </div>
                 </div>
-                <div className="flex items-start space-x-0.5 space-x-reverse">
-                    <CalendarDays className="h-2 w-2 mt-px text-primary shrink-0" />
+                <div className="flex items-start space-x-1 space-x-reverse">
+                    <CalendarDays className="h-3 w-3 mt-0.5 text-primary shrink-0" />
                     <div>
-                    <p className="text-[7px] text-muted-foreground">تاريخ الإنشاء</p>
-                    <p className="font-semibold text-[8px]">{formatDateTime(product.createdAt)}</p> {/* Further reduced font size */}
+                    <p className="text-[9px] text-muted-foreground">تاريخ الإنشاء</p>
+                    <p className="font-semibold text-[10px]">{formatDateTime(product.createdAt)}</p> 
                     </div>
                 </div>
-                <div className="flex items-start space-x-0.5 space-x-reverse">
-                    <History className="h-2 w-2 mt-px text-primary shrink-0" />
+                <div className="flex items-start space-x-1 space-x-reverse">
+                    <History className="h-3 w-3 mt-0.5 text-primary shrink-0" />
                     <div>
-                    <p className="text-[7px] text-muted-foreground">آخر تحديث</p>
-                    <p className="font-semibold text-[8px]">{formatDateTime(product.updatedAt)}</p>
+                    <p className="text-[9px] text-muted-foreground">آخر تحديث</p>
+                    <p className="font-semibold text-[10px]">{formatDateTime(product.updatedAt)}</p>
                     </div>
                 </div>
                 </CardContent>
                 {hasRole(['admin']) && (
-                <CardFooter className="flex justify-start gap-0.5 p-0.5 pt-0"> {/* Further reduced padding */}
-                    <Button size="xs" asChild className="h-4 px-0.5 text-[8px]"> {/* Further reduced button size and text */}
+                <CardFooter className="flex justify-start gap-1 p-1.5 pt-0.5"> 
+                    <Button size="sm" asChild className="h-6 px-1.5 text-[10px]"> 
                       <Link href={`/dashboard/products/${product.id}/edit`}>
                           <span className="flex items-center">
-                            <Edit3 className="ml-0.5 h-1 w-1" /> تعديل {/* Further reduced icon size */}
+                            <Edit3 className="ml-1 h-3 w-3" /> تعديل 
                           </span>
                       </Link>
                     </Button>
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button variant="destructive" size="xs" className="h-4 px-0.5 text-[8px]" disabled={isDeleting}> {/* Further reduced button size and text */}
-                          <Trash2 className="ml-0.5 h-1 w-1" /> {isDeleting ? '...' : 'حذف'} {/* Further reduced icon size */}
+                        <Button variant="destructive" size="sm" className="h-6 px-1.5 text-[10px]" disabled={isDeleting}> 
+                          <Trash2 className="ml-1 h-3 w-3" /> {isDeleting ? '...' : 'حذف'} 
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="sm:max-w-[300px]"> {/* Further reduced max-width */}
+                      <DialogContent className="sm:max-w-[350px]"> 
                         <DialogHeader>
-                          <DialogTitle className="text-[10px]">تأكيد الحذف</DialogTitle> {/* Further reduced font size */}
-                          <ShadcnDialogDescription className="text-[9px]"> {/* Further reduced font size */}
+                          <DialogTitle className="text-base">تأكيد الحذف</DialogTitle> 
+                          <ShadcnDialogDescription className="text-sm"> 
                             هل أنت متأكد أنك تريد حذف المنتج "{product.name}"؟ لا يمكن التراجع عن هذا الإجراء.
                           </ShadcnDialogDescription>
                         </DialogHeader>
-                        <DialogFooter className="gap-0.5 sm:justify-start">
+                        <DialogFooter className="gap-1 sm:justify-start">
                           <DialogClose asChild>
-                            <Button type="button" variant="secondary" size="xs" className="h-4 px-0.5 text-[8px]" disabled={isDeleting}>إلغاء</Button> {/* Further reduced button size and text */}
+                            <Button type="button" variant="secondary" size="sm" className="h-7 px-2 text-xs" disabled={isDeleting}>إلغاء</Button> 
                           </DialogClose>
-                          <Button type="button" variant="destructive" size="xs" className="h-4 px-0.5 text-[8px]" onClick={handleDeleteProduct} disabled={isDeleting}> {/* Further reduced button size and text */}
+                          <Button type="button" variant="destructive" size="sm" className="h-7 px-2 text-xs" onClick={handleDeleteProduct} disabled={isDeleting}> 
                             {isDeleting ? '...' : 'حذف'}
                           </Button>
                         </DialogFooter>
@@ -347,3 +344,4 @@ export default function ProductDetailsPage() {
     </div>
   );
 }
+
