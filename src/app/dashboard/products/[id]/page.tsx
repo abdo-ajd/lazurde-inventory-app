@@ -2,25 +2,26 @@
 // src/app/dashboard/products/[id]/page.tsx
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
+import JsBarcode from 'jsbarcode';
 import { useProducts } from '@/contexts/ProductContext';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowRight, Edit3, Package, Tag, DollarSign, Layers, CalendarDays, History, Trash2, ShoppingBag } from 'lucide-react';
+import { ArrowRight, Edit3, Package, Tag, DollarSign, Layers, CalendarDays, History, Trash2, ShoppingBag, Printer } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Product } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as ShadcnDialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useSales } from '@/contexts/SalesContext'; // Import useSales
+import { useSales } from '@/contexts/SalesContext'; 
 
 export default function ProductDetailsPage() {
   const { getProductById, deleteProduct } = useProducts();
-  const { sales } = useSales(); // Get sales data
+  const { sales } = useSales(); 
   const params = useParams();
   const router = useRouter();
   const { hasRole } = useAuth();
@@ -28,6 +29,7 @@ export default function ProductDetailsPage() {
   const [product, setProduct] = useState<Product | null | undefined>(undefined);
   const [isFetching, setIsFetching] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
+  const barcodeRef = useRef<SVGSVGElement>(null);
 
   const productId = typeof params.id === 'string' ? params.id : '';
 
@@ -39,10 +41,29 @@ export default function ProductDetailsPage() {
     setIsFetching(false);
   }, [productId, getProductById]);
 
+  useEffect(() => {
+    if (product && product.id && barcodeRef.current) {
+      try {
+        JsBarcode(barcodeRef.current, product.id, {
+          format: "CODE128",
+          displayValue: true, 
+          fontSize: 16,
+          textMargin: 5,
+          margin: 10,
+          height: 70, 
+          width: 1.8, 
+        });
+      } catch (e) {
+        console.error("Barcode generation failed:", e);
+        toast({ variant: "destructive", title: "فشل توليد الباركود", description: "حدث خطأ أثناء محاولة إنشاء الباركود." });
+      }
+    }
+  }, [product, toast]);
+
   const quantitySold = useMemo(() => {
     if (!product || !sales) return 0;
     return sales.reduce((total, sale) => {
-      if (sale.status === 'active') { // Consider only active sales for sold quantity
+      if (sale.status === 'active') { 
         sale.items.forEach(item => {
           if (item.productId === product.id) {
             total += item.quantity;
@@ -66,6 +87,71 @@ export default function ProductDetailsPage() {
     }
   };
 
+  const handlePrintBarcode = () => {
+    if (!barcodeRef.current || !product) return;
+
+    const svgString = new XMLSerializer().serializeToString(barcodeRef.current);
+
+    const printWindow = window.open('', '_blank', 'height=350,width=450');
+    if (printWindow) {
+        printWindow.document.write('<html><head><title>طباعة باركود المنتج</title>');
+        printWindow.document.write(\`
+            <style>
+                body { 
+                    margin: 5mm; 
+                    font-family: 'Arial', sans-serif; 
+                    text-align: center; 
+                    display: flex; 
+                    flex-direction: column; 
+                    align-items: center; 
+                    justify-content: center; 
+                    height: calc(100vh - 10mm); 
+                    overflow: hidden;
+                }
+                .barcode-area { 
+                    display: inline-block; 
+                    padding: 3mm; 
+                    border: 1px dashed #ccc; 
+                    width: 90%; /* Adjust width as needed for label */
+                    max-width: 70mm; /* Max width for typical label */
+                }
+                .product-name-print { font-size: 10pt; margin-bottom: 2mm; font-weight: bold; word-break: break-word; }
+                svg { 
+                    width: 100% !important; /* Ensure SVG scales to container */
+                    height: auto !important; 
+                    max-height: 40mm; /* Adjust height as needed */
+                }
+                @media print {
+                    body { margin: 0; padding: 0; width: 100%; height: 100%; }
+                    .barcode-area { border: none; padding:0; margin: 0 auto; page-break-after: always; width: 100%; }
+                }
+            </style>
+        \`);
+        printWindow.document.write('</head><body>');
+        printWindow.document.write('<div class="barcode-area">');
+        if (product.name) {
+            printWindow.document.write(\`<div class="product-name-print">\${product.name}</div>\`);
+        }
+        printWindow.document.write(svgString);
+        printWindow.document.write('</div>');
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+
+        printWindow.onload = function() {
+            printWindow.focus();
+            printWindow.print();
+            // printWindow.close(); // Let user close manually
+        };
+    } else {
+        toast({
+            variant: "destructive",
+            title: "فشل الطباعة",
+            description: "لم يتمكن المتصفح من فتح نافذة الطباعة. يرجى التحقق من إعدادات مانع النوافذ المنبثقة."
+        });
+    }
+  };
+
+
   if (isFetching) {
     return (
       <div className="space-y-6">
@@ -77,7 +163,7 @@ export default function ProductDetailsPage() {
             <Skeleton className="h-4 w-1/4" />
           </CardHeader>
           <CardContent className="space-y-4">
-            {[...Array(5)].map((_, i) => ( // Increased to 5 for the new field
+            {[...Array(5)].map((_, i) => ( 
               <div key={i} className="flex items-center space-x-reverse space-x-3">
                 <Skeleton className="h-6 w-6 rounded-full" />
                 <Skeleton className="h-6 w-1/3" />
@@ -167,9 +253,17 @@ export default function ProductDetailsPage() {
                     <Tag className="mr-2 text-accent" />
                     معلومات المنتج
                 </CardTitle>
-                <CardDescription>معرف المنتج: {product.id}</CardDescription>
+                {/* Product ID text removed, barcode will be below */}
                 </CardHeader>
-                <CardContent className="grid gap-6 sm:grid-cols-2">
+
+                <div className="px-6 pb-4 flex flex-col items-center">
+                  <svg ref={barcodeRef} className="w-full max-w-sm h-auto mb-2"></svg>
+                  <Button variant="outline" size="sm" onClick={handlePrintBarcode} className="mt-2">
+                      <Printer className="ml-2 h-4 w-4" /> طباعة الباركود
+                  </Button>
+                </div>
+                
+                <CardContent className="grid gap-6 sm:grid-cols-2 pt-0">
                 <div className="flex items-start space-x-3 space-x-reverse">
                     <DollarSign className="h-5 w-5 mt-1 text-primary shrink-0" />
                     <div>

@@ -61,7 +61,7 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
   const startCamera = async () => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
         setVideoStream(stream);
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -191,7 +191,7 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
               name="price"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel htmlFor="price">السعر</FormLabel>
+                  <FormLabel htmlFor="price">السعر (LYD)</FormLabel>
                   <FormControl>
                     <Input id="price" type="number" placeholder="مثال: 350.00" {...field} step="0.01" />
                   </FormControl>
