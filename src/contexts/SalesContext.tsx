@@ -8,6 +8,7 @@ import { LOCALSTORAGE_KEYS, INITIAL_SALES } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { useProducts } from './ProductContext';
 import { useAuth } from './AuthContext';
+import { useAppSettings } from './AppSettingsContext'; // Import AppSettingsContext
 
 interface SalesContextType {
   sales: Sale[];
@@ -24,6 +25,7 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
   const { getProductById, updateProductQuantity } = useProducts();
   const { currentUser } = useAuth();
+  const { settings } = useAppSettings(); // Get settings from AppSettingsContext
 
   const addSale = async (rawItems: Omit<SaleItem, 'productName' | 'pricePerUnit'>[]): Promise<Sale | null> => {
     if (!currentUser) {
@@ -57,7 +59,6 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
       const success = await updateProductQuantity(item.productId, -item.quantity);
       if (!success) {
         toast({ title: "خطأ فادح", description: "فشل تحديث كمية المنتج. تم إلغاء البيع.", variant: "destructive" });
-        // Optionally, revert quantities for already processed items if a multi-item sale fails midway
         return null;
       }
     }
@@ -75,14 +76,16 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
     setSales(prevSales => [newSale, ...(prevSales || [])]);
     toast({ title: "نجاح", description: `تم تسجيل عملية البيع بنجاح. الإجمالي: ${totalAmount}` });
 
-    // Play sound effect
-    // Please ensure you have a sound file at public/sounds/sale-success.mp3
-    try {
-      const audio = new Audio('/sounds/sale-success.mp3');
-      audio.play().catch(error => console.warn("Error playing sale sound:", error));
-    } catch (error) {
-      console.warn("Could not play sale sound:", error);
+    // Play custom sound effect if available, otherwise no sound
+    if (settings.saleSuccessSound && settings.saleSuccessSound.startsWith('data:audio')) {
+      try {
+        const audio = new Audio(settings.saleSuccessSound);
+        audio.play().catch(error => console.warn("Error playing custom sale sound:", error));
+      } catch (error) {
+        console.warn("Could not play custom sale sound:", error);
+      }
     }
+    // Removed default sound: /sounds/sale-success.mp3
 
     return newSale;
   };
@@ -102,10 +105,7 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
     for (const item of saleToReturn.items) {
       const success = await updateProductQuantity(item.productId, item.quantity);
       if (!success) {
-        // This scenario should be rare if product validation is done correctly
-        // but it's good to inform if it happens.
         toast({ title: "خطأ فادح", description: `فشل تحديث كمية المنتج "${item.productName}" أثناء الإرجاع.`, variant: "destructive" });
-        // Decide on rollback strategy or if partial return is acceptable
       }
     }
 

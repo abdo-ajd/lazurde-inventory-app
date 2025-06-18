@@ -37,7 +37,10 @@ export const AppSettingsProvider = ({ children }: { children: ReactNode }) => {
       if (newSettings.themeColors) {
         updatedSettings.themeColors = { ...prev.themeColors, ...newSettings.themeColors };
       }
-      applyTheme(updatedSettings.themeColors);
+      // Ensure themeColors object exists before trying to apply it
+      if (updatedSettings.themeColors) {
+        applyTheme(updatedSettings.themeColors);
+      }
       return updatedSettings;
     });
     toast({ title: "تم حفظ الإعدادات بنجاح" });

@@ -22,6 +22,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
     background: '0 0% 98%', 
     accent: '233 48% 59%',
   },
+  saleSuccessSound: '', // Default to no custom sound
 };
 
 export const INITIAL_PRODUCTS: Product[] = [

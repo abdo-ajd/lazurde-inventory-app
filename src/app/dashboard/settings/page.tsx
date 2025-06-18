@@ -12,8 +12,8 @@ import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProducts } from '@/contexts/ProductContext';
 import { useSales } from '@/contexts/SalesContext';
-import { useEffect, useRef } from 'react';
-import { Save, RotateCcw, Download, Upload } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Save, RotateCcw, Download, Upload, Music, Trash2 } from 'lucide-react';
 import { DEFAULT_APP_SETTINGS, LOCALSTORAGE_KEYS } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import type { User, Product, Sale, AppSettings as AppSettingsType } from '@/lib/types';
@@ -30,6 +30,7 @@ const settingsSchema = z.object({
     background: hslColorSchema,
     accent: hslColorSchema,
   }),
+  // saleSuccessSound is handled separately, not part of this form's Zod schema
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -38,7 +39,7 @@ interface BackupData {
   users: User[];
   products: Product[];
   sales: Sale[];
-  settings: AppSettingsType;
+  settings: AppSettingsType; // This will include saleSuccessSound
 }
 
 export default function AppSettingsPage() {
@@ -51,27 +52,47 @@ export default function AppSettingsPage() {
   const { sales, replaceAllSales } = useSales();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const soundFileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedSoundName, setUploadedSoundName] = useState<string | null>(null);
+
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
-    defaultValues: settings,
+    defaultValues: {
+        storeName: settings.storeName,
+        themeColors: settings.themeColors,
+    },
   });
 
   useEffect(() => {
-    form.reset(settings);
+    // Reset form when settings change (e.g., after restoring from backup or resetToDefaults)
+    form.reset({
+        storeName: settings.storeName,
+        themeColors: settings.themeColors,
+    });
+    if (settings.saleSuccessSound) {
+        // We don't have the original file name, so just indicate a custom sound is set.
+        // A more complex solution could store the file name in settings too.
+        setUploadedSoundName("نغمة مخصصة مرفوعة");
+    } else {
+        setUploadedSoundName(null);
+    }
   }, [settings, form]);
   
   if (!hasRole(['admin'])) {
     // Logic to redirect or show access denied message if not admin
-    // For now, assuming this is handled by layout or higher-order component
   }
 
   const onSubmit = (data: SettingsFormValues) => {
-    updateSettings(data);
+    // updateSettings will handle themeColors and saleSuccessSound is handled separately
+    updateSettings({
+        storeName: data.storeName,
+        themeColors: data.themeColors,
+    });
   };
 
   const handleReset = () => {
-    resetToDefaults();
+    resetToDefaults(); // This will also reset saleSuccessSound via DEFAULT_APP_SETTINGS
   };
 
   const handleCreateBackup = () => {
@@ -80,7 +101,8 @@ export default function AppSettingsPage() {
         users: JSON.parse(localStorage.getItem(LOCALSTORAGE_KEYS.USERS) || '[]'),
         products: JSON.parse(localStorage.getItem(LOCALSTORAGE_KEYS.PRODUCTS) || '[]'),
         sales: JSON.parse(localStorage.getItem(LOCALSTORAGE_KEYS.SALES) || '[]'),
-        settings: JSON.parse(localStorage.getItem(LOCALSTORAGE_KEYS.APP_SETTINGS) || JSON.stringify(DEFAULT_APP_SETTINGS)),
+        // Get the latest settings directly from the context, which includes saleSuccessSound
+        settings: settings, 
       };
 
       const jsonString = JSON.stringify(backupData, null, 2);
@@ -120,7 +142,6 @@ export default function AppSettingsPage() {
           throw new Error("ملف النسخ الاحتياطي غير صالح أو تالف.");
         }
         
-        // Validate structure further if necessary (e.g. array checks)
         if (!Array.isArray(restoredData.users) || !Array.isArray(restoredData.products) || !Array.isArray(restoredData.sales) || typeof restoredData.settings !== 'object') {
             throw new Error("تنسيق البيانات في ملف النسخ الاحتياطي غير صحيح.");
         }
@@ -128,11 +149,10 @@ export default function AppSettingsPage() {
         replaceAllUsers(restoredData.users);
         replaceAllProducts(restoredData.products);
         replaceAllSales(restoredData.sales);
-        updateSettings(restoredData.settings); // This will also apply theme
+        updateSettings(restoredData.settings); // This will also apply theme and saleSuccessSound
 
         toast({ title: "نجاح", description: "تم استعادة البيانات بنجاح. سيتم إعادة تحميل الصفحة." });
         
-        // Clear the file input so the same file can be selected again if needed
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
@@ -153,12 +173,38 @@ export default function AppSettingsPage() {
     reader.readAsText(file);
   };
 
+  const handleSoundFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // Limit file size to 5MB
+        toast({ variant: "destructive", title: "خطأ", description: "حجم الملف كبير جداً. الرجاء اختيار ملف أصغر من 5 ميجابايت." });
+        if(soundFileInputRef.current) soundFileInputRef.current.value = "";
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUri = reader.result as string;
+        updateSettings({ saleSuccessSound: dataUri });
+        setUploadedSoundName(file.name);
+        toast({ title: "نجاح", description: `تم رفع النغمة: ${file.name}` });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleClearSound = () => {
+    updateSettings({ saleSuccessSound: '' });
+    setUploadedSoundName(null);
+    if(soundFileInputRef.current) soundFileInputRef.current.value = "";
+    toast({ title: "نجاح", description: "تمت إزالة النغمة المخصصة." });
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight font-headline">إعدادات التطبيق</h1>
         <p className="text-muted-foreground font-body">
-          قم بتخصيص اسم المتجر، ألوان الواجهة، وإدارة النسخ الاحتياطي للبيانات.
+          قم بتخصيص اسم المتجر، ألوان الواجهة، نغمة البيع، وإدارة النسخ الاحتياطي للبيانات.
         </p>
       </div>
       <Form {...form}>
@@ -245,6 +291,41 @@ export default function AppSettingsPage() {
 
       <Card className="mt-6">
         <CardHeader>
+          <CardTitle>نغمة إتمام البيع</CardTitle>
+          <CardDescription>اختر ملفًا صوتيًا لتشغيله عند إتمام عملية بيع ناجحة.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <Button onClick={() => soundFileInputRef.current?.click()} variant="outline" className="w-full sm:w-auto">
+              <Music className="ml-2 h-4 w-4" /> {uploadedSoundName ? "تغيير النغمة" : "اختيار ملف صوتي"}
+            </Button>
+            <Input 
+                type="file" 
+                ref={soundFileInputRef} 
+                className="hidden" 
+                accept="audio/*" 
+                onChange={handleSoundFileChange}
+            />
+            {uploadedSoundName && (
+              <Button onClick={handleClearSound} variant="destructive" size="sm" className="w-full sm:w-auto">
+                 <Trash2 className="ml-2 h-4 w-4" /> إزالة النغمة
+              </Button>
+            )}
+          </div>
+          {uploadedSoundName && (
+            <p className="text-sm text-muted-foreground">النغمة الحالية: {uploadedSoundName}</p>
+          )}
+          {!uploadedSoundName && (
+            <p className="text-sm text-muted-foreground">لم يتم اختيار نغمة مخصصة.</p>
+          )}
+           <p className="text-xs text-muted-foreground pt-2">
+            (الحد الأقصى لحجم الملف: 5 ميجابايت. الأنواع المدعومة: MP3, WAV, OGG, إلخ)
+           </p>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
           <CardTitle>النسخ الاحتياطي والاستعادة</CardTitle>
           <CardDescription>قم بإنشاء نسخة احتياطية من بيانات تطبيقك أو استعد بياناتك من نسخة سابقة.</CardDescription>
         </CardHeader>
@@ -274,4 +355,3 @@ export default function AppSettingsPage() {
     </div>
   );
 }
-

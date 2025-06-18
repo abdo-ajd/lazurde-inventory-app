@@ -45,6 +45,7 @@ export interface AppSettings {
     background: string;
     accent: string;
   };
+  saleSuccessSound?: string; // Data URI for the sound
 }
 
 export interface NavItem {
