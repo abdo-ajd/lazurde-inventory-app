@@ -14,6 +14,7 @@ interface SalesContextType {
   addSale: (items: Omit<SaleItem, 'productName' | 'pricePerUnit'>[]) => Promise<Sale | null>;
   returnSale: (saleId: string) => Promise<boolean>;
   getSaleById: (saleId: string) => Sale | undefined;
+  replaceAllSales: (newSales: Sale[]) => void; // Added for backup/restore
 }
 
 const SalesContext = createContext<SalesContextType | undefined>(undefined);
@@ -52,11 +53,9 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
       totalAmount += product.price * rawItem.quantity;
     }
 
-    // All items validated, now update quantities
     for (const item of saleItems) {
       const success = await updateProductQuantity(item.productId, -item.quantity);
       if (!success) {
-        // This should ideally roll back previous quantity updates if complex transactions were supported
         toast({ title: "خطأ فادح", description: "فشل تحديث كمية المنتج. تم إلغاء البيع.", variant: "destructive" });
         return null;
       }
@@ -72,13 +71,14 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
       status: 'active',
     };
 
-    setSales(prevSales => [newSale, ...prevSales]);
+    setSales(prevSales => [newSale, ...(prevSales || [])]);
     toast({ title: "نجاح", description: `تم تسجيل عملية البيع بنجاح. الإجمالي: ${totalAmount.toFixed(2)}` });
     return newSale;
   };
 
   const returnSale = async (saleId: string): Promise<boolean> => {
-    const saleToReturn = sales.find(s => s.id === saleId);
+    const currentSales = sales || [];
+    const saleToReturn = currentSales.find(s => s.id === saleId);
     if (!saleToReturn) {
       toast({ title: "خطأ", description: "عملية البيع غير موجودة.", variant: "destructive" });
       return false;
@@ -88,18 +88,15 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
 
-    // Return quantities to stock
     for (const item of saleToReturn.items) {
-      const success = await updateProductQuantity(item.productId, item.quantity); // Add back quantity
+      const success = await updateProductQuantity(item.productId, item.quantity);
       if (!success) {
-        // This is tricky, ideally needs transaction support. For now, log error.
         toast({ title: "خطأ فادح", description: `فشل تحديث كمية المنتج "${item.productName}" أثناء الإرجاع.`, variant: "destructive" });
-        // Continue trying to update others, or decide to stop.
       }
     }
 
     setSales(prevSales =>
-      prevSales.map(s =>
+      (prevSales || []).map(s =>
         s.id === saleId ? { ...s, status: 'returned', returnedDate: new Date().toISOString() } : s
       )
     );
@@ -108,11 +105,15 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const getSaleById = (saleId: string): Sale | undefined => {
-    return sales.find(s => s.id === saleId);
+    return (sales || []).find(s => s.id === saleId);
+  };
+
+  const replaceAllSales = (newSales: Sale[]): void => {
+    setSales(newSales);
   };
 
   return (
-    <SalesContext.Provider value={{ sales, addSale, returnSale, getSaleById }}>
+    <SalesContext.Provider value={{ sales: sales || [], addSale, returnSale, getSaleById, replaceAllSales }}>
       {children}
     </SalesContext.Provider>
   );

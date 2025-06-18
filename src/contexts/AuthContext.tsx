@@ -19,6 +19,7 @@ interface AuthContextType {
   deleteUser: (userId: string) => Promise<boolean>;
   getUserById: (userId: string) => User | undefined;
   hasRole: (roles: UserRole[]) => boolean;
+  replaceAllUsers: (newUsers: User[]) => void; // Added for backup/restore
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,7 +28,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useLocalStorage<User | null>(LOCALSTORAGE_KEYS.AUTH_USER, null);
 
   const initialUsersCreator = useCallback(() => {
-    // This function is stable due to useCallback with empty deps.
     return [DEFAULT_ADMIN_USER];
   }, []);
 
@@ -36,26 +36,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     initialUsersCreator
   );
 
-  const [isLoading, setIsLoading] = useState(true); // Start with loading true
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
 
   useEffect(() => {
-    // This effect manages the isLoading state.
-    // It sets isLoading to false once `users` from useLocalStorage is no longer undefined
-    // (or has been initialized to its default like [DEFAULT_ADMIN_USER]).
-    // `useLocalStorage` itself handles the seeding with `initialUsersCreator`.
     if (users !== undefined) {
       setIsLoading(false);
     }
-    // If `users` is undefined, it means `useLocalStorage` hasn't fully initialized or hydrated yet.
-    // In that case, `isLoading` remains true.
   }, [users]);
 
 
   const login = async (username: string, password?: string): Promise<boolean> => {
     setIsLoading(true);
-    const allUsers = users || []; // Safely access users
+    const allUsers = users || [];
     const user = allUsers.find(u => u.username === username && u.password === password);
     
     if (user) {
@@ -112,7 +106,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     setUsers(prevUsers => (prevUsers || []).map(u => u.id === userId ? { ...u, ...updates, password: updates.password || u.password } : u));
     toast({ title: "نجاح", description: `تم تحديث بيانات المستخدم.` });
-    if (currentUser?.id === userId && (updates.username || updates.role)) { // check if relevant current user fields changed
+    if (currentUser?.id === userId && (updates.username || updates.role)) {
       setCurrentUser(prev => prev ? {...prev, ...updates, password: updates.password || prev.password} : null);
     }
     return true;
@@ -148,14 +142,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const hasRole = (rolesToCheck: UserRole[]): boolean => {
     if (!currentUser) return false;
-    const currentUsersSafe = users || []; // Ensure users is not null/undefined for role check context
-    const userForRoleCheck = currentUsersSafe.find(u => u.id === currentUser.id); // Re-fetch user from potentially updated users list
-    if (!userForRoleCheck) return false; // Current user not found in users list (edge case)
+    const currentUsersSafe = users || [];
+    const userForRoleCheck = currentUsersSafe.find(u => u.id === currentUser.id);
+    if (!userForRoleCheck) return false;
     return rolesToCheck.includes(userForRoleCheck.role);
   };
 
+  const replaceAllUsers = (newUsers: User[]): void => {
+    setUsers(newUsers);
+    // Check if current user still exists and is valid, otherwise log out
+    const currentIsValid = newUsers.some(u => u.id === currentUser?.id && u.username === currentUser?.username);
+    if (!currentIsValid && currentUser) {
+        // If current user is not in the new list or details changed, log them out or re-verify
+        // For simplicity, logging out or clearing current user
+        // A more sophisticated approach might try to find the user by ID and update currentUser state
+        setCurrentUser(null); 
+        // Optionally, inform the user they might need to log in again if their account was affected.
+        // toast({ title: "ملاحظة", description: "تم تحديث قائمة المستخدمين. قد تحتاج إلى تسجيل الدخول مرة أخرى." });
+    } else if (currentUser) {
+        // Update current user details if they changed
+        const updatedCurrentUser = newUsers.find(u => u.id === currentUser.id);
+        if (updatedCurrentUser && (updatedCurrentUser.username !== currentUser.username || updatedCurrentUser.role !== currentUser.role)) {
+            setCurrentUser(updatedCurrentUser);
+        }
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ currentUser, login, logout, isLoading, users: users || [], addUser, updateUser, deleteUser, getUserById, hasRole }}>
+    <AuthContext.Provider value={{ currentUser, login, logout, isLoading, users: users || [], addUser, updateUser, deleteUser, getUserById, hasRole, replaceAllUsers }}>
       {children}
     </AuthContext.Provider>
   );

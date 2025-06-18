@@ -15,8 +15,9 @@ interface ProductContextType {
   updateProduct: (productId: string, updates: ProductUpdatePayload) => Promise<Product | null>;
   deleteProduct: (productId: string) => Promise<boolean>;
   getProductById: (productId: string) => Product | undefined;
-  getProductByBarcode: (barcodeValue: string) => Product | undefined; // New method
+  getProductByBarcode: (barcodeValue: string) => Product | undefined;
   updateProductQuantity: (productId: string, quantityChange: number) => Promise<boolean>;
+  replaceAllProducts: (newProducts: Product[]) => void; // Added for backup/restore
 }
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
@@ -118,12 +119,16 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
     
-    await updateProduct(productId, { quantity: newQuantity } as ProductUpdatePayload);
+    await updateProduct(productId, { quantity: newQuantity } as ProductUpdatePayload); // Cast to avoid type issue if only quantity is passed
     return true;
   };
 
+  const replaceAllProducts = (newProducts: Product[]): void => {
+    setProducts(newProducts);
+  };
+
   return (
-    <ProductContext.Provider value={{ products: products || [], addProduct, updateProduct, deleteProduct, getProductById, getProductByBarcode, updateProductQuantity }}>
+    <ProductContext.Provider value={{ products: products || [], addProduct, updateProduct, deleteProduct, getProductById, getProductByBarcode, updateProductQuantity, replaceAllProducts }}>
       {children}
     </ProductContext.Provider>
   );
