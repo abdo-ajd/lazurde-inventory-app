@@ -15,6 +15,7 @@ interface ProductContextType {
   updateProduct: (productId: string, updates: ProductUpdatePayload) => Promise<Product | null>;
   deleteProduct: (productId: string) => Promise<boolean>;
   getProductById: (productId: string) => Product | undefined;
+  getProductByBarcode: (barcodeValue: string) => Product | undefined; // New method
   updateProductQuantity: (productId: string, quantityChange: number) => Promise<boolean>;
 }
 
@@ -94,13 +95,15 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
     setProducts(prevProducts => (prevProducts || []).filter(p => p.id !== productId));
-    // Toast for deletion is handled in the component calling this, to use product name.
-    // This function now just returns success/failure.
     return true;
   };
 
   const getProductById = (productId: string): Product | undefined => {
     return (products || []).find(p => p.id === productId);
+  };
+
+  const getProductByBarcode = (barcodeValue: string): Product | undefined => {
+    return (products || []).find(p => p.barcodeValue === barcodeValue);
   };
 
   const updateProductQuantity = async (productId: string, quantityChange: number): Promise<boolean> => {
@@ -115,13 +118,12 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
     
-    // Cast to ProductUpdatePayload as updateProduct expects this
     await updateProduct(productId, { quantity: newQuantity } as ProductUpdatePayload);
     return true;
   };
 
   return (
-    <ProductContext.Provider value={{ products: products || [], addProduct, updateProduct, deleteProduct, getProductById, updateProductQuantity }}>
+    <ProductContext.Provider value={{ products: products || [], addProduct, updateProduct, deleteProduct, getProductById, getProductByBarcode, updateProductQuantity }}>
       {children}
     </ProductContext.Provider>
   );
