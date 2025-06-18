@@ -1,3 +1,4 @@
+
 // src/app/dashboard/products/page.tsx
 "use client";
 
@@ -167,7 +168,7 @@ export default function ProductsManagementPage() {
                           {product.name}
                         </Link>
                       </TableCell>
-                      <TableCell className="text-right">{product.price.toFixed(2)} ر.س</TableCell>
+                      <TableCell className="text-right">{product.price.toFixed(2)} LYD</TableCell>
                       <TableCell className="text-center">
                         <Badge variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}>
                             {product.quantity}

@@ -1,3 +1,4 @@
+
 // src/app/dashboard/sales/report/page.tsx
 "use client";
 
@@ -12,7 +13,7 @@ import { CalendarIcon, Undo2, Search } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format, parseISO, startOfDay, endOfDay, isEqual, isValid } from 'date-fns';
-import { arSA } from 'date-fns/locale';
+import { enGB } from 'date-fns/locale'; // Use English locale for date formatting
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription, DialogClose } from '@/components/ui/dialog';
@@ -46,14 +47,13 @@ export default function SalesReportPage() {
   }, [filteredSales]);
 
   const formatDateTime = (isoString: string) => {
-    if (!isoString || !isValid(parseISO(isoString))) return 'غير متوفر';
-    return format(parseISO(isoString), 'Pp', { locale: arSA });
+    if (!isoString || !isValid(parseISO(isoString))) return 'N/A';
+    return format(parseISO(isoString), 'Pp', { locale: enGB });
   };
   
   const handleReturnSale = async (saleId: string) => {
-    if (confirm(`هل أنت متأكد أنك تريد إرجاع هذه العملية؟ سيتم إعادة المنتجات إلى المخزون.`)) {
-        await returnSale(saleId);
-    }
+    // Confirmation dialog is handled by DialogTrigger/DialogContent
+    await returnSale(saleId);
   };
 
   if (!isClient) {
@@ -99,7 +99,7 @@ export default function SalesReportPage() {
                   className="w-full md:w-[280px] justify-start text-right font-normal"
                 >
                   <CalendarIcon className="ml-2 h-4 w-4" />
-                  {selectedDate ? format(selectedDate, 'PPP', { locale: arSA }) : <span>اختر تاريخًا</span>}
+                  {selectedDate ? format(selectedDate, 'PPP', { locale: enGB }) : <span>اختر تاريخًا</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
@@ -108,8 +108,8 @@ export default function SalesReportPage() {
                   selected={selectedDate}
                   onSelect={setSelectedDate}
                   initialFocus
-                  locale={arSA}
-                  dir="rtl"
+                  locale={enGB} // Use English locale for calendar
+                  dir="rtl" // Keep RTL for calendar layout if elements support it
                 />
               </PopoverContent>
             </Popover>
@@ -120,7 +120,7 @@ export default function SalesReportPage() {
             <div className="overflow-x-auto">
               <Table>
                 <TableCaption>
-                  إجمالي المبيعات النشطة لليوم المحدد: {totalActiveSalesAmount.toFixed(2)} ر.س
+                  إجمالي المبيعات النشطة لليوم المحدد: {totalActiveSalesAmount.toFixed(2)} LYD
                 </TableCaption>
                 <TableHeader>
                   <TableRow>
@@ -187,7 +187,7 @@ export default function SalesReportPage() {
                  <TableFooter>
                     <TableRow>
                         <TableCell colSpan={hasRole(['admin', 'employee_return']) ? 3 : 2} className="font-bold text-lg">الإجمالي النشط لليوم</TableCell>
-                        <TableCell colSpan={hasRole(['admin', 'employee_return']) ? 3 : 3} className="text-left font-bold text-lg">{totalActiveSalesAmount.toFixed(2)} ر.س</TableCell>
+                        <TableCell colSpan={hasRole(['admin', 'employee_return']) ? 3 : 3} className="text-left font-bold text-lg">{totalActiveSalesAmount.toFixed(2)} LYD</TableCell>
                     </TableRow>
                 </TableFooter>
               </Table>

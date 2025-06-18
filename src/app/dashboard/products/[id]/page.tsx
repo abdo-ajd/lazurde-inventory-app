@@ -1,3 +1,4 @@
+
 // src/app/dashboard/products/[id]/page.tsx
 "use client";
 
@@ -94,15 +95,15 @@ export default function ProductDetailsPage() {
   }
 
   const formatDateTime = (isoString: string) => {
-    if (!isoString) return 'غير متوفر';
+    if (!isoString) return 'N/A';
     try {
-      return new Intl.DateTimeFormat('ar-SA', { 
-        dateStyle: 'medium', 
-        timeStyle: 'short',
-        hour12: true
+      return new Intl.DateTimeFormat('en-GB', { 
+        year: 'numeric', month: 'numeric', day: 'numeric',
+        hour: 'numeric', minute: 'numeric',
+        hour12: true 
       }).format(new Date(isoString));
     } catch (e) {
-      return 'تاريخ غير صالح';
+      return 'Invalid Date';
     }
   };
 
@@ -157,7 +158,7 @@ export default function ProductDetailsPage() {
                     <DollarSign className="h-5 w-5 mt-1 text-primary shrink-0" />
                     <div>
                     <p className="text-sm text-muted-foreground">السعر</p>
-                    <p className="font-semibold text-lg">{product.price.toFixed(2)} ر.س</p>
+                    <p className="font-semibold text-lg">{product.price.toFixed(2)} LYD</p>
                     </div>
                 </div>
                 <div className="flex items-start space-x-3 space-x-reverse">

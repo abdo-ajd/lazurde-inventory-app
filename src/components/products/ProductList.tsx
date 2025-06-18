@@ -1,3 +1,4 @@
+
 // src/components/products/ProductList.tsx
 "use client";
 
@@ -87,7 +88,7 @@ export default function ProductList({ searchTerm }: ProductListProps) {
               </Link>
               <CardContent className="pt-3 pb-2 px-3 flex-grow flex flex-col">
                 <h3 className="font-semibold text-sm truncate flex-grow" title={product.name}>{product.name}</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">السعر: {product.price.toFixed(2)} ر.س</p>
+                <p className="text-xs text-muted-foreground mt-0.5">السعر: {product.price.toFixed(2)} LYD</p>
                 <div className="flex justify-between items-center mt-1.5">
                   <Badge 
                     variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}
