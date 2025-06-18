@@ -8,20 +8,23 @@ import { useProducts } from '@/contexts/ProductContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSales } from '@/contexts/SalesContext';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+// Input, PlusCircle, Search are removed as they are now in the parent page components
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { PlusCircle, Search, Edit3, ShoppingCart } from 'lucide-react'; // Removed Trash2, Eye
+import { Edit3, ShoppingCart, PackageSearch } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import type { Product } from '@/lib/types';
 
-export default function ProductList() {
-  const { products } = useProducts(); // Removed deleteProduct
+interface ProductListProps {
+  searchTerm: string;
+}
+
+export default function ProductList({ searchTerm }: ProductListProps) {
+  const { products } = useProducts();
   const { hasRole, currentUser } = useAuth();
   const { addSale } = useSales();
   const { toast } = useToast();
 
-  const [searchTerm, setSearchTerm] = useState('');
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -44,76 +47,45 @@ export default function ProductList() {
       toast({ title: "نفذت الكمية", description: `عفواً، لا توجد كمية متوفرة من المنتج "${product.name}".`, variant: "destructive" });
       return;
     }
-
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const saleResult = await addSale([{ productId: product.id, quantity: 1 }]);
-    // Toast removed as per user request
-    // if (saleResult) {
-    //   toast({ title: "تم البيع بنجاح", description: `تم بيع قطعة واحدة من المنتج "${product.name}".` });
-    // } 
   };
   
   if (!isClient) {
     return (
-      <Card>
-        <CardHeader>
-          <div className="h-8 w-1/2 bg-muted animate-pulse rounded-md"></div>
-          <div className="h-6 w-1/3 bg-muted animate-pulse rounded-md mt-2"></div>
-        </CardHeader>
-        <CardContent>
-          <div className="h-10 w-full bg-muted animate-pulse rounded-md mb-4"></div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="rounded-lg border bg-card text-card-foreground shadow-sm">
-                <div className="p-0 relative aspect-[3/4] w-full bg-muted animate-pulse rounded-t-lg"></div>
-                <div className="p-4">
-                  <div className="h-5 w-3/4 bg-muted animate-pulse rounded-md mb-2"></div>
-                  <div className="h-3 w-1/2 bg-muted animate-pulse rounded-md mb-2"></div>
-                  <div className="h-5 w-1/4 bg-muted animate-pulse rounded-md"></div>
-                </div>
-                <div className="flex justify-around items-center p-2 border-t">
-                  <div className="h-8 w-8 bg-muted animate-pulse rounded-full"></div>
-                  <div className="h-8 w-8 bg-muted animate-pulse rounded-full"></div>
-                  <div className="h-8 w-8 bg-muted animate-pulse rounded-full"></div>
-                </div>
-              </div>
-            ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="rounded-lg border bg-card text-card-foreground shadow-sm animate-pulse">
+            <div className="p-0 relative aspect-[3/4] w-full bg-muted rounded-t-lg"></div>
+            <div className="p-3">
+              <div className="h-5 w-3/4 bg-muted rounded-md mb-2"></div>
+              <div className="h-3 w-1/2 bg-muted rounded-md mb-2"></div>
+              <div className="h-5 w-1/4 bg-muted rounded-md"></div>
+            </div>
+            <div className="flex justify-around items-center p-1.5 border-t bg-muted/50">
+              <div className="h-8 w-8 bg-muted rounded-full"></div>
+              <div className="h-8 w-8 bg-muted rounded-full"></div>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        ))}
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <CardTitle>قائمة المنتجات</CardTitle>
-            <CardDescription>إجمالي المنتجات: {products?.length || 0}</CardDescription>
-          </div>
-          <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-            <div className="relative w-full md:w-64">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="ابحث عن منتج..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pr-10"
-                aria-label="البحث عن منتج"
-              />
-            </div>
-            {hasRole(['admin']) && (
-              <Button asChild className="w-full md:w-auto">
-                <Link href="/dashboard/products/add">
-                  <PlusCircle className="ml-2 h-4 w-4" /> إضافة منتج
-                </Link>
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-      </Card>
+    <>
+      {/* Card with title and search/add button is now moved to parent pages */}
+      {/* We can add a small summary card here if needed, e.g., total products found */}
+      {filteredProducts.length > 0 && products && products.length > 0 && (
+         <Card className="mb-6">
+            <CardContent className="pt-6">
+                <p className="text-sm text-muted-foreground">
+                    تم العثور على {filteredProducts.length} منتج من إجمالي {products.length} منتجات.
+                </p>
+            </CardContent>
+        </Card>
+      )}
+
 
       {filteredProducts.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
@@ -161,7 +133,6 @@ export default function ProductList() {
                     <ShoppingCart className="h-4 w-4" />
                   </Button>
                 )}
-                {/* Delete button and view button removed from here */}
               </CardFooter>
             </Card>
           ))}
@@ -169,11 +140,15 @@ export default function ProductList() {
       ) : (
         <Card>
           <CardContent className="text-center py-20 text-muted-foreground">
-            <Search size={48} className="mx-auto mb-4" />
-            <p className="text-lg">لا توجد منتجات تطابق بحثك أو لم يتم إضافة منتجات بعد.</p>
+            <PackageSearch size={64} className="mx-auto mb-4" />
+            <p className="text-lg font-semibold">لم يتم العثور على منتجات</p>
+            <p className="text-sm">
+                {searchTerm ? "لا توجد منتجات تطابق بحثك." : "لم يتم إضافة منتجات بعد. قم بإضافة منتج جديد للبدء."}
+            </p>
           </CardContent>
         </Card>
       )}
-    </div>
+    </>
   );
 }
+
