@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import type { Product } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadcnCardDescription } from '@/components/ui/card';
-import { Save, Camera, XCircle } from 'lucide-react';
+import { Save, Camera, XCircle, FileImage } from 'lucide-react';
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
@@ -45,6 +45,7 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null);
   const [isCameraActive, setIsCameraActive] = useState(false);
@@ -67,8 +68,8 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
         }
         setHasCameraPermission(true);
         setIsCameraActive(true);
-        setImagePreview(null); // Clear existing preview when camera opens
-        form.setValue('imageUrl', ''); // Clear form value for image
+        setImagePreview(null); 
+        form.setValue('imageUrl', ''); 
       } catch (error) {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
@@ -90,18 +91,12 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
     }
     setVideoStream(null);
     setIsCameraActive(false);
-    // If an image was previously set (e.g. initialData), restore it.
-    // Or, if user cancels without taking a new photo, they might expect the old one.
-    // For now, we keep it cleared or let them re-upload/re-capture.
-    // If form.getValues('imageUrl') is empty and initialData.imageUrl exists, they might want it back.
-    // This logic can be refined based on desired UX.
     const currentFormUrl = form.getValues('imageUrl');
     if (!currentFormUrl && initialData?.imageUrl) {
       setImagePreview(initialData.imageUrl);
     } else if (currentFormUrl) {
       setImagePreview(currentFormUrl);
     }
-
   };
 
   const captureImage = () => {
@@ -120,6 +115,22 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
       stopCamera();
     }
   };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (isCameraActive) {
+        stopCamera();
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUri = reader.result as string;
+        form.setValue('imageUrl', dataUri, { shouldValidate: true, shouldDirty: true });
+        setImagePreview(dataUri);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   
   const clearImage = () => {
     form.setValue('imageUrl', '', { shouldValidate: true, shouldDirty: true });
@@ -127,10 +138,12 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
     if (isCameraActive) {
       stopCamera();
     }
+    if (fileInputRef.current) {
+        fileInputRef.current.value = ''; // Reset file input
+    }
   };
 
   useEffect(() => {
-    // Cleanup: stop camera when component unmounts or camera is no longer active
     return () => {
       if (videoStream) {
         videoStream.getTracks().forEach(track => track.stop());
@@ -138,12 +151,14 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
     };
   }, [videoStream]);
 
-
   const handleFormSubmit = async (data: ProductFormValues) => {
     await onSubmit(data);
     if (!isEditMode) {
       form.reset(); 
-      setImagePreview(null); // Clear preview on successful add
+      setImagePreview(null); 
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
   
@@ -204,12 +219,14 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
                 {isCameraActive && hasCameraPermission && (
                   <div className="border rounded-md p-4 space-y-3">
                     <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
-                    <Button type="button" onClick={captureImage} className="w-full">
-                      <Camera className="ml-2 h-4 w-4" /> التقاط صورة
-                    </Button>
-                    <Button type="button" variant="outline" onClick={stopCamera} className="w-full">
-                      إلغاء الكاميرا
-                    </Button>
+                    <div className="grid grid-cols-2 gap-2">
+                        <Button type="button" onClick={captureImage} className="w-full">
+                        <Camera className="ml-2 h-4 w-4" /> التقاط صورة
+                        </Button>
+                        <Button type="button" variant="outline" onClick={stopCamera} className="w-full">
+                        إلغاء الكاميرا
+                        </Button>
+                    </div>
                   </div>
                 )}
 
@@ -251,12 +268,26 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
                     </div>
                 )}
 
-                <Button type="button" variant="outline" onClick={startCamera} disabled={isCameraActive}>
-                  <Camera className="ml-2 h-4 w-4" /> 
-                  {imagePreview ? 'استبدال الصورة بالكاميرا' : 'إضافة صورة بالكاميرا'}
-                </Button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <Button type="button" variant="outline" onClick={startCamera} disabled={isCameraActive}>
+                    <Camera className="ml-2 h-4 w-4" /> 
+                    {imagePreview && !isCameraActive ? 'استبدال بالكاميرا' : 'فتح الكاميرا'}
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isCameraActive}>
+                        <FileImage className="ml-2 h-4 w-4" />
+                        {imagePreview && !isCameraActive ? 'استبدال من الجهاز' : 'اختيار من الجهاز'}
+                    </Button>
+                </div>
+                <Input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept="image/*" 
+                    onChange={handleFileSelect}
+                />
+
                  {imagePreview && !isCameraActive && (
-                  <Button type="button" variant="ghost" onClick={clearImage} className="text-destructive hover:text-destructive/90">
+                  <Button type="button" variant="ghost" onClick={clearImage} className="text-destructive hover:text-destructive/90 w-full sm:w-auto">
                     <XCircle className="ml-2 h-4 w-4" /> إزالة الصورة الحالية
                   </Button>
                 )}
@@ -265,14 +296,12 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
                   control={form.control}
                   name="imageUrl"
                   render={({ field }) => (
-                    // This input is hidden, its value is controlled by camera/clear buttons
                     <Input type="hidden" {...field} />
                   )}
                 />
-              <FormMessage /> {/* For imageUrl field errors if any */}
+              <FormMessage /> 
             </FormItem>
             <canvas ref={canvasRef} style={{ display: 'none' }} />
-
 
             <Button type="submit" className="w-full sm:w-auto" disabled={isLoading || isCameraActive}>
               {isLoading ? (isEditMode ? 'جاري الحفظ...' : 'جاري الإضافة...') : 
