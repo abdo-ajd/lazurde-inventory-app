@@ -14,7 +14,7 @@ interface AuthContextType {
   logout: () => void;
   isLoading: boolean;
   users: User[];
-  addUser: (user: Omit<User, 'id' | 'password'> & { password: string; avatarUrl?: string }) => Promise<boolean>;
+  addUser: (user: Omit<User, 'id' | 'password'> & { password: string }) => Promise<boolean>; // Removed avatarUrl from addUser
   updateUser: (userId: string, updates: Partial<Omit<User, 'id'>>) => Promise<boolean>;
   deleteUser: (userId: string) => Promise<boolean>;
   getUserById: (userId: string) => User | undefined;
@@ -72,7 +72,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     toast({ title: "تم تسجيل الخروج بنجاح" });
   };
 
-  const addUser = async (userData: Omit<User, 'id' | 'password'> & { password: string; avatarUrl?: string }): Promise<boolean> => {
+  const addUser = async (userData: Omit<User, 'id' | 'password'> & { password: string }): Promise<boolean> => { // Removed avatarUrl
     const currentUsers = users || [];
     if (currentUsers.find(u => u.username === userData.username)) {
       toast({ title: "خطأ", description: "اسم المستخدم موجود بالفعل.", variant: "destructive" });
@@ -82,7 +82,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       username: userData.username,
       password: userData.password,
       role: userData.role,
-      avatarUrl: userData.avatarUrl || '',
+      // avatarUrl: userData.avatarUrl || '', // Removed avatarUrl
       id: `user_${Date.now()}` 
     };
     setUsers(prevUsers => [...(prevUsers || []), newUser]);
@@ -110,6 +110,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
 
+    // if (updates.avatarUrl === undefined) delete updates.avatarUrl; // Ensure avatarUrl is not accidentally set to undefined
+
     setUsers(prevUsers => (prevUsers || []).map(u => {
       if (u.id === userId) {
         const updatedUser = { ...u, ...updates };
@@ -117,6 +119,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (!updates.password || updates.password === '') {
           updatedUser.password = u.password;
         }
+        // delete updatedUser.avatarUrl; // Ensure avatarUrl isn't part of the update unless explicitly passed (which it won't be now)
         return updatedUser;
       }
       return u;
@@ -178,8 +181,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const updatedCurrentUser = newUsers.find(u => u.id === currentUser.id);
         if (updatedCurrentUser && (
             updatedCurrentUser.username !== currentUser.username || 
-            updatedCurrentUser.role !== currentUser.role ||
-            updatedCurrentUser.avatarUrl !== currentUser.avatarUrl
+            updatedCurrentUser.role !== currentUser.role 
+            // updatedCurrentUser.avatarUrl !== currentUser.avatarUrl // Removed avatarUrl check
             )) {
             setCurrentUser(updatedCurrentUser);
         }

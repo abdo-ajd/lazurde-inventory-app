@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+// import Image from 'next/image'; // No longer needed for avatar list
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ import { PlusCircle, Search, Edit3, Trash2, ShieldCheck, User as UserIconLucide,
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription as ShadcnDialogDescription, DialogClose } from '@/components/ui/dialog';
 import type { User, UserRole } from '@/lib/types';
 import { DEFAULT_ADMIN_USER } from '@/lib/constants';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'; // Removed AvatarImage
 
 const roleTranslations: Record<UserRole, string> = {
   admin: 'مدير',
@@ -128,7 +128,7 @@ export default function ManageUsersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[60px]">الصورة</TableHead>
+                    <TableHead className="w-[60px]">الرمز</TableHead> {/* Changed from الصورة to الرمز */}
                     <TableHead>اسم المستخدم</TableHead>
                     <TableHead>الدور</TableHead>
                     <TableHead className="text-center">الإجراءات</TableHead>
@@ -139,28 +139,20 @@ export default function ManageUsersPage() {
                     const RoleIcon = roleIcons[user.role];
                     const isDefaultAdmin = user.id === DEFAULT_ADMIN_USER.id;
                     
-                    // Determine if the user is the sole admin
                     const adminUsers = users.filter(u => u.role === 'admin');
                     const isSoleAdmin = user.role === 'admin' && adminUsers.length === 1;
                     
-                    // Determine if the user is the currently logged-in user
                     const isCurrentUser = currentUser?.id === user.id;
 
-                    // Deletion is disabled if:
-                    // 1. User is the default admin.
-                    // 2. User is the sole admin.
-                    // 3. User is the currently logged-in user.
                     const canDelete = !isDefaultAdmin && !isSoleAdmin && !isCurrentUser;
                     
-                    const userAvatarSrcList = user.avatarUrl 
-                      ? user.avatarUrl 
-                      : `https://placehold.co/40x40/E2E8F0/64748B?text=${getInitials(user.username)}&font=sans-serif`;
+                    // Removed userAvatarSrcList logic
 
                     return (
                       <TableRow key={user.id}>
                         <TableCell>
                           <Avatar className="h-9 w-9">
-                            <AvatarImage src={userAvatarSrcList} alt={user.username} data-ai-hint="user avatar" />
+                            {/* <AvatarImage src={userAvatarSrcList} alt={user.username} data-ai-hint="user avatar" /> Removed AvatarImage */}
                             <AvatarFallback>{getInitials(user.username)}</AvatarFallback>
                           </Avatar>
                         </TableCell>
@@ -212,7 +204,7 @@ export default function ManageUsersPage() {
             </div>
           ) : (
             <div className="text-center py-10 text-muted-foreground">
-              <UserCircle2 size={48} className="mx-auto mb-2" /> {/* Changed icon for no users */}
+              <UserCircle2 size={48} className="mx-auto mb-2" />
               <p>
                 {searchTerm
                   ? "لا يوجد مستخدمون يطابقون بحثك."

@@ -145,9 +145,7 @@ export default function Header() {
   const showDashboardBarcodeScanner = pathname === '/dashboard' && hasRole(['admin', 'employee', 'employee_return']);
   const showHeaderAddProduct = pathname === '/dashboard' && hasRole(['admin']);
   
-  const userAvatarSrc = currentUser?.avatarUrl 
-    ? currentUser.avatarUrl 
-    : `https://placehold.co/40x40/A4C3F5/FFFFFF?text=${getInitials(currentUser?.username || 'N A')}&font=sans-serif`;
+  const userAvatarPlaceholder = `https://placehold.co/40x40/A4C3F5/FFFFFF?text=${getInitials(currentUser?.username || 'N A')}&font=sans-serif`;
 
 
   return (
@@ -244,7 +242,7 @@ export default function Header() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src={userAvatarSrc} alt={currentUser.username} data-ai-hint="user avatar"/>
+                    <AvatarImage src={userAvatarPlaceholder} alt={currentUser.username} data-ai-hint="user avatar placeholder"/>
                     <AvatarFallback>{getInitials(currentUser.username)}</AvatarFallback>
                   </Avatar>
                 </Button>

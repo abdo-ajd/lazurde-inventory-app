@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProducts } from '@/contexts/ProductContext';
 import { useSales } from '@/contexts/SalesContext';
 import { useEffect, useRef, useState } from 'react';
-import { Save, RotateCcw, Download, Upload, Music, Trash2 } from 'lucide-react';
+import { Save, RotateCcw, Download, Upload, Music, Trash2, Smartphone, DownloadCloud } from 'lucide-react';
 import { DEFAULT_APP_SETTINGS, LOCALSTORAGE_KEYS } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import type { User, Product, Sale, AppSettings as AppSettingsType } from '@/lib/types';
@@ -75,6 +75,15 @@ const PREDEFINED_PALETTES: { name: string; id: string; colors: AppSettingsType['
   },
 ];
 
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: Array<string>;
+  readonly userChoice: Promise<{
+    outcome: 'accepted' | 'dismissed';
+    platform: string;
+  }>;
+  prompt(): Promise<void>;
+}
+
 
 export default function AppSettingsPage() {
   const { settings, updateSettings, resetToDefaults, applyTheme } = useAppSettings();
@@ -88,6 +97,10 @@ export default function AppSettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const soundFileInputRef = useRef<HTMLInputElement>(null);
   const [uploadedSoundName, setUploadedSoundName] = useState<string | null>(null);
+
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [canInstallPWA, setCanInstallPWA] = useState(false);
+  const [isPWAInstalled, setIsPWAInstalled] = useState(false);
 
 
   const form = useForm<SettingsFormValues>({
@@ -111,6 +124,38 @@ export default function AppSettingsPage() {
         setUploadedSoundName(null);
     }
   }, [settings, form]);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      setCanInstallPWA(true);
+      setIsPWAInstalled(false); // If prompt is shown, it's not installed yet
+    };
+
+    const handleAppInstalled = () => {
+      setDeferredPrompt(null);
+      setCanInstallPWA(false);
+      setIsPWAInstalled(true);
+      toast({ title: "تم التثبيت", description: "تم تثبيت التطبيق بنجاح." });
+    };
+    
+    // Check if running as PWA
+    if (typeof window !== 'undefined') {
+        if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone) {
+            setIsPWAInstalled(true);
+            setCanInstallPWA(false);
+        }
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, [toast]);
   
   if (!hasRole(['admin'])) {
     // Logic to redirect or show access denied message if not admin
@@ -119,7 +164,7 @@ export default function AppSettingsPage() {
   const onSubmit = (data: SettingsFormValues) => {
     updateSettings({
         storeName: data.storeName,
-        themeColors: data.themeColors, // These are already updated by palette selection
+        themeColors: data.themeColors, 
     });
   };
 
@@ -243,12 +288,27 @@ export default function AppSettingsPage() {
     toast({ title: "نجاح", description: "تمت إزالة النغمة المخصصة." });
   };
 
+  const handleInstallPWA = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      // Wait for the user to respond to the prompt
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        // App was installed, appinstalled event will handle UI update
+      } else {
+        toast({ title: "ملاحظة", description: "تم إلغاء طلب التثبيت." });
+      }
+      setDeferredPrompt(null); // Prompt can only be used once.
+      setCanInstallPWA(false); // No longer can install with this prompt
+    }
+  };
+
   return (
     <div className="space-y-6 pb-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight font-headline">إعدادات التطبيق</h1>
         <p className="text-muted-foreground font-body">
-          قم بتخصيص اسم المتجر، ألوان الواجهة، نغمة البيع، وإدارة النسخ الاحتياطي للبيانات.
+          قم بتخصيص اسم المتجر، ألوان الواجهة، نغمة البيع، وإدارة النسخ الاحتياطي للبيانات، وتثبيت التطبيق.
         </p>
       </div>
       <Form {...form}>
@@ -302,7 +362,6 @@ export default function AppSettingsPage() {
                   </Button>
                 ))}
               </div>
-               {/* Hidden FormField to keep themeColors in form state for submission */}
                <FormField
                 control={form.control}
                 name="themeColors.primary"
@@ -396,6 +455,36 @@ export default function AppSettingsPage() {
            </p>
         </CardContent>
       </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>تثبيت التطبيق (Offline)</CardTitle>
+          <CardDescription>
+            قم بتثبيت التطبيق على جهازك لاستخدامه بدون اتصال بالإنترنت ولتجربة أسرع.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {isPWAInstalled ? (
+            <div className="flex items-center p-3 rounded-md bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700">
+              <Smartphone className="ml-3 h-5 w-5" />
+              <p>التطبيق مثبت بالفعل على هذا الجهاز.</p>
+            </div>
+          ) : canInstallPWA && deferredPrompt ? (
+            <Button onClick={handleInstallPWA} className="w-full sm:w-auto">
+              <DownloadCloud className="ml-2 h-4 w-4" /> تثبيت التطبيق الآن
+            </Button>
+          ) : (
+             <div className="flex items-center p-3 rounded-md bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                <Smartphone className="ml-3 h-5 w-5" />
+                <p>التثبيت غير متوفر حاليًا أو يتطلب متصفحًا يدعم هذه الميزة (مثل Chrome أو Edge).</p>
+             </div>
+          )}
+          <p className="text-xs text-muted-foreground pt-1">
+            إذا لم يظهر زر التثبيت، قد يكون متصفحك لا يدعم هذه الميزة، أو تم رفض طلب التثبيت سابقًا.
+          </p>
+        </CardContent>
+      </Card>
+
     </div>
   );
 }

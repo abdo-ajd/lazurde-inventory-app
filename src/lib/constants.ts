@@ -13,7 +13,7 @@ export const DEFAULT_ADMIN_USER: User = {
   username: 'abdo',
   password: '00123456', // In a real app, this would be hashed or handled by a proper auth system
   role: 'admin',
-  avatarUrl: '', // Default avatar
+  // avatarUrl: '', // Removed user avatar
 };
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
