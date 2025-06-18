@@ -17,6 +17,7 @@ import { Save, RotateCcw, Download, Upload, Music, Trash2 } from 'lucide-react';
 import { DEFAULT_APP_SETTINGS, LOCALSTORAGE_KEYS } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import type { User, Product, Sale, AppSettings as AppSettingsType } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 
 const hslColorSchema = z.string().regex(/^(\d{1,3})\s+(\d{1,3}%)\s+(\d{1,3}%)$/, {
@@ -30,7 +31,6 @@ const settingsSchema = z.object({
     background: hslColorSchema,
     accent: hslColorSchema,
   }),
-  // saleSuccessSound is handled separately, not part of this form's Zod schema
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -39,11 +39,45 @@ interface BackupData {
   users: User[];
   products: Product[];
   sales: Sale[];
-  settings: AppSettingsType; // This will include saleSuccessSound
+  settings: AppSettingsType;
 }
 
+const PREDEFINED_PALETTES: { name: string; id: string; colors: AppSettingsType['themeColors'] }[] = [
+  {
+    name: "لازوردي الافتراضي",
+    id: 'lazurde_default',
+    colors: DEFAULT_APP_SETTINGS.themeColors,
+  },
+  {
+    name: "أزرق سماوي",
+    id: 'sky_blue',
+    colors: { primary: "207 90% 54%", background: "210 40% 98%", accent: "190 80% 60%" },
+  },
+  {
+    name: "أخضر نعناعي",
+    id: 'mint_green',
+    colors: { primary: "150 70% 45%", background: "150 20% 97%", accent: "160 60% 70%" },
+  },
+  {
+    name: "وردي دافئ",
+    id: 'warm_pink',
+    colors: { primary: "340 80% 65%", background: "340 30% 98%", accent: "350 70% 75%" },
+  },
+  {
+    name: "بنفسجي ملكي",
+    id: 'royal_purple',
+    colors: { primary: "260 70% 55%", background: "260 20% 96%", accent: "270 60% 70%" },
+  },
+  {
+    name: "رمادي محايد",
+    id: 'neutral_gray',
+    colors: { primary: "215 15% 50%", background: "0 0% 98%", accent: "215 10% 70%" },
+  },
+];
+
+
 export default function AppSettingsPage() {
-  const { settings, updateSettings, resetToDefaults } = useAppSettings();
+  const { settings, updateSettings, resetToDefaults, applyTheme } = useAppSettings();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { users, replaceAllUsers, hasRole } = useAuth();
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -63,16 +97,15 @@ export default function AppSettingsPage() {
         themeColors: settings.themeColors,
     },
   });
+  
+  const currentThemeColors = form.watch('themeColors');
 
   useEffect(() => {
-    // Reset form when settings change (e.g., after restoring from backup or resetToDefaults)
     form.reset({
         storeName: settings.storeName,
         themeColors: settings.themeColors,
     });
     if (settings.saleSuccessSound) {
-        // We don't have the original file name, so just indicate a custom sound is set.
-        // A more complex solution could store the file name in settings too.
         setUploadedSoundName("نغمة مخصصة مرفوعة");
     } else {
         setUploadedSoundName(null);
@@ -84,15 +117,27 @@ export default function AppSettingsPage() {
   }
 
   const onSubmit = (data: SettingsFormValues) => {
-    // updateSettings will handle themeColors and saleSuccessSound is handled separately
     updateSettings({
         storeName: data.storeName,
-        themeColors: data.themeColors,
+        themeColors: data.themeColors, // These are already updated by palette selection
     });
   };
 
   const handleReset = () => {
-    resetToDefaults(); // This will also reset saleSuccessSound via DEFAULT_APP_SETTINGS
+    resetToDefaults(); 
+  };
+
+  const handlePaletteSelect = (paletteColors: AppSettingsType['themeColors']) => {
+    form.setValue('themeColors', paletteColors, { shouldDirty: true, shouldValidate: true });
+    applyTheme(paletteColors); 
+  };
+
+  const isActivePalette = (paletteColors: AppSettingsType['themeColors']) => {
+    return (
+      currentThemeColors.primary === paletteColors.primary &&
+      currentThemeColors.background === paletteColors.background &&
+      currentThemeColors.accent === paletteColors.accent
+    );
   };
 
   const handleCreateBackup = () => {
@@ -101,7 +146,6 @@ export default function AppSettingsPage() {
         users: JSON.parse(localStorage.getItem(LOCALSTORAGE_KEYS.USERS) || '[]'),
         products: JSON.parse(localStorage.getItem(LOCALSTORAGE_KEYS.PRODUCTS) || '[]'),
         sales: JSON.parse(localStorage.getItem(LOCALSTORAGE_KEYS.SALES) || '[]'),
-        // Get the latest settings directly from the context, which includes saleSuccessSound
         settings: settings, 
       };
 
@@ -149,7 +193,7 @@ export default function AppSettingsPage() {
         replaceAllUsers(restoredData.users);
         replaceAllProducts(restoredData.products);
         replaceAllSales(restoredData.sales);
-        updateSettings(restoredData.settings); // This will also apply theme and saleSuccessSound
+        updateSettings(restoredData.settings);
 
         toast({ title: "نجاح", description: "تم استعادة البيانات بنجاح. سيتم إعادة تحميل الصفحة." });
         
@@ -176,7 +220,7 @@ export default function AppSettingsPage() {
   const handleSoundFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // Limit file size to 5MB
+      if (file.size > 5 * 1024 * 1024) { 
         toast({ variant: "destructive", title: "خطأ", description: "حجم الملف كبير جداً. الرجاء اختيار ملف أصغر من 5 ميجابايت." });
         if(soundFileInputRef.current) soundFileInputRef.current.value = "";
         return;
@@ -234,58 +278,58 @@ export default function AppSettingsPage() {
           <Card className="mt-6">
             <CardHeader>
               <CardTitle>ألوان الواجهة</CardTitle>
-              <CardDescription>أدخل الألوان بتنسيق HSL (مثال: 217 89% 61%). سيتم تطبيق الألوان مباشرة.</CardDescription>
+              <CardDescription>اختر نسق الألوان المفضل لديك. سيتم تطبيق النسق مباشرة كمعاينة.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <FormField
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {PREDEFINED_PALETTES.map((palette) => (
+                  <Button
+                    key={palette.id}
+                    type="button"
+                    variant={isActivePalette(palette.colors) ? "default" : "outline"}
+                    onClick={() => handlePaletteSelect(palette.colors)}
+                    className={cn(
+                        "flex flex-col items-start p-3 h-auto text-right",
+                        isActivePalette(palette.colors) && "ring-2 ring-primary ring-offset-2"
+                    )}
+                  >
+                    <span className="font-semibold mb-2 text-sm">{palette.name}</span>
+                    <div className="flex gap-2">
+                      <div className="w-5 h-5 rounded-full border" style={{ backgroundColor: `hsl(${palette.colors.primary})` }} title={`Primary: ${palette.colors.primary}`} />
+                      <div className="w-5 h-5 rounded-full border" style={{ backgroundColor: `hsl(${palette.colors.background})` }} title={`Background: ${palette.colors.background}`} />
+                      <div className="w-5 h-5 rounded-full border" style={{ backgroundColor: `hsl(${palette.colors.accent})` }} title={`Accent: ${palette.colors.accent}`} />
+                    </div>
+                  </Button>
+                ))}
+              </div>
+               {/* Hidden FormField to keep themeColors in form state for submission */}
+               <FormField
                 control={form.control}
                 name="themeColors.primary"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel htmlFor="primaryColor">اللون الأساسي (Primary)</FormLabel>
-                    <FormControl>
-                      <Input id="primaryColor" placeholder={DEFAULT_APP_SETTINGS.themeColors.primary} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => <Input type="hidden" {...field} />}
               />
               <FormField
                 control={form.control}
                 name="themeColors.background"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel htmlFor="backgroundColor">لون الخلفية (Background)</FormLabel>
-                    <FormControl>
-                      <Input id="backgroundColor" placeholder={DEFAULT_APP_SETTINGS.themeColors.background} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => <Input type="hidden" {...field} />}
               />
               <FormField
                 control={form.control}
                 name="themeColors.accent"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel htmlFor="accentColor">اللون الثانوي/المميز (Accent)</FormLabel>
-                    <FormControl>
-                      <Input id="accentColor" placeholder={DEFAULT_APP_SETTINGS.themeColors.accent} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => <Input type="hidden" {...field} />}
               />
             </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button type="submit">
-                <Save className="ml-2 h-4 w-4" /> حفظ الإعدادات
-              </Button>
-              <Button type="button" variant="outline" onClick={handleReset}>
-                <RotateCcw className="ml-2 h-4 w-4" /> استعادة الافتراضي
-              </Button>
-            </CardFooter>
           </Card>
+          
+          <div className="mt-8 flex flex-col sm:flex-row justify-between gap-4">
+            <Button type="submit" className="w-full sm:w-auto">
+              <Save className="ml-2 h-4 w-4" /> حفظ جميع الإعدادات
+            </Button>
+            <Button type="button" variant="outline" onClick={handleReset} className="w-full sm:w-auto">
+              <RotateCcw className="ml-2 h-4 w-4" /> استعادة الإعدادات الافتراضية
+            </Button>
+          </div>
+
         </form>
       </Form>
 
