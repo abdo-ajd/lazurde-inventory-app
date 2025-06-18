@@ -9,18 +9,22 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowRight, Edit3, Package, Tag, DollarSign, Layers, CalendarDays, History } from 'lucide-react'; // Removed ImageIcon
+import { ArrowRight, Edit3, Package, Tag, DollarSign, Layers, CalendarDays, History, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Product } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as ShadcnDialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ProductDetailsPage() {
-  const { getProductById } = useProducts();
+  const { getProductById, deleteProduct } = useProducts();
   const params = useParams();
   const router = useRouter();
   const { hasRole } = useAuth();
+  const { toast } = useToast();
   const [product, setProduct] = useState<Product | null | undefined>(undefined);
   const [isFetching, setIsFetching] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const productId = typeof params.id === 'string' ? params.id : '';
 
@@ -32,11 +36,24 @@ export default function ProductDetailsPage() {
     setIsFetching(false);
   }, [productId, getProductById]);
 
+  const handleDeleteProduct = async () => {
+    if (!product) return;
+    setIsDeleting(true);
+    const success = await deleteProduct(product.id);
+    setIsDeleting(false);
+    if (success) {
+      toast({title: "تم الحذف", description: `تم حذف المنتج "${product.name}" بنجاح.`});
+      router.push('/dashboard/products');
+    } else {
+      // Error toast is handled by deleteProduct in context
+    }
+  };
+
   if (isFetching) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-10 w-3/4" />
-        <Skeleton className="h-96 w-full md:w-1/2 mx-auto mb-6 rounded-lg" /> {/* Adjusted for potentially taller image */}
+        <Skeleton className="h-96 w-full md:w-1/2 mx-auto mb-6 rounded-lg" />
         <Card>
           <CardHeader>
             <Skeleton className="h-8 w-1/2" />
@@ -51,7 +68,8 @@ export default function ProductDetailsPage() {
               </div>
             ))}
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex justify-between">
+            <Skeleton className="h-10 w-24" />
             <Skeleton className="h-10 w-24" />
           </CardFooter>
         </Card>
@@ -110,12 +128,12 @@ export default function ProductDetailsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-1">
            <Card className="shadow-lg overflow-hidden">
-             <CardHeader className="p-0 relative aspect-[3/4] w-full"> {/* Aspect ratio for abaya-like images */}
+             <CardHeader className="p-0 relative aspect-[3/4] w-full">
                 <Image
-                    src={product.imageUrl || 'https://placehold.co/300x400.png'}
+                    src={product.imageUrl || 'https://placehold.co/300x450.png'}
                     alt={product.name}
                     layout="fill"
-                    objectFit="cover" // 'cover' often better for clothing
+                    objectFit="cover"
                     data-ai-hint="abaya product detail"
                 />
              </CardHeader>
@@ -167,12 +185,35 @@ export default function ProductDetailsPage() {
                 </div>
                 </CardContent>
                 {hasRole(['admin']) && (
-                <CardFooter>
+                <CardFooter className="flex justify-start gap-2">
                     <Button asChild>
-                    <Link href={`/dashboard/products/${product.id}/edit`}>
-                        <Edit3 className="ml-2 h-4 w-4" /> تعديل المنتج
-                    </Link>
+                      <Link href={`/dashboard/products/${product.id}/edit`}>
+                          <Edit3 className="ml-2 h-4 w-4" /> تعديل المنتج
+                      </Link>
                     </Button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="destructive" disabled={isDeleting}>
+                          <Trash2 className="ml-2 h-4 w-4" /> {isDeleting ? 'جاري الحذف...' : 'حذف المنتج'}
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>تأكيد الحذف</DialogTitle>
+                          <ShadcnDialogDescription>
+                            هل أنت متأكد أنك تريد حذف المنتج "{product.name}"؟ لا يمكن التراجع عن هذا الإجراء.
+                          </ShadcnDialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className="gap-2 sm:justify-start">
+                          <DialogClose asChild>
+                            <Button type="button" variant="secondary" disabled={isDeleting}>إلغاء</Button>
+                          </DialogClose>
+                          <Button type="button" variant="destructive" onClick={handleDeleteProduct} disabled={isDeleting}>
+                            {isDeleting ? 'جاري الحذف...' : 'حذف'}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                 </CardFooter>
                 )}
             </Card>

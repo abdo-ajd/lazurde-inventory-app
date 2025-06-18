@@ -10,14 +10,13 @@ import { useSales } from '@/contexts/SalesContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { PlusCircle, Search, Edit3, Trash2, ShoppingCart, Eye } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription as ShadcnDialogDescription, DialogClose } from '@/components/ui/dialog';
+import { PlusCircle, Search, Edit3, ShoppingCart } from 'lucide-react'; // Removed Trash2, Eye
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import type { Product } from '@/lib/types';
 
 export default function ProductList() {
-  const { products, deleteProduct } = useProducts();
+  const { products } = useProducts(); // Removed deleteProduct
   const { hasRole, currentUser } = useAuth();
   const { addSale } = useSales();
   const { toast } = useToast();
@@ -46,19 +45,14 @@ export default function ProductList() {
       return;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const saleResult = await addSale([{ productId: product.id, quantity: 1 }]);
-    if (saleResult) {
-      toast({ title: "تم البيع بنجاح", description: `تم بيع قطعة واحدة من المنتج "${product.name}".` });
-    } 
+    // Toast removed as per user request
+    // if (saleResult) {
+    //   toast({ title: "تم البيع بنجاح", description: `تم بيع قطعة واحدة من المنتج "${product.name}".` });
+    // } 
   };
   
-  const handleDeleteProduct = async (productId: string) => {
-    const product = products.find(p => p.id === productId);
-    if (product && confirm(`هل أنت متأكد أنك تريد حذف المنتج "${product.name}"؟ هذا الإجراء لا يمكن التراجع عنه.`)) {
-      await deleteProduct(productId);
-    }
-  };
-
   if (!isClient) {
     return (
       <Card>
@@ -125,18 +119,20 @@ export default function ProductList() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {filteredProducts.map((product) => (
             <Card key={product.id} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <CardHeader className="p-0 relative aspect-[3/4] w-full"> {/* Aspect ratio for abaya-like images */}
-                <Image
-                  src={product.imageUrl || 'https://placehold.co/300x400.png'} 
-                  alt={product.name}
-                  layout="fill"
-                  objectFit="cover" // 'cover' might be better for abayas
-                  className="rounded-t-lg"
-                  data-ai-hint="abaya product item"
-                />
-              </CardHeader>
-              <CardContent className="pt-3 pb-2 px-3 flex-grow"> {/* Reduced padding */}
-                <h3 className="font-semibold text-sm truncate" title={product.name}>{product.name}</h3> {/* Slightly smaller text */}
+              <Link href={`/dashboard/products/${product.id}`} passHref aria-label={`عرض تفاصيل ${product.name}`}>
+                <CardHeader className="p-0 relative aspect-[3/4] w-full cursor-pointer group">
+                  <Image
+                    src={product.imageUrl || 'https://placehold.co/300x450.png'} 
+                    alt={product.name}
+                    layout="fill"
+                    objectFit="cover"
+                    className="rounded-t-lg group-hover:opacity-90 transition-opacity"
+                    data-ai-hint="abaya product item"
+                  />
+                </CardHeader>
+              </Link>
+              <CardContent className="pt-3 pb-2 px-3 flex-grow">
+                <h3 className="font-semibold text-sm truncate" title={product.name}>{product.name}</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">السعر: {product.price.toFixed(2)} ر.س</p>
                 <Badge 
                   variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}
@@ -145,12 +141,7 @@ export default function ProductList() {
                   الكمية: {product.quantity}
                 </Badge>
               </CardContent>
-              <CardFooter className="flex justify-around items-center p-1.5 border-t bg-muted/50"> {/* Reduced padding */}
-                <Button variant="ghost" size="icon" asChild title="عرض التفاصيل">
-                  <Link href={`/dashboard/products/${product.id}`}>
-                    <Eye className="h-4 w-4" /> {/* Slightly smaller icons */}
-                  </Link>
-                </Button>
+              <CardFooter className="flex justify-around items-center p-1.5 border-t bg-muted/50">
                 {hasRole(['admin']) && (
                   <Button variant="ghost" size="icon" asChild title="تعديل المنتج">
                     <Link href={`/dashboard/products/${product.id}/edit`}>
@@ -170,29 +161,7 @@ export default function ProductList() {
                     <ShoppingCart className="h-4 w-4" />
                   </Button>
                 )}
-                {hasRole(['admin']) && (
-                   <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="destructive" size="icon" title="حذف المنتج" className="hover:bg-destructive/80">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>تأكيد الحذف</DialogTitle>
-                          <ShadcnDialogDescription>
-                            هل أنت متأكد أنك تريد حذف المنتج "{product.name}"؟ لا يمكن التراجع عن هذا الإجراء.
-                          </ShadcnDialogDescription>
-                        </DialogHeader>
-                        <DialogFooter className="gap-2 sm:justify-start">
-                          <DialogClose asChild>
-                            <Button type="button" variant="secondary">إلغاء</Button>
-                          </DialogClose>
-                          <Button type="button" variant="destructive" onClick={() => handleDeleteProduct(product.id)}>حذف</Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                )}
+                {/* Delete button and view button removed from here */}
               </CardFooter>
             </Card>
           ))}
