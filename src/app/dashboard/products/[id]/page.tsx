@@ -2,13 +2,14 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useProducts } from '@/contexts/ProductContext';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowRight, Edit3, Package, Tag, DollarSign, Layers, CalendarDays, History } from 'lucide-react';
+import { ArrowRight, Edit3, Package, Tag, DollarSign, Layers, CalendarDays, History, Image as ImageIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Product } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +36,7 @@ export default function ProductDetailsPage() {
     return (
       <div className="space-y-6">
         <Skeleton className="h-10 w-3/4" />
+        <Skeleton className="h-64 w-full md:w-2/3 mx-auto mb-6 rounded-lg" />
         <Card>
           <CardHeader>
             <Skeleton className="h-8 w-1/2" />
@@ -104,57 +106,78 @@ export default function ProductDetailsPage() {
                 </Link>
             </Button>
         </div>
-      
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Tag className="mr-2 text-accent" />
-            معلومات المنتج
-          </CardTitle>
-          <CardDescription>معرف المنتج: {product.id}</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
-          <div className="flex items-start space-x-3 space-x-reverse">
-            <DollarSign className="h-5 w-5 mt-1 text-primary" />
-            <div>
-              <p className="text-sm text-muted-foreground">السعر</p>
-              <p className="font-semibold text-lg">{product.price.toFixed(2)} ر.س</p>
-            </div>
-          </div>
-          <div className="flex items-start space-x-3 space-x-reverse">
-            <Layers className="h-5 w-5 mt-1 text-primary" />
-            <div>
-              <p className="text-sm text-muted-foreground">الكمية المتوفرة</p>
-              <Badge variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"} className="text-lg px-3 py-1">
-                {product.quantity}
-              </Badge>
-            </div>
-          </div>
-          <div className="flex items-start space-x-3 space-x-reverse">
-            <CalendarDays className="h-5 w-5 mt-1 text-primary" />
-            <div>
-              <p className="text-sm text-muted-foreground">تاريخ الإنشاء</p>
-              <p className="font-semibold">{formatDateTime(product.createdAt)}</p>
-            </div>
-          </div>
-          <div className="flex items-start space-x-3 space-x-reverse">
-            <History className="h-5 w-5 mt-1 text-primary" />
-            <div>
-              <p className="text-sm text-muted-foreground">آخر تحديث</p>
-              <p className="font-semibold">{formatDateTime(product.updatedAt)}</p>
-            </div>
-          </div>
-        </CardContent>
-        {hasRole(['admin']) && (
-          <CardFooter>
-            <Button asChild>
-              <Link href={`/dashboard/products/${product.id}/edit`}>
-                <Edit3 className="ml-2 h-4 w-4" /> تعديل المنتج
-              </Link>
-            </Button>
-          </CardFooter>
-        )}
-      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-1">
+           <Card className="shadow-lg overflow-hidden">
+             <CardHeader className="p-0 relative aspect-[4/3] w-full">
+                <Image
+                    src={product.imageUrl || 'https://placehold.co/400x300.png'}
+                    alt={product.name}
+                    layout="fill"
+                    objectFit="cover"
+                    data-ai-hint="product detail image"
+                />
+             </CardHeader>
+             <CardContent className="p-4">
+                <h3 className="font-semibold text-lg text-center">{product.name}</h3>
+             </CardContent>
+           </Card>
+        </div>
+
+        <div className="md:col-span-2">
+            <Card className="shadow-lg h-full">
+                <CardHeader>
+                <CardTitle className="flex items-center">
+                    <Tag className="mr-2 text-accent" />
+                    معلومات المنتج
+                </CardTitle>
+                <CardDescription>معرف المنتج: {product.id}</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-6 sm:grid-cols-2">
+                <div className="flex items-start space-x-3 space-x-reverse">
+                    <DollarSign className="h-5 w-5 mt-1 text-primary shrink-0" />
+                    <div>
+                    <p className="text-sm text-muted-foreground">السعر</p>
+                    <p className="font-semibold text-lg">{product.price.toFixed(2)} ر.س</p>
+                    </div>
+                </div>
+                <div className="flex items-start space-x-3 space-x-reverse">
+                    <Layers className="h-5 w-5 mt-1 text-primary shrink-0" />
+                    <div>
+                    <p className="text-sm text-muted-foreground">الكمية المتوفرة</p>
+                    <Badge variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"} className="text-lg px-3 py-1">
+                        {product.quantity}
+                    </Badge>
+                    </div>
+                </div>
+                <div className="flex items-start space-x-3 space-x-reverse">
+                    <CalendarDays className="h-5 w-5 mt-1 text-primary shrink-0" />
+                    <div>
+                    <p className="text-sm text-muted-foreground">تاريخ الإنشاء</p>
+                    <p className="font-semibold">{formatDateTime(product.createdAt)}</p>
+                    </div>
+                </div>
+                <div className="flex items-start space-x-3 space-x-reverse">
+                    <History className="h-5 w-5 mt-1 text-primary shrink-0" />
+                    <div>
+                    <p className="text-sm text-muted-foreground">آخر تحديث</p>
+                    <p className="font-semibold">{formatDateTime(product.updatedAt)}</p>
+                    </div>
+                </div>
+                </CardContent>
+                {hasRole(['admin']) && (
+                <CardFooter>
+                    <Button asChild>
+                    <Link href={`/dashboard/products/${product.id}/edit`}>
+                        <Edit3 className="ml-2 h-4 w-4" /> تعديل المنتج
+                    </Link>
+                    </Button>
+                </CardFooter>
+                )}
+            </Card>
+        </div>
+      </div>
     </div>
   );
 }

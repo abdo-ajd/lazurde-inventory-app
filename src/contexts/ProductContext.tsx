@@ -2,7 +2,7 @@
 "use client";
 
 import type { Product } from '@/lib/types';
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode, useCallback } from 'react'; // Added useCallback
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { LOCALSTORAGE_KEYS, INITIAL_PRODUCTS } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 interface ProductContextType {
   products: Product[];
   addProduct: (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Product | null>;
-  updateProduct: (productId: string, updates: Partial<Omit<Product, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<Product | null>;
+  updateProduct: (productId: string, updates: Partial<Omit<Product, 'id' | 'createdAt' | 'updatedAt' | 'imageUrl'>> & { imageUrl?: string | undefined }) => Promise<Product | null>;
   deleteProduct: (productId: string) => Promise<boolean>;
   getProductById: (productId: string) => Product | undefined;
   updateProductQuantity: (productId: string, quantityChange: number) => Promise<boolean>; // Positive for adding, negative for subtracting
@@ -19,63 +19,77 @@ interface ProductContextType {
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
 export const ProductProvider = ({ children }: { children: ReactNode }) => {
-  const [products, setProducts] = useLocalStorage<Product[]>(LOCALSTORAGE_KEYS.PRODUCTS, INITIAL_PRODUCTS);
+  const initialProductsCreator = useCallback(() => INITIAL_PRODUCTS, []);
+  const [products, setProducts] = useLocalStorage<Product[]>(LOCALSTORAGE_KEYS.PRODUCTS, initialProductsCreator);
   const { toast } = useToast();
 
   const addProduct = async (productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Promise<Product | null> => {
-    if (products.find(p => p.name.trim().toLowerCase() === productData.name.trim().toLowerCase())) {
+    const currentProducts = products || [];
+    if (currentProducts.find(p => p.name.trim().toLowerCase() === productData.name.trim().toLowerCase())) {
       toast({ title: "خطأ", description: "منتج بنفس الاسم موجود بالفعل.", variant: "destructive" });
       return null;
     }
     const newProduct: Product = {
       ...productData,
       id: `prod_${Date.now()}`,
+      imageUrl: productData.imageUrl || '', // Ensure imageUrl is at least an empty string
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    setProducts(prevProducts => [...prevProducts, newProduct]);
+    setProducts(prevProducts => [...(prevProducts || []), newProduct]);
     toast({ title: "نجاح", description: `تمت إضافة المنتج "${newProduct.name}" بنجاح.` });
     return newProduct;
   };
 
-  const updateProduct = async (productId: string, updates: Partial<Omit<Product, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Product | null> => {
+  const updateProduct = async (productId: string, updates: Partial<Omit<Product, 'id' | 'createdAt' | 'updatedAt' | 'imageUrl'>> & { imageUrl?: string | undefined }): Promise<Product | null> => {
     let updatedProduct: Product | null = null;
+    let hasConflict = false;
+    const currentProducts = products || [];
+
     setProducts(prevProducts =>
-      prevProducts.map(p => {
+      (prevProducts || []).map(p => {
         if (p.id === productId) {
-          // Check for name conflict if name is being updated
-          if (updates.name && updates.name !== p.name && prevProducts.some(op => op.id !== productId && op.name.trim().toLowerCase() === updates.name!.trim().toLowerCase())) {
+          if (updates.name && updates.name !== p.name && currentProducts.some(op => op.id !== productId && op.name.trim().toLowerCase() === updates.name!.trim().toLowerCase())) {
              toast({ title: "خطأ", description: "منتج آخر بنفس الاسم الجديد موجود بالفعل.", variant: "destructive" });
-             updatedProduct = p; // keep original product to indicate no update
+             hasConflict = true;
+             updatedProduct = p; 
              return p; 
           }
-          updatedProduct = { ...p, ...updates, updatedAt: new Date().toISOString() };
+          updatedProduct = { ...p, ...updates, imageUrl: updates.imageUrl !== undefined ? updates.imageUrl : p.imageUrl, updatedAt: new Date().toISOString() };
           return updatedProduct;
         }
         return p;
       })
     );
-    if (updatedProduct && updatedProduct.id === productId) { // Check if update actually happened
-         if (JSON.stringify(products.find(p => p.id === productId)) !== JSON.stringify(updatedProduct)) { // Check if something actually changed
+
+    if (hasConflict) {
+        return updatedProduct; // Return the original product in case of conflict, update was effectively aborted
+    }
+
+    if (updatedProduct && updatedProduct.id === productId) {
+        const originalProduct = currentProducts.find(p=> p.id === productId);
+        // Check if something actually changed to avoid unnecessary toast
+        if (JSON.stringify(originalProduct) !== JSON.stringify(updatedProduct)) {
             toast({ title: "نجاح", description: `تم تحديث المنتج "${updatedProduct.name}".` });
-         }
+        }
     }
     return updatedProduct;
   };
 
   const deleteProduct = async (productId: string): Promise<boolean> => {
-    const productToDelete = products.find(p => p.id === productId);
+    const currentProducts = products || [];
+    const productToDelete = currentProducts.find(p => p.id === productId);
     if (!productToDelete) {
       toast({ title: "خطأ", description: "المنتج غير موجود.", variant: "destructive" });
       return false;
     }
-    setProducts(prevProducts => prevProducts.filter(p => p.id !== productId));
+    setProducts(prevProducts => (prevProducts || []).filter(p => p.id !== productId));
     toast({ title: "نجاح", description: `تم حذف المنتج "${productToDelete.name}".` });
     return true;
   };
 
   const getProductById = (productId: string): Product | undefined => {
-    return products.find(p => p.id === productId);
+    return (products || []).find(p => p.id === productId);
   };
 
   const updateProductQuantity = async (productId: string, quantityChange: number): Promise<boolean> => {
@@ -91,12 +105,11 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     }
     
     await updateProduct(productId, { quantity: newQuantity });
-    // Toast for quantity update is handled by updateProduct or specific sale/return logic
     return true;
   };
 
   return (
-    <ProductContext.Provider value={{ products, addProduct, updateProduct, deleteProduct, getProductById, updateProductQuantity }}>
+    <ProductContext.Provider value={{ products: products || [], addProduct, updateProduct, deleteProduct, getProductById, updateProductQuantity }}>
       {children}
     </ProductContext.Provider>
   );

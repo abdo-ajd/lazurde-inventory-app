@@ -30,6 +30,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     name: 'منتج تجريبي ١',
     price: 150,
     quantity: 20,
+    imageUrl: 'https://placehold.co/600x400.png',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -38,6 +39,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     name: 'منتج تجريبي ٢',
     price: 75,
     quantity: 50,
+    imageUrl: 'https://placehold.co/600x400.png',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -46,9 +48,11 @@ export const INITIAL_PRODUCTS: Product[] = [
     name: 'منتج آخر',
     price: 220,
     quantity: 15,
+    imageUrl: 'https://placehold.co/600x400.png',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
 ];
 
 export const INITIAL_SALES: Sale[] = []; // Start with no sales
+

@@ -12,6 +12,7 @@ export interface Product {
   name: string;
   price: number;
   quantity: number;
+  imageUrl?: string; // Added for product image
   createdAt: string;
   updatedAt: string;
 }
@@ -53,3 +54,4 @@ export interface NavItem {
   disabled?: boolean;
   external?: boolean;
 }
+
