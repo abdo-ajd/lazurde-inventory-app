@@ -3,15 +3,17 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { PlusCircle, Search, Edit3, Trash2, ShieldCheck, User, Briefcase } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import { PlusCircle, Search, Edit3, Trash2, ShieldCheck, User as UserIconLucide, Briefcase, UserCircle2 } from 'lucide-react'; // Renamed User to UserIconLucide
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription as ShadcnDialogDescription, DialogClose } from '@/components/ui/dialog';
 import type { User, UserRole } from '@/lib/types';
 import { DEFAULT_ADMIN_USER } from '@/lib/constants';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const roleTranslations: Record<UserRole, string> = {
   admin: 'مدير',
@@ -21,12 +23,12 @@ const roleTranslations: Record<UserRole, string> = {
 
 const roleIcons: Record<UserRole, React.ElementType> = {
   admin: ShieldCheck,
-  employee: User,
+  employee: UserIconLucide, // Use renamed import
   employee_return: Briefcase,
 };
 
 export default function ManageUsersPage() {
-  const { users, deleteUser, hasRole: userHasRoleAuth } = useAuth(); // Renamed to avoid conflict
+  const { users, deleteUser, hasRole: userHasRoleAuth, currentUser } = useAuth(); // Renamed to avoid conflict
   const [searchTerm, setSearchTerm] = useState('');
   const [isClient, setIsClient] = useState(false);
 
@@ -34,6 +36,14 @@ export default function ManageUsersPage() {
     setIsClient(true);
   }, []);
 
+  const getInitials = (name?: string) => {
+    if (!name) return '?';
+    const parts = name.split(' ');
+    if (parts.length > 1) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
 
   const filteredUsers = useMemo(() => {
     if (!users) return [];
@@ -46,9 +56,8 @@ export default function ManageUsersPage() {
   const handleDeleteUser = async (userId: string) => {
      const userToDelete = users.find(u => u.id === userId);
      if (userToDelete) {
-        if (confirm(`هل أنت متأكد أنك تريد حذف المستخدم "${userToDelete.username}"؟`)) {
-           await deleteUser(userId);
-        }
+        // Confirmation is now handled by Dialog
+        await deleteUser(userId);
      }
   };
 
@@ -119,6 +128,7 @@ export default function ManageUsersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[60px]">الصورة</TableHead>
                     <TableHead>اسم المستخدم</TableHead>
                     <TableHead>الدور</TableHead>
                     <TableHead className="text-center">الإجراءات</TableHead>
@@ -128,12 +138,32 @@ export default function ManageUsersPage() {
                   {filteredUsers.map((user) => {
                     const RoleIcon = roleIcons[user.role];
                     const isDefaultAdmin = user.id === DEFAULT_ADMIN_USER.id;
-                    const currentAdmins = users.filter(u => u.role === 'admin');
-                    const isSoleAdmin = user.role === 'admin' && currentAdmins.length === 1;
-                    const canDelete = !isDefaultAdmin && !isSoleAdmin;
+                    
+                    // Determine if the user is the sole admin
+                    const adminUsers = users.filter(u => u.role === 'admin');
+                    const isSoleAdmin = user.role === 'admin' && adminUsers.length === 1;
+                    
+                    // Determine if the user is the currently logged-in user
+                    const isCurrentUser = currentUser?.id === user.id;
+
+                    // Deletion is disabled if:
+                    // 1. User is the default admin.
+                    // 2. User is the sole admin.
+                    // 3. User is the currently logged-in user.
+                    const canDelete = !isDefaultAdmin && !isSoleAdmin && !isCurrentUser;
+                    
+                    const userAvatarSrcList = user.avatarUrl 
+                      ? user.avatarUrl 
+                      : `https://placehold.co/40x40/E2E8F0/64748B?text=${getInitials(user.username)}&font=sans-serif`;
 
                     return (
                       <TableRow key={user.id}>
+                        <TableCell>
+                          <Avatar className="h-9 w-9">
+                            <AvatarImage src={userAvatarSrcList} alt={user.username} data-ai-hint="user avatar" />
+                            <AvatarFallback>{getInitials(user.username)}</AvatarFallback>
+                          </Avatar>
+                        </TableCell>
                         <TableCell className="font-medium">{user.username}</TableCell>
                         <TableCell>
                           <span className="flex items-center">
@@ -142,7 +172,7 @@ export default function ManageUsersPage() {
                           </span>
                         </TableCell>
                         <TableCell className="text-center space-x-1 space-x-reverse">
-                          <Button variant="ghost" size="icon" asChild title="تعديل المستخدم">
+                          <Button variant="ghost" size="icon" asChild title="تعديل المستخدم" disabled={isDefaultAdmin && currentUser?.id !== DEFAULT_ADMIN_USER.id}>
                             <Link href={`/dashboard/users/${user.id}/edit`}>
                               <Edit3 className="h-4 w-4" />
                             </Link>
@@ -156,11 +186,12 @@ export default function ManageUsersPage() {
                             <DialogContent>
                               <DialogHeader>
                                 <DialogTitle>تأكيد الحذف</DialogTitle>
-                                <DialogDescription>
+                                <ShadcnDialogDescription>
                                   هل أنت متأكد أنك تريد حذف المستخدم "{user.username}"؟
                                   {isDefaultAdmin && " لا يمكن حذف المدير الافتراضي."}
                                   {isSoleAdmin && " لا يمكن حذف المدير الوحيد."}
-                                </DialogDescription>
+                                  {isCurrentUser && " لا يمكنك حذف حسابك الحالي."}
+                                </ShadcnDialogDescription>
                               </DialogHeader>
                               <DialogFooter className="gap-2 sm:justify-start">
                                 <DialogClose asChild>
@@ -181,8 +212,12 @@ export default function ManageUsersPage() {
             </div>
           ) : (
             <div className="text-center py-10 text-muted-foreground">
-              <Search size={48} className="mx-auto mb-2" />
-              <p>لا يوجد مستخدمون يطابقون بحثك أو لم يتم إضافة مستخدمين بعد.</p>
+              <UserCircle2 size={48} className="mx-auto mb-2" /> {/* Changed icon for no users */}
+              <p>
+                {searchTerm
+                  ? "لا يوجد مستخدمون يطابقون بحثك."
+                  : "لم يتم إضافة مستخدمين بعد."}
+              </p>
             </div>
           )}
         </CardContent>

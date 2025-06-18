@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useTheme } from "next-themes";
 import { useState, useEffect, ChangeEvent, KeyboardEvent, useRef } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -48,11 +48,9 @@ export default function Header() {
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    // Sync header input with URL q param if it changes
     setHeaderSearchValue(searchParams.get('q') || '');
   }, [searchParams]);
 
-  // Auto-focus barcode input on /dashboard
   useEffect(() => {
     if (pathname === '/dashboard' && hasRole(['admin', 'employee', 'employee_return']) && currentUser) {
       const timer = setTimeout(() => {
@@ -91,7 +89,6 @@ export default function Header() {
         if (currentUser) {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const saleResult = await addSale([{ productId: product.id, quantity: 1 }]);
-          // Toast for successful sale is handled by addSale now
         } else {
           toast({ variant: "destructive", title: "خطأ", description: "يجب تسجيل الدخول لإتمام عملية البيع." });
         }
@@ -113,6 +110,10 @@ export default function Header() {
 
   const getInitials = (name?: string) => {
     if (!name) return '؟';
+    const parts = name.split(' ');
+    if (parts.length > 1) {
+      return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+    }
     return name.substring(0, 2).toUpperCase();
   };
   
@@ -143,6 +144,11 @@ export default function Header() {
   const showHeaderProductSearch = pathname === '/dashboard' || pathname.startsWith('/dashboard/products');
   const showDashboardBarcodeScanner = pathname === '/dashboard' && hasRole(['admin', 'employee', 'employee_return']);
   const showHeaderAddProduct = pathname === '/dashboard' && hasRole(['admin']);
+  
+  const userAvatarSrc = currentUser?.avatarUrl 
+    ? currentUser.avatarUrl 
+    : `https://placehold.co/40x40/A4C3F5/FFFFFF?text=${getInitials(currentUser?.username || 'N A')}&font=sans-serif`;
+
 
   return (
     <TooltipProvider delayDuration={100}>
@@ -238,7 +244,7 @@ export default function Header() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src={`https://placehold.co/40x40/A4C3F5/FFFFFF?text=${getInitials(currentUser.username)}`} alt={currentUser.username} data-ai-hint="user avatar"/>
+                    <AvatarImage src={userAvatarSrc} alt={currentUser.username} data-ai-hint="user avatar"/>
                     <AvatarFallback>{getInitials(currentUser.username)}</AvatarFallback>
                   </Avatar>
                 </Button>

@@ -14,12 +14,12 @@ interface AuthContextType {
   logout: () => void;
   isLoading: boolean;
   users: User[];
-  addUser: (user: Omit<User, 'id'>) => Promise<boolean>;
+  addUser: (user: Omit<User, 'id' | 'password'> & { password: string; avatarUrl?: string }) => Promise<boolean>;
   updateUser: (userId: string, updates: Partial<Omit<User, 'id'>>) => Promise<boolean>;
   deleteUser: (userId: string) => Promise<boolean>;
   getUserById: (userId: string) => User | undefined;
   hasRole: (roles: UserRole[]) => boolean;
-  replaceAllUsers: (newUsers: User[]) => void; // Added for backup/restore
+  replaceAllUsers: (newUsers: User[]) => void; 
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -72,13 +72,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     toast({ title: "تم تسجيل الخروج بنجاح" });
   };
 
-  const addUser = async (userData: Omit<User, 'id'>): Promise<boolean> => {
+  const addUser = async (userData: Omit<User, 'id' | 'password'> & { password: string; avatarUrl?: string }): Promise<boolean> => {
     const currentUsers = users || [];
     if (currentUsers.find(u => u.username === userData.username)) {
       toast({ title: "خطأ", description: "اسم المستخدم موجود بالفعل.", variant: "destructive" });
       return false;
     }
-    const newUser: User = { ...userData, id: `user_${Date.now()}` };
+    const newUser: User = { 
+      username: userData.username,
+      password: userData.password,
+      role: userData.role,
+      avatarUrl: userData.avatarUrl || '',
+      id: `user_${Date.now()}` 
+    };
     setUsers(prevUsers => [...(prevUsers || []), newUser]);
     toast({ title: "نجاح", description: `تم إضافة المستخدم ${newUser.username} بنجاح.` });
     return true;
@@ -104,10 +110,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
 
-    setUsers(prevUsers => (prevUsers || []).map(u => u.id === userId ? { ...u, ...updates, password: updates.password || u.password } : u));
+    setUsers(prevUsers => (prevUsers || []).map(u => {
+      if (u.id === userId) {
+        const updatedUser = { ...u, ...updates };
+        // Keep old password if new one is not provided or is empty
+        if (!updates.password || updates.password === '') {
+          updatedUser.password = u.password;
+        }
+        return updatedUser;
+      }
+      return u;
+    }));
+    
     toast({ title: "نجاح", description: `تم تحديث بيانات المستخدم.` });
-    if (currentUser?.id === userId && (updates.username || updates.role)) {
-      setCurrentUser(prev => prev ? {...prev, ...updates, password: updates.password || prev.password} : null);
+    
+    if (currentUser?.id === userId) {
+       const updatedUserDetailsFromStorage = (users || []).find(u => u.id === userId);
+        if(updatedUserDetailsFromStorage){
+            setCurrentUser(updatedUserDetailsFromStorage);
+        }
     }
     return true;
   };
@@ -150,19 +171,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const replaceAllUsers = (newUsers: User[]): void => {
     setUsers(newUsers);
-    // Check if current user still exists and is valid, otherwise log out
     const currentIsValid = newUsers.some(u => u.id === currentUser?.id && u.username === currentUser?.username);
     if (!currentIsValid && currentUser) {
-        // If current user is not in the new list or details changed, log them out or re-verify
-        // For simplicity, logging out or clearing current user
-        // A more sophisticated approach might try to find the user by ID and update currentUser state
         setCurrentUser(null); 
-        // Optionally, inform the user they might need to log in again if their account was affected.
-        // toast({ title: "ملاحظة", description: "تم تحديث قائمة المستخدمين. قد تحتاج إلى تسجيل الدخول مرة أخرى." });
     } else if (currentUser) {
-        // Update current user details if they changed
         const updatedCurrentUser = newUsers.find(u => u.id === currentUser.id);
-        if (updatedCurrentUser && (updatedCurrentUser.username !== currentUser.username || updatedCurrentUser.role !== currentUser.role)) {
+        if (updatedCurrentUser && (
+            updatedCurrentUser.username !== currentUser.username || 
+            updatedCurrentUser.role !== currentUser.role ||
+            updatedCurrentUser.avatarUrl !== currentUser.avatarUrl
+            )) {
             setCurrentUser(updatedCurrentUser);
         }
     }

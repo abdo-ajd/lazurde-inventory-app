@@ -5,6 +5,7 @@ export interface User {
   username: string;
   password?: string; // Password will be stored hashed in a real app, plain text here for simplicity
   role: UserRole;
+  avatarUrl?: string; // Added for user avatar
 }
 
 export interface Product {
