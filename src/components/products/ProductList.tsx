@@ -14,7 +14,7 @@ import { PlusCircle, Search, Edit3, Trash2, ShoppingCart, Eye } from 'lucide-rea
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription as ShadcnDialogDescription, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
+// import { Label } from '@/components/ui/label'; // No longer needed for sell dialog
 import type { Product } from '@/lib/types';
 
 export default function ProductList() {
@@ -24,9 +24,10 @@ export default function ProductList() {
   const { toast } = useToast();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [sellDialogOpen, setSellDialogOpen] = useState(false);
-  const [selectedProductForSale, setSelectedProductForSale] = useState<Product | null>(null);
-  const [saleQuantity, setSaleQuantity] = useState(1);
+  // States for sell dialog are removed for quick sell
+  // const [sellDialogOpen, setSellDialogOpen] = useState(false);
+  // const [selectedProductForSale, setSelectedProductForSale] = useState<Product | null>(null);
+  // const [saleQuantity, setSaleQuantity] = useState(1);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -40,28 +41,21 @@ export default function ProductList() {
     );
   }, [products, searchTerm]);
 
-  const handleSellProduct = (product: Product) => {
-    setSelectedProductForSale(product);
-    setSaleQuantity(1); // Reset quantity
-    setSellDialogOpen(true);
-  };
-
-  const confirmSale = async () => {
-    if (!selectedProductForSale || !currentUser) return;
-    if (saleQuantity <= 0) {
-      toast({ title: "خطأ", description: "الكمية يجب أن تكون أكبر من صفر.", variant: "destructive" });
+  const handleQuickSell = async (product: Product) => {
+    if (!currentUser) {
+      toast({ title: "خطأ", description: "يجب تسجيل الدخول أولاً لإتمام عملية البيع.", variant: "destructive" });
       return;
     }
-    if (saleQuantity > selectedProductForSale.quantity) {
-      toast({ title: "خطأ", description: `الكمية المطلوبة (${saleQuantity}) أكبر من المتوفر (${selectedProductForSale.quantity}).`, variant: "destructive" });
+    if (product.quantity === 0) {
+      toast({ title: "نفذت الكمية", description: `عفواً، لا توجد كمية متوفرة من المنتج "${product.name}".`, variant: "destructive" });
       return;
     }
 
-    const saleResult = await addSale([{ productId: selectedProductForSale.id, quantity: saleQuantity }]);
+    const saleResult = await addSale([{ productId: product.id, quantity: 1 }]);
     if (saleResult) {
-      toast({ title: "تم البيع", description: `تم بيع ${saleQuantity} من ${selectedProductForSale.name}.` });
-      setSellDialogOpen(false);
-    }
+      toast({ title: "تم البيع بنجاح", description: `تم بيع قطعة واحدة من المنتج "${product.name}".` });
+    } 
+    // addSale internally handles toasts for its own failures e.g. product not found or insufficient quantity after double check
   };
   
   const handleDeleteProduct = async (productId: string) => {
@@ -83,11 +77,11 @@ export default function ProductList() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="rounded-lg border bg-card text-card-foreground shadow-sm">
-                <div className="p-0 relative aspect-[3/2] w-full bg-muted animate-pulse rounded-t-lg"></div>
+                <div className="p-0 relative aspect-[4/3] w-full bg-muted animate-pulse rounded-t-lg"></div> {/* Adjusted aspect ratio */}
                 <div className="p-4">
-                  <div className="h-6 w-3/4 bg-muted animate-pulse rounded-md mb-2"></div>
-                  <div className="h-4 w-1/2 bg-muted animate-pulse rounded-md mb-2"></div>
-                  <div className="h-6 w-1/4 bg-muted animate-pulse rounded-md"></div>
+                  <div className="h-5 w-3/4 bg-muted animate-pulse rounded-md mb-2"></div> {/* Adjusted height for smaller text */}
+                  <div className="h-3 w-1/2 bg-muted animate-pulse rounded-md mb-2"></div> {/* Adjusted height for smaller text */}
+                  <div className="h-5 w-1/4 bg-muted animate-pulse rounded-md"></div>
                 </div>
                 <div className="flex justify-around items-center p-2 border-t">
                   <div className="h-8 w-8 bg-muted animate-pulse rounded-full"></div>
@@ -137,9 +131,9 @@ export default function ProductList() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {filteredProducts.map((product) => (
             <Card key={product.id} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <CardHeader className="p-0 relative aspect-[3/2] w-full">
+              <CardHeader className="p-0 relative aspect-[4/3] w-full"> {/* Image aspect ratio */}
                 <Image
-                  src={product.imageUrl || 'https://placehold.co/300x200.png'}
+                  src={product.imageUrl || 'https://placehold.co/400x300.png'} // Default placeholder
                   alt={product.name}
                   layout="fill"
                   objectFit="cover"
@@ -148,11 +142,11 @@ export default function ProductList() {
                 />
               </CardHeader>
               <CardContent className="pt-4 flex-grow">
-                <h3 className="font-semibold text-lg truncate" title={product.name}>{product.name}</h3>
-                <p className="text-sm text-muted-foreground mt-1">السعر: {product.price.toFixed(2)} ر.س</p>
+                <h3 className="font-semibold text-base truncate" title={product.name}>{product.name}</h3> {/* Text size reduced */}
+                <p className="text-xs text-muted-foreground mt-1">السعر: {product.price.toFixed(2)} ر.س</p> {/* Text size reduced */}
                 <Badge 
                   variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}
-                  className="mt-2 text-xs px-2 py-1"
+                  className="mt-2 text-xs px-2 py-1" // Badge styling kept as is
                 >
                   الكمية: {product.quantity}
                 </Badge>
@@ -174,8 +168,8 @@ export default function ProductList() {
                   <Button 
                     variant="outline" 
                     size="icon" 
-                    onClick={() => handleSellProduct(product)} 
-                    title="بيع المنتج" 
+                    onClick={() => handleQuickSell(product)} // Changed to quick sell
+                    title="بيع قطعة واحدة" 
                     disabled={product.quantity === 0}
                     className="hover:bg-primary/10"
                   >
@@ -218,39 +212,7 @@ export default function ProductList() {
         </Card>
       )}
 
-      {selectedProductForSale && (
-        <Dialog open={sellDialogOpen} onOpenChange={setSellDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>بيع المنتج: {selectedProductForSale.name}</DialogTitle>
-              <ShadcnDialogDescription>
-                الكمية المتوفرة: {selectedProductForSale.quantity} | السعر: {selectedProductForSale.price.toFixed(2)} للوحدة
-              </ShadcnDialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="flex items-center space-x-2 space-x-reverse">
-                <Label htmlFor="saleQuantity" className="whitespace-nowrap">الكمية المباعة:</Label>
-                <Input
-                  id="saleQuantity"
-                  type="number"
-                  value={saleQuantity}
-                  onChange={(e) => setSaleQuantity(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                  min="1"
-                  max={selectedProductForSale.quantity}
-                  className="w-full"
-                />
-              </div>
-              <p className="text-lg font-semibold">الإجمالي: {(saleQuantity * selectedProductForSale.price).toFixed(2)} ر.س</p>
-            </div>
-            <DialogFooter className="gap-2 sm:justify-start">
-               <DialogClose asChild>
-                <Button type="button" variant="outline">إلغاء</Button>
-               </DialogClose>
-              <Button onClick={confirmSale} disabled={saleQuantity <= 0 || saleQuantity > selectedProductForSale.quantity}>تأكيد البيع</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+      {/* Sell Dialog is removed for quick sell feature */}
     </div>
   );
 }
