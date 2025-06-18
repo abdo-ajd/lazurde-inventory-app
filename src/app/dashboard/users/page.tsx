@@ -128,7 +128,7 @@ export default function ManageUsersPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[60px]">الرمز</TableHead> {/* Changed from الصورة to الرمز */}
+                    <TableHead className="w-[60px]">الرمز</TableHead>
                     <TableHead>اسم المستخدم</TableHead>
                     <TableHead>الدور</TableHead>
                     <TableHead className="text-center">الإجراءات</TableHead>
@@ -146,23 +146,11 @@ export default function ManageUsersPage() {
 
                     const canDelete = !isDefaultAdmin && !isSoleAdmin && !isCurrentUser;
                     
-                    // Removed userAvatarSrcList logic
-
                     return (
                       <TableRow key={user.id}>
-                        <TableCell>
-                          <Avatar className="h-9 w-9">
-                            {/* <AvatarImage src={userAvatarSrcList} alt={user.username} data-ai-hint="user avatar" /> Removed AvatarImage */}
-                            <AvatarFallback>{getInitials(user.username)}</AvatarFallback>
-                          </Avatar>
-                        </TableCell>
+                        <TableCell><Avatar className="h-9 w-9"><AvatarFallback>{getInitials(user.username)}</AvatarFallback></Avatar></TableCell>
                         <TableCell className="font-medium">{user.username}</TableCell>
-                        <TableCell>
-                          <span className="flex items-center">
-                            <RoleIcon className="ml-2 h-4 w-4 text-muted-foreground" />
-                            {roleTranslations[user.role]}
-                          </span>
-                        </TableCell>
+                        <TableCell><span className="flex items-center"><RoleIcon className="ml-2 h-4 w-4 text-muted-foreground" />{roleTranslations[user.role]}</span></TableCell>
                         <TableCell className="text-center space-x-1 space-x-reverse">
                           <Button variant="ghost" size="icon" asChild title="تعديل المستخدم" disabled={isDefaultAdmin && currentUser?.id !== DEFAULT_ADMIN_USER.id}>
                             <Link href={`/dashboard/users/${user.id}/edit`}>
