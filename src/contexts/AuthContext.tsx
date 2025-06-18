@@ -28,14 +28,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const initialUsersCreator = useCallback(() => {
     if (typeof window === 'undefined') {
+      // For SSR or if window is not available, return an empty array or a specific server-side default.
+      // Since DEFAULT_ADMIN_USER is client-side logic for localStorage seeding,
+      // returning [] here is safer for initial server render pass.
       return []; 
     }
+    // On client, this will provide the default admin if users array needs seeding.
     return [DEFAULT_ADMIN_USER];
   }, []);
 
   const [users, setUsers] = useLocalStorage<User[]>(
     LOCALSTORAGE_KEYS.USERS,
-    initialUsersCreator
+    initialUsersCreator // Pass the memoized function
   );
 
   const [isLoading, setIsLoading] = useState(true);
@@ -43,28 +47,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // This effect runs on the client.
-    // Its main purpose is to finalize the `isLoading` state and ensure default admin exists if necessary.
     if (typeof window !== 'undefined') {
-      if (users && users.length === 0) {
-        // This case handles if localStorage somehow got an empty array "[]" stored,
-        // or if initial hydration resulted in an empty users array.
-        // We ensure the default admin is present.
-        setUsers([DEFAULT_ADMIN_USER]);
-        // setIsLoading(false) will be called in the next run of this effect after users update.
-      } else {
-        // If users array is populated (or was just populated by setUsers above),
-        // then we can consider auth initialization complete.
-        setIsLoading(false);
-      }
+        // `users` comes from useLocalStorage. It might be the direct initialValue (e.g. result of initialUsersCreator for client)
+        // or the value from localStorage if present.
+        
+        const expectedInitialUsersOnClient = [DEFAULT_ADMIN_USER]; // Define what we expect if seeding is needed on client
+
+        if (users === undefined) {
+            // This case might occur if useLocalStorage's useState returns undefined initially, though unlikely with current setup.
+            // Or if the initialValueProp itself leads to undefined. Better to keep isLoading true.
+            setIsLoading(true); 
+            return;
+        }
+
+        // Check if the users array from localStorage (or initial value) is empty
+        // AND we intended to seed it (i.e., expectedInitialUsersOnClient is not empty).
+        if (users.length === 0 && expectedInitialUsersOnClient.length > 0) {
+            // This means localStorage was empty or didn't have users, and we need to seed the default admin.
+            setUsers(expectedInitialUsersOnClient);
+            // setIsLoading(false) will be handled in the next run of this effect after `users` state updates.
+        } else {
+            // `users` are loaded (either from localStorage, just seeded, or correctly an empty array if that's the initial intent)
+            setIsLoading(false);
+        }
     }
-    // Do not set isLoading to false on SSR, as client-side checks are needed.
-  }, [users, setUsers]);
+    // No explicit else for server-side, isLoading remains true until client-side effects run.
+  }, [users, initialUsersCreator, setUsers, setIsLoading]);
 
 
   const login = async (username: string, password?: string): Promise<boolean> => {
     setIsLoading(true);
-    const user = users.find(u => u.username === username && u.password === password);
+    // Ensure users array is available before trying to find
+    const allUsers = users || [];
+    const user = allUsers.find(u => u.username === username && u.password === password);
+    
     if (user) {
       setCurrentUser(user);
       setIsLoading(false);
@@ -86,62 +102,71 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const addUser = async (userData: Omit<User, 'id'>): Promise<boolean> => {
-    if (users.find(u => u.username === userData.username)) {
+    const currentUsers = users || [];
+    if (currentUsers.find(u => u.username === userData.username)) {
       toast({ title: "خطأ", description: "اسم المستخدم موجود بالفعل.", variant: "destructive" });
       return false;
     }
     const newUser: User = { ...userData, id: `user_${Date.now()}` };
-    setUsers(prevUsers => [...prevUsers, newUser]);
+    setUsers(prevUsers => [...(prevUsers || []), newUser]);
     toast({ title: "نجاح", description: `تم إضافة المستخدم ${newUser.username} بنجاح.` });
     return true;
   };
 
   const updateUser = async (userId: string, updates: Partial<Omit<User, 'id'>>): Promise<boolean> => {
-    const userIndex = users.findIndex(u => u.id === userId);
+    const currentUsers = users || [];
+    const userIndex = currentUsers.findIndex(u => u.id === userId);
     if (userIndex === -1) {
       toast({ title: "خطأ", description: "المستخدم غير موجود.", variant: "destructive" });
       return false;
     }
 
-    const currentAdmins = users.filter(u => u.role === 'admin');
-    if (users[userIndex].role === 'admin' && currentAdmins.length === 1 && updates.role && updates.role !== 'admin') {
+    const actualUsers = users || []; // Ensure users is not null/undefined
+    const currentAdmins = actualUsers.filter(u => u.role === 'admin');
+    if (actualUsers[userIndex].role === 'admin' && currentAdmins.length === 1 && updates.role && updates.role !== 'admin') {
         toast({ title: "خطأ", description: "لا يمكن تغيير دور المدير الوحيد.", variant: "destructive" });
         return false;
     }
     
-    if (updates.username && users.some(u => u.username === updates.username && u.id !== userId)) {
+    if (updates.username && actualUsers.some(u => u.username === updates.username && u.id !== userId)) {
       toast({ title: "خطأ", description: "اسم المستخدم الجديد موجود بالفعل.", variant: "destructive" });
       return false;
     }
 
-    setUsers(prevUsers => prevUsers.map(u => u.id === userId ? { ...u, ...updates, password: updates.password || u.password } : u));
+    setUsers(prevUsers => (prevUsers || []).map(u => u.id === userId ? { ...u, ...updates, password: updates.password || u.password } : u));
     toast({ title: "نجاح", description: `تم تحديث بيانات المستخدم.` });
+    if (currentUser?.id === userId && updates.username) {
+      setCurrentUser(prev => prev ? {...prev, ...updates, password: updates.password || prev.password} : null);
+    }
     return true;
   };
 
   const deleteUser = async (userId: string): Promise<boolean> => {
-    const userToDelete = users.find(u => u.id === userId);
+    const currentUsers = users || [];
+    const userToDelete = currentUsers.find(u => u.id === userId);
     if (!userToDelete) {
       toast({ title: "خطأ", description: "المستخدم غير موجود.", variant: "destructive" });
       return false;
     }
-    if (userToDelete.id === DEFAULT_ADMIN_USER.id) {
+    if (userToDelete.id === DEFAULT_ADMIN_USER.id && userToDelete.username === DEFAULT_ADMIN_USER.username) { // More robust check
         toast({ title: "خطأ", description: "لا يمكن حذف المدير الافتراضي.", variant: "destructive" });
         return false;
     }
-    const currentAdmins = users.filter(u => u.role === 'admin');
+    
+    const actualUsers = users || []; // Ensure users is not null/undefined
+    const currentAdmins = actualUsers.filter(u => u.role === 'admin');
     if (userToDelete.role === 'admin' && currentAdmins.length === 1) {
         toast({ title: "خطأ", description: "لا يمكن حذف المدير الوحيد.", variant: "destructive" });
         return false;
     }
 
-    setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
+    setUsers(prevUsers => (prevUsers || []).filter(u => u.id !== userId));
     toast({ title: "نجاح", description: `تم حذف المستخدم ${userToDelete.username}.` });
     return true;
   };
   
   const getUserById = (userId: string): User | undefined => {
-    return users.find(u => u.id === userId);
+    return (users || []).find(u => u.id === userId);
   };
 
   const hasRole = (rolesToCheck: UserRole[]): boolean => {
@@ -150,7 +175,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, login, logout, isLoading, users, addUser, updateUser, deleteUser, getUserById, hasRole }}>
+    <AuthContext.Provider value={{ currentUser, login, logout, isLoading, users: users || [], addUser, updateUser, deleteUser, getUserById, hasRole }}>
       {children}
     </AuthContext.Provider>
   );
