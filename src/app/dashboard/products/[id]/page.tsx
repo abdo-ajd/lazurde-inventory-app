@@ -47,11 +47,11 @@ export default function ProductDetailsPage() {
         JsBarcode(barcodeRef.current, product.barcodeValue, {
           format: "CODE128",
           displayValue: true,
-          fontSize: 10, // Adjusted
-          textMargin: 0, // Adjusted
-          margin: 2, // Adjusted
-          height: 20, // Adjusted from 30
-          width: 2, // Adjusted
+          fontSize: 10, 
+          textMargin: 0, 
+          margin: 2, 
+          height: 20, 
+          width: 2, 
         });
       } catch (e) {
         console.error("Barcode generation failed:", e);
@@ -90,14 +90,14 @@ export default function ProductDetailsPage() {
 
     const svgString = new XMLSerializer().serializeToString(barcodeRef.current);
 
-    const printWindow = window.open('', '_blank', 'height=150,width=250'); // Adjusted size
+    const printWindow = window.open('', '_blank', 'height=150,width=250'); 
     if (printWindow) {
         printWindow.document.write('<html><head><title>طباعة باركود المنتج</title>');
         
         const styleContent = 
             '<style>' +
             'body { ' +
-            '    margin: 1mm; ' + // Adjusted margin
+            '    margin: 1mm; ' + 
             '    font-family: "Arial", sans-serif; ' +
             '    text-align: center; ' +
             '    display: flex; ' +
@@ -109,16 +109,16 @@ export default function ProductDetailsPage() {
             '}' +
             '.barcode-area { ' +
             '    display: inline-block; ' +
-            '    padding: 0.25mm; ' + // Adjusted padding
-            '    border: 0.25px dashed #ccc; ' + // Thinner border
+            '    padding: 0.25mm; ' + 
+            '    border: 0.25px dashed #ccc; ' + 
             '    width: 98%;' + 
-            '    max-width: 40mm;' + // Adjusted max width
+            '    max-width: 40mm;' + 
             '}' +
-            '.product-name-print { font-size: 6pt; margin-bottom: 0.1mm; font-weight: bold; word-break: break-word; }' + // Adjusted font size
+            '.product-name-print { font-size: 6pt; margin-bottom: 0.1mm; font-weight: bold; word-break: break-word; }' + 
             'svg { ' +
             '    width: 100% !important; ' +
             '    height: auto !important; ' +
-            '    max-height: 10mm;' + // Adjusted max height for SVG
+            '    max-height: 10mm;' + 
             '}' +
             '@media print {' +
             '    body { margin: 0; padding: 0; width: 100%; height: 100%; }' +
@@ -256,13 +256,13 @@ export default function ProductDetailsPage() {
                 <div className="px-2 pb-0.5 flex flex-col items-center"> 
                   {product.barcodeValue ? (
                     <>
-                      <svg ref={barcodeRef} className="w-full max-w-[100px] h-auto mb-0"></svg> {/* Adjusted size */}
-                      <div className="flex gap-0.5 mt-0">  {/* Reduced gap */}
-                        <Button variant="outline" size="icon-xs" onClick={handlePrintBarcode} className="h-5 w-5"> {/* Smaller button */}
+                      <svg ref={barcodeRef} className="w-full max-w-[100px] h-auto mb-0"></svg> 
+                      <div className="flex gap-0.5 mt-0">  
+                        <Button variant="outline" size="icon-xs" onClick={handlePrintBarcode} className="h-5 w-5"> 
                             <Printer className="h-2.5 w-2.5" />
                         </Button>
                         {hasRole(['admin']) && (
-                          <Button variant="outline" size="icon-xs" asChild className="h-5 w-5"> {/* Smaller button */}
+                          <Button variant="outline" size="icon-xs" asChild className="h-5 w-5"> 
                             <Link href={`/dashboard/products/${product.id}/edit`}>
                               <Edit3 className="h-2.5 w-2.5" />
                             </Link>
@@ -274,9 +274,11 @@ export default function ProductDetailsPage() {
                     <div className="text-center py-1"> 
                       <p className="text-[9px] text-muted-foreground mb-0.5">لم يتم تعيين باركود.</p> 
                       {hasRole(['admin']) && (
-                        <Button variant="outline" size="xs" asChild className="h-5 px-1.5 text-[9px]"> {/* Smaller button */}
+                        <Button variant="outline" size="xs" asChild className="h-5 px-1.5 text-[9px]"> 
                           <Link href={`/dashboard/products/${product.id}/edit`}>
-                            <Edit3 className="ml-0.5 h-2 w-2" /> إضافة/تعديل
+                            <span className="flex items-center">
+                                <Edit3 className="ml-0.5 h-2 w-2" /> إضافة/تعديل
+                            </span>
                           </Link>
                         </Button>
                       )}
@@ -284,7 +286,7 @@ export default function ProductDetailsPage() {
                   )}
                 </div>
                 
-                <CardContent className="grid gap-1 sm:grid-cols-2 pt-1 px-2 pb-1.5"> {/* Reduced padding and gap */}
+                <CardContent className="grid gap-1 sm:grid-cols-2 pt-1 px-2 pb-1.5"> 
                 <div className="flex items-start space-x-1 space-x-reverse"> 
                     <DollarSign className="h-3 w-3 mt-px text-primary shrink-0" /> 
                     <div>
@@ -324,30 +326,32 @@ export default function ProductDetailsPage() {
                 </div>
                 </CardContent>
                 {hasRole(['admin']) && (
-                <CardFooter className="flex justify-start gap-0.5 p-1.5 pt-0"> {/* Reduced padding and gap */}
-                    <Button size="xs" asChild className="h-6 px-1.5 text-[10px]"> {/* Smaller button */}
+                <CardFooter className="flex justify-start gap-0.5 p-1.5 pt-0"> 
+                    <Button size="xs" asChild className="h-6 px-1.5 text-[10px]"> 
                       <Link href={`/dashboard/products/${product.id}/edit`}>
-                          <Edit3 className="ml-0.5 h-2 w-2" /> تعديل
+                          <span className="flex items-center">
+                            <Edit3 className="ml-0.5 h-2 w-2" /> تعديل
+                          </span>
                       </Link>
                     </Button>
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button variant="destructive" size="xs" className="h-6 px-1.5 text-[10px]" disabled={isDeleting}> {/* Smaller button */}
+                        <Button variant="destructive" size="xs" className="h-6 px-1.5 text-[10px]" disabled={isDeleting}> 
                           <Trash2 className="ml-0.5 h-2 w-2" /> {isDeleting ? '...' : 'حذف'}
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="sm:max-w-[360px]"> {/* Slightly smaller dialog */}
+                      <DialogContent className="sm:max-w-[360px]"> 
                         <DialogHeader>
-                          <DialogTitle className="text-sm">تأكيد الحذف</DialogTitle> {/* Smaller title */}
-                          <ShadcnDialogDescription className="text-[11px]"> {/* Smaller description */}
+                          <DialogTitle className="text-sm">تأكيد الحذف</DialogTitle> 
+                          <ShadcnDialogDescription className="text-[11px]"> 
                             هل أنت متأكد أنك تريد حذف المنتج "{product.name}"؟ لا يمكن التراجع عن هذا الإجراء.
                           </ShadcnDialogDescription>
                         </DialogHeader>
                         <DialogFooter className="gap-1 sm:justify-start"> 
                           <DialogClose asChild>
-                            <Button type="button" variant="secondary" size="xs" className="h-6 px-1.5 text-[10px]" disabled={isDeleting}>إلغاء</Button> {/* Smaller button */}
+                            <Button type="button" variant="secondary" size="xs" className="h-6 px-1.5 text-[10px]" disabled={isDeleting}>إلغاء</Button> 
                           </DialogClose>
-                          <Button type="button" variant="destructive" size="xs" className="h-6 px-1.5 text-[10px]" onClick={handleDeleteProduct} disabled={isDeleting}> {/* Smaller button */}
+                          <Button type="button" variant="destructive" size="xs" className="h-6 px-1.5 text-[10px]" onClick={handleDeleteProduct} disabled={isDeleting}> 
                             {isDeleting ? '...' : 'حذف'}
                           </Button>
                         </DialogFooter>
@@ -361,3 +365,4 @@ export default function ProductDetailsPage() {
     </div>
   );
 }
+
