@@ -8,8 +8,8 @@ import { useProducts } from '@/contexts/ProductContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSales } from '@/contexts/SalesContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
-import { Edit3, ShoppingCart, PackageSearch } from 'lucide-react';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { ShoppingCart, PackageSearch } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Product } from '@/lib/types';
 
@@ -37,15 +37,14 @@ export default function ProductList({ searchTerm }: ProductListProps) {
 
   const handleQuickSell = async (product: Product) => {
     if (!currentUser) {
-      // Toast for login requirement is handled by addSale or relevant contexts if needed
       return;
     }
     if (product.quantity === 0) {
-      // Toast for out of stock is better handled by addSale if it checks quantity
       return;
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const saleResult = await addSale([{ productId: product.id, quantity: 1 }]);
+    // Toast after quick sell removed as per request
   };
   
   if (!isClient) {
@@ -54,14 +53,13 @@ export default function ProductList({ searchTerm }: ProductListProps) {
         {[...Array(5)].map((_, i) => (
           <div key={i} className="rounded-lg border bg-card text-card-foreground shadow-sm animate-pulse">
             <div className="p-0 relative aspect-[3/4] w-full bg-muted rounded-t-lg"></div>
-            <div className="p-3">
-              <div className="h-5 w-3/4 bg-muted rounded-md mb-2"></div>
-              <div className="h-3 w-1/2 bg-muted rounded-md mb-2"></div>
-              <div className="h-5 w-1/4 bg-muted rounded-md"></div>
-            </div>
-            <div className="flex justify-around items-center p-1.5 border-t bg-muted/50">
-              <div className="h-8 w-8 bg-muted rounded-full"></div>
-              <div className="h-8 w-8 bg-muted rounded-full"></div>
+            <div className="p-3 space-y-1">
+              <div className="h-5 w-3/4 bg-muted rounded-md mb-1"></div>
+              <div className="h-3 w-1/2 bg-muted rounded-md mb-1"></div>
+              <div className="flex justify-between items-center">
+                <div className="h-5 w-1/4 bg-muted rounded-md"></div>
+                <div className="h-7 w-7 bg-muted rounded-full"></div> {/* Placeholder for moved sell icon */}
+              </div>
             </div>
           </div>
         ))}
@@ -87,37 +85,31 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                   />
                 </CardHeader>
               </Link>
-              <CardContent className="pt-3 pb-2 px-3 flex-grow">
-                <h3 className="font-semibold text-sm truncate" title={product.name}>{product.name}</h3>
+              <CardContent className="pt-3 pb-2 px-3 flex-grow flex flex-col">
+                <h3 className="font-semibold text-sm truncate flex-grow" title={product.name}>{product.name}</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">السعر: {product.price.toFixed(2)} ر.س</p>
-                <Badge 
-                  variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}
-                  className="mt-1.5 text-xs px-2 py-0.5"
-                >
-                  الكمية: {product.quantity}
-                </Badge>
-              </CardContent>
-              <CardFooter className="flex justify-around items-center p-1.5 border-t bg-muted/50">
-                {hasRole(['admin']) && (
-                  <Button variant="ghost" size="icon" asChild title="تعديل المنتج">
-                    <Link href={`/dashboard/products/${product.id}/edit`}>
-                      <Edit3 className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                )}
-                {hasRole(['admin', 'employee', 'employee_return']) && (
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={() => handleQuickSell(product)}
-                    title="بيع قطعة واحدة" 
-                    disabled={product.quantity === 0}
-                    className="hover:bg-primary/10"
+                <div className="flex justify-between items-center mt-1.5">
+                  <Badge 
+                    variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}
+                    className="text-xs px-2 py-0.5"
                   >
-                    <ShoppingCart className="h-4 w-4" />
-                  </Button>
-                )}
-              </CardFooter>
+                    الكمية: {product.quantity}
+                  </Badge>
+                  {hasRole(['admin', 'employee', 'employee_return']) && (
+                    <Button 
+                      variant="ghost"
+                      size="icon" 
+                      onClick={() => handleQuickSell(product)}
+                      title="بيع قطعة واحدة" 
+                      disabled={product.quantity === 0}
+                      className="hover:bg-primary/10 h-7 w-7 text-primary hover:text-primary/80"
+                    >
+                      <ShoppingCart className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+              {/* CardFooter (toolbox) removed */}
             </Card>
           ))}
         </div>

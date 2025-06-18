@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
-import { LogOut, Settings, Users, BarChart3, Sun, Moon, LayoutDashboard, PlusCircle, Search as SearchIcon } from 'lucide-react';
+import { LogOut, Settings, Users, BarChart3, Sun, Moon, PlusCircle, Search as SearchIcon, ListOrdered, Package } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,7 +37,7 @@ export default function Header() {
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    // Sync header input with URL q param if it changes (e.g. back/forward navigation)
+    // Sync header input with URL q param if it changes (e.g. back/forward navigation or page-specific search update)
     setHeaderSearchValue(searchParams.get('q') || '');
   }, [searchParams]);
 
@@ -54,9 +54,8 @@ export default function Header() {
     const search = current.toString();
     const query = search ? `?${search}` : '';
     
-    // Only push to router if current page is one that uses the search functionality
-    // to avoid adding ?q= to pages that don't use it.
-    if (pathname === '/dashboard' || pathname.startsWith('/dashboard/products')) {
+    // Push to router if current page is one that uses the search functionality
+    if (pathname === '/dashboard' || pathname.startsWith('/dashboard/products')) { // Covers grid and list views
         router.push(`${pathname}${query}`, { scroll: false });
     }
   };
@@ -72,10 +71,10 @@ export default function Header() {
         <div className="container flex h-14 max-w-screen-2xl items-center justify-between px-4 md:px-6">
           <div className="h-6 w-24 animate-pulse rounded-md bg-muted"></div>
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 animate-pulse rounded-full bg-muted"></div> {/* Search skeleton */}
-            <div className="h-8 w-20 animate-pulse rounded-md bg-muted md:flex"></div> {/* Add product skeleton */}
-            <div className="h-8 w-8 animate-pulse rounded-full bg-muted"></div> {/* Theme toggle skeleton */}
-            <div className="h-8 w-8 animate-pulse rounded-full bg-muted md:flex"></div> {/* User avatar skeleton */}
+            <div className="h-8 w-8 animate-pulse rounded-full bg-muted"></div> 
+            <div className="h-8 w-20 animate-pulse rounded-md bg-muted md:flex"></div> 
+            <div className="h-8 w-8 animate-pulse rounded-full bg-muted"></div> 
+            <div className="h-8 w-8 animate-pulse rounded-full bg-muted md:flex"></div>
           </div>
         </div>
       </header>
@@ -83,13 +82,15 @@ export default function Header() {
   }
 
   const navIconsList = [
-    { href: '/dashboard', label: 'لوحة التحكم الرئيسية', icon: LayoutDashboard, roles: ['admin', 'employee', 'employee_return'] },
+    { href: '/dashboard', label: 'المنتجات (صور)', icon: Package, roles: ['admin', 'employee', 'employee_return'] },
+    { href: '/dashboard/products', label: 'إدارة المنتجات (قائمة)', icon: ListOrdered, roles: ['admin'] },
     { href: '/dashboard/sales/report', label: 'تقرير المبيعات', icon: BarChart3, roles: ['admin', 'employee', 'employee_return'] },
     { href: '/dashboard/users', label: 'إدارة المستخدمين', icon: Users, roles: ['admin'] },
     { href: '/dashboard/settings', label: 'إعدادات التطبيق', icon: Settings, roles: ['admin'] },
   ];
 
-  const showSearchAndAddControls = pathname === '/dashboard' || pathname.startsWith('/dashboard/products');
+  const showHeaderSearch = pathname === '/dashboard' || pathname.startsWith('/dashboard/products'); // Show search for grid and list/table
+  const showHeaderAddProduct = pathname === '/dashboard'; // Show header Add Product button only for grid view page
 
   return (
     <TooltipProvider delayDuration={100}>
@@ -107,9 +108,13 @@ export default function Header() {
                 hasRole(item.roles) && (
                 <Tooltip key={item.href}>
                     <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" asChild>
+                    <Button 
+                        variant={pathname === item.href || (item.href === '/dashboard/products' && pathname.startsWith('/dashboard/products/')) ? "secondary" : "ghost"} 
+                        size="icon" 
+                        asChild
+                    >
                         <Link href={item.href} aria-label={item.label}>
-                        <item.icon className="h-5 w-5" />
+                           <item.icon className="h-5 w-5" />
                         </Link>
                     </Button>
                     </TooltipTrigger>
@@ -124,27 +129,25 @@ export default function Header() {
 
 
         <div className="flex items-center gap-2 sm:gap-3">
-          {showSearchAndAddControls && (
-            <>
-              <div className="relative hidden md:flex items-center">
-                <SearchIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="ابحث عن منتج..."
-                  value={headerSearchValue}
-                  onChange={handleSearchChange}
-                  className="h-9 w-full md:w-40 lg:w-56 pr-10 text-sm"
-                  aria-label="البحث عن منتج"
-                />
-              </div>
-              {hasRole(['admin']) && (
-                <Button asChild size="sm" className="hidden md:inline-flex">
-                  <Link href="/dashboard/products/add">
-                    <PlusCircle className="ml-1 h-4 w-4" /> إضافة
-                  </Link>
-                </Button>
-              )}
-            </>
+          {showHeaderSearch && (
+            <div className="relative hidden md:flex items-center">
+              <SearchIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder={"ابحث عن منتج..."}
+                value={headerSearchValue}
+                onChange={handleSearchChange}
+                className="h-9 w-full md:w-40 lg:w-56 pr-10 text-sm"
+                aria-label={"البحث عن منتج"}
+              />
+            </div>
+          )}
+          {showHeaderAddProduct && hasRole(['admin']) && (
+            <Button asChild size="sm" className="hidden md:inline-flex">
+              <Link href="/dashboard/products/add">
+                <PlusCircle className="ml-1 h-4 w-4" /> إضافة
+              </Link>
+            </Button>
           )}
 
           <Tooltip>
