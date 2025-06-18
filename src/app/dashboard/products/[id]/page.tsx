@@ -44,14 +44,19 @@ export default function ProductDetailsPage() {
   useEffect(() => {
     if (product && product.barcodeValue && barcodeRef.current) {
       try {
-        JsBarcode(barcodeRef.current, product.barcodeValue, {
+        let barcodeDisplayValue = product.barcodeValue;
+        if (product.id.startsWith('prod_') && product.barcodeValue === product.id.substring(5)) {
+             barcodeDisplayValue = product.id.substring(5);
+        }
+
+        JsBarcode(barcodeRef.current, barcodeDisplayValue, {
           format: "CODE128",
           displayValue: true,
-          fontSize: 10, 
-          textMargin: 0, 
-          margin: 2,     
-          height: 30,    
-          width: 2,      
+          fontSize: 12, 
+          textMargin: 2, 
+          margin: 5,     
+          height: 40,    
+          width: 1.8,      
         });
       } catch (e) {
         console.error("Barcode generation failed:", e);
@@ -88,15 +93,15 @@ export default function ProductDetailsPage() {
   const handlePrintBarcode = () => {
     if (!barcodeRef.current || !product || !product.barcodeValue) return;
     const svgString = new XMLSerializer().serializeToString(barcodeRef.current);
-    const printWindow = window.open('', '_blank', 'height=150,width=250');
+    const printWindow = window.open('', '_blank', 'height=200,width=300'); 
     if (printWindow) {
         printWindow.document.write('<html><head><title>طباعة باركود المنتج</title>');
         const styleContent =
             '<style>' +
-            'body { margin: 1mm; font-family: "Arial", sans-serif; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: calc(100vh - 2mm); overflow: hidden;}' +
-            '.barcode-area { display: inline-block; padding: 0.25mm; border: 0.25px dashed #ccc; width: 98%; max-width: 40mm;}' +
-            '.product-name-print { font-size: 6pt; margin-bottom: 0.1mm; font-weight: bold; word-break: break-word; }' + 
-            'svg { width: 100% !important; height: auto !important; max-height: 10mm; }' + 
+            'body { margin: 2mm; font-family: "Arial", sans-serif; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: calc(100vh - 4mm); overflow: hidden;}' +
+            '.barcode-area { display: inline-block; padding: 0.5mm; border: 0.25px dashed #ccc; width: 98%; max-width: 50mm;}' + 
+            '.product-name-print { font-size: 8pt; margin-bottom: 0.2mm; font-weight: bold; word-break: break-word; }' + 
+            'svg { width: 100% !important; height: auto !important; max-height: 25mm; }' + 
             '@media print { body { margin: 0; padding: 0; width: 100%; height: 100%; } .barcode-area { border: none; padding:0; margin: 0 auto; page-break-after: always; width: 100%; }}' +
             '</style>';
         printWindow.document.write(styleContent);
@@ -125,42 +130,52 @@ export default function ProductDetailsPage() {
 
   if (isFetching) {
     return (
-      <div className="space-y-1.5">
-        <Skeleton className="h-5 w-1/3" />
-        <Skeleton className="h-40 w-full md:w-1/3 mx-auto mb-1.5 rounded-sm" />
-        <Card className="shadow-sm">
-          <CardHeader className="p-1.5">
-            <Skeleton className="h-3.5 w-2/5" />
-            <Skeleton className="h-1.5 w-1/4 mt-0.5" />
-          </CardHeader>
-          <CardContent className="space-y-1 p-1.5">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex items-center space-x-reverse space-x-0.5">
-                <Skeleton className="h-2.5 w-2.5 rounded-full" />
-                <Skeleton className="h-2.5 w-1/5" />
-                <Skeleton className="h-2.5 w-2/5" />
-              </div>
-            ))}
-          </CardContent>
-          <CardFooter className="flex justify-between p-1.5">
-            <Skeleton className="h-5 w-10" />
-            <Skeleton className="h-5 w-10" />
-          </CardFooter>
-        </Card>
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-1/2" /> {/* Slightly larger title skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-1">
+            <Skeleton className="h-64 w-full rounded-lg" /> {/* Image skeleton */}
+            <Skeleton className="h-4 w-3/4 mt-2 mx-auto rounded-md" />
+          </div>
+          <div className="md:col-span-2">
+            <Card className="shadow-sm h-full">
+              <CardHeader className="p-4">
+                <Skeleton className="h-6 w-3/5 rounded-md" /> {/* Info card title skeleton */}
+              </CardHeader>
+              <CardContent className="space-y-3 p-4">
+                {[...Array(3)].map((_, i) => ( // Barcode + 2 info rows
+                  <Skeleton key={i} className="h-10 w-full rounded-md" />
+                ))}
+                 <div className="grid grid-cols-2 gap-3 mt-2">
+                    {[...Array(4)].map((_, i) => (
+                    <div key={i} className="space-y-1">
+                        <Skeleton className="h-4 w-1/3 rounded-md" />
+                        <Skeleton className="h-5 w-2/3 rounded-md" />
+                    </div>
+                    ))}
+                </div>
+              </CardContent>
+              <CardFooter className="p-4">
+                <Skeleton className="h-9 w-24 rounded-md mr-2" />
+                <Skeleton className="h-9 w-24 rounded-md" />
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!product) {
     return (
-      <div className="text-center py-3">
-        <Package size={28} className="mx-auto text-muted-foreground mb-0.5" />
-        <h1 className="text-sm font-bold">المنتج غير موجود</h1>
-        <p className="text-[10px] text-muted-foreground mb-1.5">عذرًا، لم نتمكن من العثور على المنتج الذي طلبته.</p>
-        <Button size="xs" className="h-6 px-1.5 text-[10px]" asChild>
+      <div className="text-center py-10">
+        <Package size={48} className="mx-auto text-muted-foreground mb-4" /> {/* Larger icon */}
+        <h1 className="text-2xl font-bold mb-2">المنتج غير موجود</h1> {/* Larger title */}
+        <p className="text-sm text-muted-foreground mb-6">عذرًا، لم نتمكن من العثور على المنتج الذي طلبته.</p> {/* Larger text */}
+        <Button size="default" asChild> {/* Default button size */}
           <Link href="/dashboard/products">
             <span className="flex items-center">
-                <ArrowRight className="ml-0.5 h-2 w-2" />
+                 <ArrowRight className="ml-2 h-4 w-4" />
                 العودة إلى قائمة المنتجات
             </span>
           </Link>
@@ -183,27 +198,27 @@ export default function ProductDetailsPage() {
   };
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-4">
         <div className="flex justify-between items-center">
             <div>
-                <h1 className="text-sm font-bold tracking-tight font-headline flex items-center">
-                    <Package className="mr-1 text-primary" size={14} /> {product.name}
+                <h1 className="text-xl font-bold tracking-tight font-headline flex items-center"> 
+                    <Package className="mr-2 text-primary" size={20} /> {product.name} 
                 </h1>
-                <p className="text-[8px] text-muted-foreground font-body mt-0">
+                <p className="text-xs text-muted-foreground font-body mt-0.5"> 
                 تفاصيل المنتج الكاملة.
                 </p>
             </div>
-             <Button variant="outline" size="xs" asChild className="h-5 px-1 text-[9px]">
+             <Button variant="outline" size="sm" asChild className="h-8 px-2.5 text-xs"> 
                 <Link href="/dashboard/products">
                   <span className="flex items-center">
-                    <ArrowRight className="ml-0.5 h-2 w-2" />
+                    <ArrowRight className="ml-1 h-3.5 w-3.5" /> 
                     للقائمة
                   </span>
                 </Link>
             </Button>
         </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="md:col-span-1">
            <Card className="shadow-sm overflow-hidden">
              <CardHeader className="p-0 relative aspect-[3/4] w-full">
@@ -215,34 +230,34 @@ export default function ProductDetailsPage() {
                     data-ai-hint="abaya product detail"
                 />
              </CardHeader>
-             <CardContent className="p-1"> 
-                <h3 className="font-semibold text-xs text-center truncate" title={product.name}>{product.name}</h3> 
+             <CardContent className="p-2"> 
+                <h3 className="font-semibold text-sm text-center truncate" title={product.name}>{product.name}</h3> 
              </CardContent>
            </Card>
         </div>
 
         <div className="md:col-span-2">
             <Card className="shadow-sm h-full"> 
-                <CardHeader className="pb-0.5 pt-1.5 px-1.5"> 
-                <CardTitle className="flex items-center text-xs"> 
-                    <Tag className="mr-1 text-accent h-3 w-3" /> 
+                <CardHeader className="pb-2 pt-4 px-4">  
+                <CardTitle className="flex items-center text-lg"> 
+                    <Tag className="mr-2 text-accent h-5 w-5" /> 
                     معلومات المنتج
                 </CardTitle>
                 </CardHeader>
 
-                <div className="px-1.5 pb-0.5 flex flex-col items-center mb-0.5"> 
+                <div className="px-4 pb-2 flex flex-col items-center mb-2"> 
                   {product.barcodeValue ? (
                     <>
-                      <svg ref={barcodeRef} className="w-full max-w-[120px] h-auto mb-0.5"></svg> 
-                      <div className="flex gap-0.5 mt-0.5"> 
-                        <Button variant="outline" size="xs" onClick={handlePrintBarcode} className="h-5 px-1 text-[9px]"> 
-                            <Printer className="ml-1 h-2.5 w-2.5" /> طباعة
+                      <svg ref={barcodeRef} className="w-full max-w-[200px] h-auto mb-2"></svg>  
+                      <div className="flex gap-2 mt-1"> 
+                        <Button variant="outline" size="sm" onClick={handlePrintBarcode} className="h-8 px-2.5 text-xs"> 
+                            <Printer className="ml-1.5 h-4 w-4" /> طباعة 
                         </Button>
                         {hasRole(['admin']) && (
-                          <Button variant="outline" size="xs" asChild className="h-5 px-1 text-[9px]"> 
+                          <Button variant="outline" size="sm" asChild className="h-8 px-2.5 text-xs"> 
                             <Link href={`/dashboard/products/${product.id}/edit`}>
                               <span className="flex items-center">
-                                <Edit3 className="ml-1 h-2.5 w-2.5" /> تعديل
+                                <Edit3 className="ml-1.5 h-4 w-4" /> تعديل 
                                </span>
                             </Link>
                           </Button>
@@ -250,13 +265,13 @@ export default function ProductDetailsPage() {
                       </div>
                     </>
                   ) : (
-                    <div className="text-center py-1"> 
-                      <p className="text-[9px] text-muted-foreground mb-0.5">لم يتم تعيين باركود.</p> 
+                    <div className="text-center py-2"> 
+                      <p className="text-sm text-muted-foreground mb-1">لم يتم تعيين باركود.</p> 
                       {hasRole(['admin']) && (
-                        <Button variant="outline" size="xs" asChild className="h-5 px-1 text-[9px]"> 
+                        <Button variant="outline" size="sm" asChild className="h-8 px-2.5 text-xs"> 
                           <Link href={`/dashboard/products/${product.id}/edit`}>
                             <span className="flex items-center">
-                                <Edit3 className="ml-1 h-2.5 w-2.5" /> إضافة/تعديل
+                                <Edit3 className="ml-1.5 h-4 w-4" /> إضافة/تعديل 
                             </span>
                           </Link>
                         </Button>
@@ -265,72 +280,72 @@ export default function ProductDetailsPage() {
                   )}
                 </div>
 
-                <CardContent className="grid gap-0.5 sm:grid-cols-2 pt-0.5 px-1.5 pb-1"> 
-                <div className="flex items-start space-x-1 space-x-reverse">
-                    <DollarSign className="h-3 w-3 mt-0.5 text-primary shrink-0" /> 
+                <CardContent className="grid gap-3 sm:grid-cols-2 pt-2 px-4 pb-4"> 
+                <div className="flex items-start space-x-2 space-x-reverse"> 
+                    <DollarSign className="h-4 w-4 mt-1 text-primary shrink-0" /> 
                     <div>
-                    <p className="text-[9px] text-muted-foreground">السعر</p> 
-                    <p className="font-semibold text-xs">{product.price.toFixed(2)} LYD</p> 
+                    <p className="text-sm text-muted-foreground">السعر</p> 
+                    <p className="font-semibold text-base">{product.price.toFixed(2)} LYD</p> 
                     </div>
                 </div>
-                <div className="flex items-start space-x-1 space-x-reverse">
-                    <Layers className="h-3 w-3 mt-0.5 text-primary shrink-0" />
+                <div className="flex items-start space-x-2 space-x-reverse">
+                    <Layers className="h-4 w-4 mt-1 text-primary shrink-0" />
                     <div>
-                    <p className="text-[9px] text-muted-foreground">الكمية المتوفرة</p>
-                    <Badge variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"} className="text-[9px] px-1.5 py-0 font-normal"> 
+                    <p className="text-sm text-muted-foreground">الكمية المتوفرة</p>
+                    <Badge variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"} className="text-xs px-2 py-0.5 font-normal"> 
                         {product.quantity}
                     </Badge>
                     </div>
                 </div>
-                <div className="flex items-start space-x-1 space-x-reverse">
-                    <ShoppingBag className="h-3 w-3 mt-0.5 text-primary shrink-0" />
+                <div className="flex items-start space-x-2 space-x-reverse">
+                    <ShoppingBag className="h-4 w-4 mt-1 text-primary shrink-0" />
                     <div>
-                    <p className="text-[9px] text-muted-foreground">الكمية المباعة</p>
-                    <p className="font-semibold text-xs">{quantitySold}</p>
+                    <p className="text-sm text-muted-foreground">الكمية المباعة</p>
+                    <p className="font-semibold text-base">{quantitySold}</p>
                     </div>
                 </div>
-                <div className="flex items-start space-x-1 space-x-reverse">
-                    <CalendarDays className="h-3 w-3 mt-0.5 text-primary shrink-0" />
+                <div className="flex items-start space-x-2 space-x-reverse">
+                    <CalendarDays className="h-4 w-4 mt-1 text-primary shrink-0" />
                     <div>
-                    <p className="text-[9px] text-muted-foreground">تاريخ الإنشاء</p>
-                    <p className="font-semibold text-[10px]">{formatDateTime(product.createdAt)}</p> 
+                    <p className="text-sm text-muted-foreground">تاريخ الإنشاء</p>
+                    <p className="font-semibold text-sm">{formatDateTime(product.createdAt)}</p> 
                     </div>
                 </div>
-                <div className="flex items-start space-x-1 space-x-reverse">
-                    <History className="h-3 w-3 mt-0.5 text-primary shrink-0" />
+                <div className="flex items-start space-x-2 space-x-reverse">
+                    <History className="h-4 w-4 mt-1 text-primary shrink-0" />
                     <div>
-                    <p className="text-[9px] text-muted-foreground">آخر تحديث</p>
-                    <p className="font-semibold text-[10px]">{formatDateTime(product.updatedAt)}</p>
+                    <p className="text-sm text-muted-foreground">آخر تحديث</p>
+                    <p className="font-semibold text-sm">{formatDateTime(product.updatedAt)}</p>
                     </div>
                 </div>
                 </CardContent>
                 {hasRole(['admin']) && (
-                <CardFooter className="flex justify-start gap-1 p-1.5 pt-0.5"> 
-                    <Button size="sm" asChild className="h-6 px-1.5 text-[10px]"> 
+                <CardFooter className="flex justify-start gap-2 p-4 pt-2"> 
+                    <Button size="sm" asChild className="h-9 px-3"> 
                       <Link href={`/dashboard/products/${product.id}/edit`}>
                           <span className="flex items-center">
-                            <Edit3 className="ml-1 h-3 w-3" /> تعديل 
+                            <Edit3 className="ml-2 h-4 w-4" /> تعديل 
                           </span>
                       </Link>
                     </Button>
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button variant="destructive" size="sm" className="h-6 px-1.5 text-[10px]" disabled={isDeleting}> 
-                          <Trash2 className="ml-1 h-3 w-3" /> {isDeleting ? '...' : 'حذف'} 
+                        <Button variant="destructive" size="sm" className="h-9 px-3" disabled={isDeleting}> 
+                          <Trash2 className="ml-2 h-4 w-4" /> {isDeleting ? '...' : 'حذف'} 
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="sm:max-w-[350px]"> 
+                      <DialogContent className="sm:max-w-md"> 
                         <DialogHeader>
-                          <DialogTitle className="text-base">تأكيد الحذف</DialogTitle> 
+                          <DialogTitle className="text-lg">تأكيد الحذف</DialogTitle> 
                           <ShadcnDialogDescription className="text-sm"> 
                             هل أنت متأكد أنك تريد حذف المنتج "{product.name}"؟ لا يمكن التراجع عن هذا الإجراء.
                           </ShadcnDialogDescription>
                         </DialogHeader>
-                        <DialogFooter className="gap-1 sm:justify-start">
+                        <DialogFooter className="gap-2 sm:justify-start">
                           <DialogClose asChild>
-                            <Button type="button" variant="secondary" size="sm" className="h-7 px-2 text-xs" disabled={isDeleting}>إلغاء</Button> 
+                            <Button type="button" variant="secondary" size="sm" className="h-9 px-3" disabled={isDeleting}>إلغاء</Button> 
                           </DialogClose>
-                          <Button type="button" variant="destructive" size="sm" className="h-7 px-2 text-xs" onClick={handleDeleteProduct} disabled={isDeleting}> 
+                          <Button type="button" variant="destructive" size="sm" className="h-9 px-3" onClick={handleDeleteProduct} disabled={isDeleting}> 
                             {isDeleting ? '...' : 'حذف'}
                           </Button>
                         </DialogFooter>
@@ -344,4 +359,3 @@ export default function ProductDetailsPage() {
     </div>
   );
 }
-
