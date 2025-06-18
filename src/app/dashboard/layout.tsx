@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/layout/Header';
-import SidebarNav from '@/components/layout/SidebarNav';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 
@@ -35,13 +34,9 @@ export default function DashboardLayout({
             <Skeleton className="h-8 w-8 rounded-full" />
           </div>
         </header>
-        <div className="container flex-1 items-start md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10 px-0 md:px-4 py-6 md:py-8">
-          <aside className="fixed top-14 z-30 -ml-2 hidden h-[calc(100vh-3.5rem)] w-full shrink-0 md:sticky md:block overflow-y-auto border-r py-6 pr-6 lg:py-8">
-             <div className="space-y-4">
-                {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
-             </div>
-          </aside>
-          <main className="flex w-full flex-col overflow-hidden px-4 md:px-0">
+        <div className="container flex-1 px-4 md:px-6 py-6 md:py-8">
+          {/* Removed sidebar skeleton part */}
+          <main className="flex w-full flex-col overflow-hidden">
             <Skeleton className="h-96 w-full" />
           </main>
         </div>
@@ -49,16 +44,13 @@ export default function DashboardLayout({
     );
   }
   
-  // Use NextThemesProvider here if it's not in the root layout or if you want a specific theme context for dashboard
   return (
     <NextThemesProvider attribute="class" defaultTheme="system" enableSystem>
       <div className="flex flex-col min-h-screen bg-background">
         <Header />
-        <div className="container flex-1 items-start md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10 px-0 md:px-4 pt-6 pb-8 md:py-8">
-          <aside className="fixed top-14 z-30 -ml-2 hidden h-[calc(100vh-3.5rem)] w-full shrink-0 md:sticky md:block overflow-y-auto border-r py-6 pr-6 lg:py-8 print:hidden">
-            <SidebarNav />
-          </aside>
-          <main className="flex w-full flex-col overflow-hidden px-4 md:px-0">
+        <div className="container flex-1 px-4 md:px-6 pt-6 pb-8 md:py-8">
+          {/* Removed aside/sidebar structure */}
+          <main className="flex w-full flex-col overflow-hidden">
             {children}
           </main>
         </div>

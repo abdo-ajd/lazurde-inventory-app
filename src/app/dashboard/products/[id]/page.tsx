@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowRight, Edit3, Package, Tag, DollarSign, Layers, CalendarDays, History, Image as ImageIcon } from 'lucide-react';
+import { ArrowRight, Edit3, Package, Tag, DollarSign, Layers, CalendarDays, History } from 'lucide-react'; // Removed ImageIcon
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Product } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
@@ -36,7 +36,7 @@ export default function ProductDetailsPage() {
     return (
       <div className="space-y-6">
         <Skeleton className="h-10 w-3/4" />
-        <Skeleton className="h-64 w-full md:w-2/3 mx-auto mb-6 rounded-lg" />
+        <Skeleton className="h-96 w-full md:w-1/2 mx-auto mb-6 rounded-lg" /> {/* Adjusted for potentially taller image */}
         <Card>
           <CardHeader>
             <Skeleton className="h-8 w-1/2" />
@@ -110,13 +110,13 @@ export default function ProductDetailsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-1">
            <Card className="shadow-lg overflow-hidden">
-             <CardHeader className="p-0 relative aspect-[4/3] w-full">
+             <CardHeader className="p-0 relative aspect-[3/4] w-full"> {/* Aspect ratio for abaya-like images */}
                 <Image
-                    src={product.imageUrl || 'https://placehold.co/400x300.png'}
+                    src={product.imageUrl || 'https://placehold.co/300x400.png'}
                     alt={product.name}
                     layout="fill"
-                    objectFit="cover"
-                    data-ai-hint="product detail image"
+                    objectFit="cover" // 'cover' often better for clothing
+                    data-ai-hint="abaya product detail"
                 />
              </CardHeader>
              <CardContent className="p-4">

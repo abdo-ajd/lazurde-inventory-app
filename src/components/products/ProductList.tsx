@@ -14,7 +14,6 @@ import { PlusCircle, Search, Edit3, Trash2, ShoppingCart, Eye } from 'lucide-rea
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription as ShadcnDialogDescription, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-// import { Label } from '@/components/ui/label'; // No longer needed for sell dialog
 import type { Product } from '@/lib/types';
 
 export default function ProductList() {
@@ -24,10 +23,6 @@ export default function ProductList() {
   const { toast } = useToast();
 
   const [searchTerm, setSearchTerm] = useState('');
-  // States for sell dialog are removed for quick sell
-  // const [sellDialogOpen, setSellDialogOpen] = useState(false);
-  // const [selectedProductForSale, setSelectedProductForSale] = useState<Product | null>(null);
-  // const [saleQuantity, setSaleQuantity] = useState(1);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -55,7 +50,6 @@ export default function ProductList() {
     if (saleResult) {
       toast({ title: "تم البيع بنجاح", description: `تم بيع قطعة واحدة من المنتج "${product.name}".` });
     } 
-    // addSale internally handles toasts for its own failures e.g. product not found or insufficient quantity after double check
   };
   
   const handleDeleteProduct = async (productId: string) => {
@@ -77,10 +71,10 @@ export default function ProductList() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="rounded-lg border bg-card text-card-foreground shadow-sm">
-                <div className="p-0 relative aspect-[4/3] w-full bg-muted animate-pulse rounded-t-lg"></div> {/* Adjusted aspect ratio */}
+                <div className="p-0 relative aspect-[3/4] w-full bg-muted animate-pulse rounded-t-lg"></div>
                 <div className="p-4">
-                  <div className="h-5 w-3/4 bg-muted animate-pulse rounded-md mb-2"></div> {/* Adjusted height for smaller text */}
-                  <div className="h-3 w-1/2 bg-muted animate-pulse rounded-md mb-2"></div> {/* Adjusted height for smaller text */}
+                  <div className="h-5 w-3/4 bg-muted animate-pulse rounded-md mb-2"></div>
+                  <div className="h-3 w-1/2 bg-muted animate-pulse rounded-md mb-2"></div>
                   <div className="h-5 w-1/4 bg-muted animate-pulse rounded-md"></div>
                 </div>
                 <div className="flex justify-around items-center p-2 border-t">
@@ -128,39 +122,39 @@ export default function ProductList() {
       </Card>
 
       {filteredProducts.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {filteredProducts.map((product) => (
             <Card key={product.id} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <CardHeader className="p-0 relative aspect-[4/3] w-full"> {/* Image aspect ratio */}
+              <CardHeader className="p-0 relative aspect-[3/4] w-full"> {/* Aspect ratio for abaya-like images */}
                 <Image
-                  src={product.imageUrl || 'https://placehold.co/400x300.png'} // Default placeholder
+                  src={product.imageUrl || 'https://placehold.co/300x400.png'} 
                   alt={product.name}
                   layout="fill"
-                  objectFit="cover"
+                  objectFit="cover" // 'cover' might be better for abayas
                   className="rounded-t-lg"
-                  data-ai-hint="product item"
+                  data-ai-hint="abaya product item"
                 />
               </CardHeader>
-              <CardContent className="pt-4 flex-grow">
-                <h3 className="font-semibold text-base truncate" title={product.name}>{product.name}</h3> {/* Text size reduced */}
-                <p className="text-xs text-muted-foreground mt-1">السعر: {product.price.toFixed(2)} ر.س</p> {/* Text size reduced */}
+              <CardContent className="pt-3 pb-2 px-3 flex-grow"> {/* Reduced padding */}
+                <h3 className="font-semibold text-sm truncate" title={product.name}>{product.name}</h3> {/* Slightly smaller text */}
+                <p className="text-xs text-muted-foreground mt-0.5">السعر: {product.price.toFixed(2)} ر.س</p>
                 <Badge 
                   variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}
-                  className="mt-2 text-xs px-2 py-1" // Badge styling kept as is
+                  className="mt-1.5 text-xs px-2 py-0.5"
                 >
                   الكمية: {product.quantity}
                 </Badge>
               </CardContent>
-              <CardFooter className="flex justify-around items-center p-2 border-t bg-muted/50">
+              <CardFooter className="flex justify-around items-center p-1.5 border-t bg-muted/50"> {/* Reduced padding */}
                 <Button variant="ghost" size="icon" asChild title="عرض التفاصيل">
                   <Link href={`/dashboard/products/${product.id}`}>
-                    <Eye className="h-5 w-5" />
+                    <Eye className="h-4 w-4" /> {/* Slightly smaller icons */}
                   </Link>
                 </Button>
                 {hasRole(['admin']) && (
                   <Button variant="ghost" size="icon" asChild title="تعديل المنتج">
                     <Link href={`/dashboard/products/${product.id}/edit`}>
-                      <Edit3 className="h-5 w-5" />
+                      <Edit3 className="h-4 w-4" />
                     </Link>
                   </Button>
                 )}
@@ -168,19 +162,19 @@ export default function ProductList() {
                   <Button 
                     variant="outline" 
                     size="icon" 
-                    onClick={() => handleQuickSell(product)} // Changed to quick sell
+                    onClick={() => handleQuickSell(product)}
                     title="بيع قطعة واحدة" 
                     disabled={product.quantity === 0}
                     className="hover:bg-primary/10"
                   >
-                    <ShoppingCart className="h-5 w-5" />
+                    <ShoppingCart className="h-4 w-4" />
                   </Button>
                 )}
                 {hasRole(['admin']) && (
                    <Dialog>
                       <DialogTrigger asChild>
                         <Button variant="destructive" size="icon" title="حذف المنتج" className="hover:bg-destructive/80">
-                          <Trash2 className="h-5 w-5" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </DialogTrigger>
                       <DialogContent>
@@ -211,8 +205,6 @@ export default function ProductList() {
           </CardContent>
         </Card>
       )}
-
-      {/* Sell Dialog is removed for quick sell feature */}
     </div>
   );
 }
