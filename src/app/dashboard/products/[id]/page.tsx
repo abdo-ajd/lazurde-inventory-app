@@ -95,42 +95,44 @@ export default function ProductDetailsPage() {
     const printWindow = window.open('', '_blank', 'height=350,width=450');
     if (printWindow) {
         printWindow.document.write('<html><head><title>طباعة باركود المنتج</title>');
-        printWindow.document.write(\`
-            <style>
-                body { 
-                    margin: 5mm; 
-                    font-family: 'Arial', sans-serif; 
-                    text-align: center; 
-                    display: flex; 
-                    flex-direction: column; 
-                    align-items: center; 
-                    justify-content: center; 
-                    height: calc(100vh - 10mm); 
-                    overflow: hidden;
-                }
-                .barcode-area { 
-                    display: inline-block; 
-                    padding: 3mm; 
-                    border: 1px dashed #ccc; 
-                    width: 90%; /* Adjust width as needed for label */
-                    max-width: 70mm; /* Max width for typical label */
-                }
-                .product-name-print { font-size: 10pt; margin-bottom: 2mm; font-weight: bold; word-break: break-word; }
-                svg { 
-                    width: 100% !important; /* Ensure SVG scales to container */
-                    height: auto !important; 
-                    max-height: 40mm; /* Adjust height as needed */
-                }
-                @media print {
-                    body { margin: 0; padding: 0; width: 100%; height: 100%; }
-                    .barcode-area { border: none; padding:0; margin: 0 auto; page-break-after: always; width: 100%; }
-                }
-            </style>
-        \`);
+        
+        const styleContent = 
+            '<style>' +
+            'body { ' +
+            '    margin: 5mm; ' +
+            '    font-family: "Arial", sans-serif; ' +
+            '    text-align: center; ' +
+            '    display: flex; ' +
+            '    flex-direction: column; ' +
+            '    align-items: center; ' +
+            '    justify-content: center; ' +
+            '    height: calc(100vh - 10mm); ' +
+            '    overflow: hidden;' +
+            '}' +
+            '.barcode-area { ' +
+            '    display: inline-block; ' +
+            '    padding: 3mm; ' +
+            '    border: 1px dashed #ccc; ' +
+            '    width: 90%;' +
+            '    max-width: 70mm;' +
+            '}' +
+            '.product-name-print { font-size: 10pt; margin-bottom: 2mm; font-weight: bold; word-break: break-word; }' +
+            'svg { ' +
+            '    width: 100% !important; ' +
+            '    height: auto !important; ' +
+            '    max-height: 40mm;' +
+            '}' +
+            '@media print {' +
+            '    body { margin: 0; padding: 0; width: 100%; height: 100%; }' +
+            '    .barcode-area { border: none; padding:0; margin: 0 auto; page-break-after: always; width: 100%; }' +
+            '}' +
+            '</style>';
+        printWindow.document.write(styleContent);
+        
         printWindow.document.write('</head><body>');
         printWindow.document.write('<div class="barcode-area">');
         if (product.name) {
-            printWindow.document.write(\`<div class="product-name-print">\${product.name}</div>\`);
+            printWindow.document.write(`<div class="product-name-print">${product.name}</div>`);
         }
         printWindow.document.write(svgString);
         printWindow.document.write('</div>');
