@@ -11,13 +11,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowRight, Edit3, Package, Tag, DollarSign, Layers, CalendarDays, History, Trash2, ShoppingBag, Printer } from 'lucide-react';
+import { ArrowRight, Edit3, Package, Tag, DollarSign, Layers, CalendarDays, History, Trash2, ShoppingBag, Printer, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Product } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as ShadcnDialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useSales } from '@/contexts/SalesContext';
+import { useProductImage } from '@/hooks/useProductImage'; // Import the hook
 
 export default function ProductDetailsPage() {
   const { getProductById, deleteProduct } = useProducts();
@@ -27,18 +28,22 @@ export default function ProductDetailsPage() {
   const { hasRole } = useAuth();
   const { toast } = useToast();
   const [product, setProduct] = useState<Product | null | undefined>(undefined);
-  const [isFetching, setIsFetching] = useState(true);
+  const [isFetchingProduct, setIsFetchingProduct] = useState(true); // Renamed from isFetching
   const [isDeleting, setIsDeleting] = useState(false);
   const barcodeRef = useRef<SVGSVGElement>(null);
 
   const productId = typeof params.id === 'string' ? params.id : '';
+
+  // Use the hook for the product image
+  const { imageUrl: resolvedProductImageUrl, isLoading: isImageLoading } = useProductImage(product?.id, product?.imageUrl);
+
 
   useEffect(() => {
     if (productId) {
       const fetchedProduct = getProductById(productId);
       setProduct(fetchedProduct);
     }
-    setIsFetching(false);
+    setIsFetchingProduct(false);
   }, [productId, getProductById]);
 
   useEffect(() => {
@@ -128,22 +133,22 @@ export default function ProductDetailsPage() {
   };
 
 
-  if (isFetching) {
+  if (isFetchingProduct) {
     return (
       <div className="space-y-6 p-4 md:p-6">
-        <Skeleton className="h-10 w-3/4 md:w-1/2" /> {/* Title skeleton */}
+        <Skeleton className="h-10 w-3/4 md:w-1/2" /> 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-1">
-            <Skeleton className="h-80 w-full rounded-lg" /> {/* Image skeleton */}
-            <Skeleton className="h-5 w-4/5 mt-2 mx-auto rounded-md" /> {/* Image name skeleton */}
+            <Skeleton className="h-80 w-full rounded-lg" /> 
+            <Skeleton className="h-5 w-4/5 mt-2 mx-auto rounded-md" /> 
           </div>
           <div className="md:col-span-2">
             <Card className="shadow-lg h-full">
               <CardHeader className="p-6">
-                <Skeleton className="h-8 w-4/5 rounded-md" /> {/* Info card title skeleton */}
+                <Skeleton className="h-8 w-4/5 rounded-md" /> 
               </CardHeader>
               <CardContent className="space-y-4 p-6">
-                {[...Array(3)].map((_, i) => ( // Barcode + 2 info rows
+                {[...Array(3)].map((_, i) => ( 
                   <Skeleton key={i} className="h-12 w-full rounded-md" />
                 ))}
                  <div className="grid grid-cols-2 gap-4 mt-4">
@@ -169,10 +174,10 @@ export default function ProductDetailsPage() {
   if (!product) {
     return (
       <div className="text-center py-16">
-        <Package size={64} className="mx-auto text-muted-foreground mb-6" /> {/* Larger icon */}
-        <h1 className="text-3xl font-bold mb-3">المنتج غير موجود</h1> {/* Larger title */}
-        <p className="text-base text-muted-foreground mb-8">عذرًا، لم نتمكن من العثور على المنتج الذي طلبته.</p> {/* Larger text */}
-        <Button size="lg" asChild> {/* Larger button size */}
+        <Package size={64} className="mx-auto text-muted-foreground mb-6" /> 
+        <h1 className="text-3xl font-bold mb-3">المنتج غير موجود</h1> 
+        <p className="text-base text-muted-foreground mb-8">عذرًا، لم نتمكن من العثور على المنتج الذي طلبته.</p> 
+        <Button size="lg" asChild> 
           <Link href="/dashboard/products">
             <span className="flex items-center">
                  <ArrowRight className="ml-2 h-5 w-5" />
@@ -222,13 +227,20 @@ export default function ProductDetailsPage() {
         <div className="md:col-span-1">
            <Card className="shadow-sm overflow-hidden">
              <CardHeader className="p-0 relative aspect-[3/4] w-full">
-                <Image
-                    src={product.imageUrl || 'https://placehold.co/300x400.png'}
-                    alt={product.name}
-                    layout="fill"
-                    objectFit="cover"
-                    data-ai-hint="abaya product detail"
-                />
+                {isImageLoading ? (
+                    <div className="w-full h-full flex items-center justify-center bg-muted">
+                        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                    </div>
+                ) : (
+                    <Image
+                        src={resolvedProductImageUrl || 'https://placehold.co/300x400.png'}
+                        alt={product.name}
+                        layout="fill"
+                        objectFit="cover"
+                        data-ai-hint="abaya product detail"
+                        key={resolvedProductImageUrl || product.id} // Add key to force re-render if URL changes
+                    />
+                )}
              </CardHeader>
              <CardContent className="p-2"> 
                 <h3 className="font-semibold text-sm text-center truncate" title={product.name}>{product.name}</h3> 

@@ -2,7 +2,7 @@
 // src/components/products/ProductList.tsx
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useProducts } from '@/contexts/ProductContext';
@@ -10,13 +10,41 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSales } from '@/contexts/SalesContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { ShoppingCart, PackageSearch } from 'lucide-react';
+import { ShoppingCart, PackageSearch, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Product } from '@/lib/types';
+import { useProductImage } from '@/hooks/useProductImage'; // Import the hook
 
 interface ProductListProps {
   searchTerm: string;
 }
+
+interface ProductCardImageProps {
+  productId: string;
+  productName: string;
+  fallbackImageUrl: string | undefined | null;
+}
+
+const ProductCardImage: React.FC<ProductCardImageProps> = ({ productId, productName, fallbackImageUrl }) => {
+  const { imageUrl: resolvedImageUrl, isLoading } = useProductImage(productId, fallbackImageUrl);
+
+  if (isLoading) {
+    return <div className="p-0 relative aspect-[3/4] w-full bg-muted rounded-t-lg animate-pulse"></div>;
+  }
+
+  return (
+    <Image
+      src={resolvedImageUrl || 'https://placehold.co/200x266.png'} // Use placeholder if resolved is null
+      alt={productName}
+      layout="fill"
+      objectFit="cover"
+      className="rounded-t-lg group-hover:opacity-90 transition-opacity"
+      data-ai-hint="abaya product item"
+      key={resolvedImageUrl || productId} // Add key to force re-render if URL changes
+    />
+  );
+};
+
 
 export default function ProductList({ searchTerm }: ProductListProps) {
   const { products } = useProducts();
@@ -43,15 +71,13 @@ export default function ProductList({ searchTerm }: ProductListProps) {
     if (product.quantity === 0) {
       return;
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const saleResult = await addSale([{ productId: product.id, quantity: 1 }]);
-    // Toast after quick sell removed as per request
   };
   
   if (!isClient) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3">
-        {[...Array(14)].map((_, i) => ( // Increased skeleton items
+        {[...Array(14)].map((_, i) => ( 
           <div key={i} className="rounded-lg border bg-card text-card-foreground shadow-sm animate-pulse">
             <div className="p-0 relative aspect-[3/4] w-full bg-muted rounded-t-lg"></div>
             <div className="p-2 space-y-1">
@@ -76,13 +102,10 @@ export default function ProductList({ searchTerm }: ProductListProps) {
             <Card key={product.id} className="flex flex-col overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200">
               <Link href={`/dashboard/products/${product.id}`} passHref aria-label={`عرض تفاصيل ${product.name}`}>
                 <CardHeader className="p-0 relative aspect-[3/4] w-full cursor-pointer group">
-                  <Image
-                    src={product.imageUrl || 'https://placehold.co/200x266.png'} 
-                    alt={product.name}
-                    layout="fill"
-                    objectFit="cover"
-                    className="rounded-t-lg group-hover:opacity-90 transition-opacity"
-                    data-ai-hint="abaya product item"
+                  <ProductCardImage 
+                    productId={product.id} 
+                    productName={product.name} 
+                    fallbackImageUrl={product.imageUrl} 
                   />
                 </CardHeader>
               </Link>
