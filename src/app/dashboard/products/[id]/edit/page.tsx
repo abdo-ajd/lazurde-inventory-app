@@ -1,3 +1,4 @@
+
 // src/app/dashboard/products/[id]/edit/page.tsx
 "use client";
 
@@ -46,12 +47,8 @@ export default function EditProductPage() {
     const updatedProduct = await updateProduct(product.id, data);
     setIsLoading(false);
     if (updatedProduct) {
-      // After successful update, the useEffect above should re-fetch the product
-      // due to `allProducts` changing in the context, which updates the local `product` state,
-      // which in turn updates `initialData` for `ProductForm`.
-      // Optionally, navigate away or confirm update.
-      // For now, staying on the page to see the updated form is fine.
-      // router.push(`/dashboard/products/${product.id}`); // This would navigate away
+      // After successful update, navigate to the product details page
+      router.push(`/dashboard/products/${updatedProduct.id}`);
     }
   };
 

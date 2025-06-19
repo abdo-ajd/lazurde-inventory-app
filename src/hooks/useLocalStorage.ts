@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 
 // Helper to safely parse JSON
@@ -35,18 +36,25 @@ export function useLocalStorage<T>(key: string, initialValueProp: T | (() => T))
   const setValue = useCallback(
     (value: T | ((val: T) => T)) => {
       if (typeof window === 'undefined') {
-        // console.warn(`Attempted to set localStorage key “${key}” on the server.`);
         const newValue = value instanceof Function ? value(storedValue) : value;
-        setStoredValue(newValue);
+        setStoredValue(newValue); // Update server-side/SSR state
         return;
       }
       try {
-        const newValue = value instanceof Function ? value(storedValue) : value;
-        window.localStorage.setItem(key, JSON.stringify(newValue));
-        setStoredValue(newValue);
+        const valueToStore = value instanceof Function ? value(storedValue) : value;
+        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        setStoredValue(valueToStore);
         window.dispatchEvent(new CustomEvent('local-storage-changed', { detail: { key } }));
       } catch (error) {
-        console.warn(`Error setting localStorage key “${key}”:`, error);
+        console.error(`Error setting localStorage key “${key}”:`, error);
+        // Notify the user if it's a quota error
+        if (error instanceof DOMException && (error.name === 'QuotaExceededError' || error.code === 22)) {
+          alert(`فشل حفظ البيانات في المتصفح. قد تكون مساحة التخزين المخصصة للتطبيق ممتلئة. يرجى محاولة حذف بعض البيانات القديمة أو التواصل مع الدعم.\n\nتفاصيل الخطأ: ${error.message}`);
+        } else if (error instanceof Error) {
+          alert(`حدث خطأ غير متوقع أثناء محاولة حفظ البيانات: ${error.message}`);
+        } else {
+          alert(`حدث خطأ غير معروف أثناء محاولة حفظ البيانات.`);
+        }
       }
     },
     [key, storedValue]
@@ -76,8 +84,6 @@ export function useLocalStorage<T>(key: string, initialValueProp: T | (() => T))
             setStoredValue(getInitialValue());
           } else {
             const parsedItem = parseJSON<T>(eventNewValue);
-            // Only update if the parsed value is different from the current stored value
-            // to avoid unnecessary re-renders if the event was for the exact same value.
             if (JSON.stringify(storedValue) !== JSON.stringify(parsedItem)) {
                  setStoredValue(parsedItem !== undefined ? parsedItem : getInitialValue());
             }
@@ -96,8 +102,6 @@ export function useLocalStorage<T>(key: string, initialValueProp: T | (() => T))
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('local-storage-changed', handleStorageChange);
     };
-  // getInitialValue depends on initialValueProp. storedValue is added to dependencies
-  // to ensure re-evaluation for the comparison inside handleStorageChange.
   }, [key, getInitialValue, storedValue]);
 
   return [storedValue, setValue];
