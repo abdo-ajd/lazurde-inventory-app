@@ -1,3 +1,4 @@
+
 // src/components/products/ProductForm.tsx
 "use client";
 
@@ -121,6 +122,18 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5 MB limit
+        toast({
+          variant: "destructive",
+          title: "ملف كبير جدًا",
+          description: "حجم الصورة يتجاوز 5 ميجابايت. الرجاء اختيار صورة أصغر.",
+        });
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''; 
+        }
+        return;
+      }
+
       if (isCameraActive) {
         stopCamera();
       }
@@ -129,6 +142,16 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
         const dataUri = reader.result as string;
         form.setValue('imageUrl', dataUri, { shouldValidate: true, shouldDirty: true });
         setImagePreview(dataUri);
+      };
+      reader.onerror = () => {
+        toast({
+          variant: "destructive",
+          title: "خطأ في قراءة الملف",
+          description: "لم نتمكن من قراءة ملف الصورة المحدد. حاول مرة أخرى أو اختر ملفًا آخر.",
+        });
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -340,3 +363,4 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
     </Card>
   );
 }
+
