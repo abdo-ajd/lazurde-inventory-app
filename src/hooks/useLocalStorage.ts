@@ -46,18 +46,20 @@ export function useLocalStorage<T>(key: string, initialValueProp: T | (() => T))
         setStoredValue(valueToStore);
         window.dispatchEvent(new CustomEvent('local-storage-changed', { detail: { key } }));
       } catch (error) {
-        console.error(`Error setting localStorage key “${key}”:`, error);
-        // Notify the user if it's a quota error
         if (error instanceof DOMException && (error.name === 'QuotaExceededError' || error.code === 22)) {
+          console.warn(`LocalStorage quota exceeded for key “${key}”. User has been alerted.`, error);
           alert(`فشل حفظ البيانات في المتصفح. قد تكون مساحة التخزين المخصصة للتطبيق ممتلئة. يرجى محاولة حذف بعض البيانات القديمة أو التواصل مع الدعم.\n\nتفاصيل الخطأ: ${error.message}`);
-        } else if (error instanceof Error) {
-          alert(`حدث خطأ غير متوقع أثناء محاولة حفظ البيانات: ${error.message}`);
         } else {
-          alert(`حدث خطأ غير معروف أثناء محاولة حفظ البيانات.`);
+          console.error(`Error setting localStorage key “${key}”:`, error);
+          if (error instanceof Error) {
+            alert(`حدث خطأ غير متوقع أثناء محاولة حفظ البيانات: ${error.message}`);
+          } else {
+            alert(`حدث خطأ غير معروف أثناء محاولة حفظ البيانات.`);
+          }
         }
       }
     },
-    [key, storedValue]
+    [key, storedValue, getInitialValue] // Added getInitialValue to dependencies of setValue
   );
 
   // Effect for cross-tab/window synchronization and same-tab custom event
