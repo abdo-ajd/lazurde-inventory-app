@@ -32,8 +32,8 @@ export default function LoginPage() {
           <Image 
             src="https://images.unsplash.com/photo-1483985988355-763728e1935b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxGYXNoaW9uJTIwfGVufDB8fHx8MTc1MDMyMjI4NHww&ixlib=rb-4.1.0&q=80&w=1080" 
             alt="شعار المتجر" 
-            width={100} 
-            height={100} 
+            width={120} 
+            height={120} 
             className="mx-auto mb-4 rounded-full object-cover"
             data-ai-hint="fashion shopping" 
           />
