@@ -1,3 +1,4 @@
+
 // src/contexts/SalesContext.tsx
 "use client";
 
@@ -62,7 +63,7 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
     const discountToApply = Math.max(0, currentDiscount); 
     const finalTotalAmount = Math.max(0, currentOriginalTotalAmount - discountToApply);
 
-    if (discountToApply > currentOriginalTotalAmount) {
+    if (discountToApply > 0 && discountToApply > currentOriginalTotalAmount) {
         toast({ title: "تنبيه", description: "قيمة الخصم أكبر من إجمالي الفاتورة. تم تطبيق خصم بقيمة الفاتورة.", variant: "default" });
     }
 
@@ -101,6 +102,8 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
         console.warn("Could not play custom sale sound:", error);
       }
     }
+    
+    setCurrentDiscount(0); // Reset discount after successful sale
 
     return newSale;
   };
@@ -118,9 +121,10 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
     }
 
     for (const item of saleToReturn.items) {
-      const success = await updateProductQuantity(item.productId, item.quantity);
+      const success = await updateProductQuantity(item.productId, item.quantity); // Return items to stock
       if (!success) {
-        toast({ title: "خطأ فادح", description: `فشل تحديث كمية المنتج "${item.productName}" أثناء الإرجاع.`, variant: "destructive" });
+        // Even if one item fails, proceed to mark sale as returned but log error or notify
+        toast({ title: "خطأ في الإرجاع", description: `فشل تحديث كمية المنتج "${item.productName}"، ولكن سيتم إكمال عملية الإرجاع.`, variant: "destructive" });
       }
     }
 
@@ -155,3 +159,4 @@ export const useSales = () => {
   }
   return context;
 };
+
