@@ -2,7 +2,7 @@
 "use client";
 
 import type { Sale, SaleItem } from '@/lib/types';
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode, useState } from 'react'; // Added useState
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { LOCALSTORAGE_KEYS, INITIAL_SALES } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
@@ -12,10 +12,12 @@ import { useAppSettings } from './AppSettingsContext';
 
 interface SalesContextType {
   sales: Sale[];
-  addSale: (items: Omit<SaleItem, 'productName' | 'pricePerUnit'>[], discountInput?: number) => Promise<Sale | null>;
+  addSale: (items: Omit<SaleItem, 'productName' | 'pricePerUnit'>[]) => Promise<Sale | null>;
   returnSale: (saleId: string) => Promise<boolean>;
   getSaleById: (saleId: string) => Sale | undefined;
   replaceAllSales: (newSales: Sale[]) => void;
+  currentDiscount: number;
+  setCurrentDiscount: (value: number) => void;
 }
 
 const SalesContext = createContext<SalesContextType | undefined>(undefined);
@@ -26,8 +28,9 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
   const { getProductById, updateProductQuantity } = useProducts();
   const { currentUser } = useAuth();
   const { settings } = useAppSettings();
+  const [currentDiscount, setCurrentDiscount] = useState<number>(0);
 
-  const addSale = async (rawItems: Omit<SaleItem, 'productName' | 'pricePerUnit'>[], discountInput: number = 0): Promise<Sale | null> => {
+  const addSale = async (rawItems: Omit<SaleItem, 'productName' | 'pricePerUnit'>[]): Promise<Sale | null> => {
     if (!currentUser) {
       toast({ title: "خطأ", description: "يجب تسجيل الدخول لتسجيل عملية بيع.", variant: "destructive" });
       return null;
@@ -54,20 +57,19 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
       });
       currentOriginalTotalAmount += product.price * rawItem.quantity;
     }
+    
+    // Use currentDiscount from context state
+    const discountToApply = Math.max(0, currentDiscount); 
+    const finalTotalAmount = Math.max(0, currentOriginalTotalAmount - discountToApply);
 
-    const discountValue = Math.max(0, discountInput); // Ensure discount is not negative
-    const finalTotalAmount = Math.max(0, currentOriginalTotalAmount - discountValue); // Ensure total is not negative
-
-    if (discountValue > currentOriginalTotalAmount) {
+    if (discountToApply > currentOriginalTotalAmount) {
         toast({ title: "تنبيه", description: "قيمة الخصم أكبر من إجمالي الفاتورة. تم تطبيق خصم بقيمة الفاتورة.", variant: "default" });
     }
-
 
     for (const item of saleItems) {
       const success = await updateProductQuantity(item.productId, -item.quantity);
       if (!success) {
         toast({ title: "خطأ فادح", description: "فشل تحديث كمية المنتج. تم إلغاء البيع.", variant: "destructive" });
-        // Optionally, revert any previously updated quantities here if needed
         return null;
       }
     }
@@ -76,7 +78,7 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
       id: `sale_${Date.now()}`,
       items: saleItems,
       originalTotalAmount: currentOriginalTotalAmount,
-      discountAmount: discountValue,
+      discountAmount: discountToApply,
       totalAmount: finalTotalAmount,
       saleDate: new Date().toISOString(),
       sellerId: currentUser.id,
@@ -85,9 +87,9 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
     };
 
     setSales(prevSales => [newSale, ...(prevSales || [])]);
-    let toastMessage = `تم تسجيل البيع بنجاح. الإجمالي: ${finalTotalAmount}`;
-    if (discountValue > 0) {
-        toastMessage += ` (بعد خصم ${discountValue})`;
+    let toastMessage = `تم تسجيل البيع بنجاح. الإجمالي: ${finalTotalAmount.toFixed(2)}`;
+    if (discountToApply > 0) {
+        toastMessage += ` (بعد خصم ${discountToApply.toFixed(2)})`;
     }
     toast({ title: "نجاح", description: toastMessage });
 
@@ -104,8 +106,8 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const returnSale = async (saleId: string): Promise<boolean> => {
-    const currentSales = sales || [];
-    const saleToReturn = currentSales.find(s => s.id === saleId);
+    const currentSalesData = sales || [];
+    const saleToReturn = currentSalesData.find(s => s.id === saleId);
     if (!saleToReturn) {
       toast({ title: "خطأ", description: "عملية البيع غير موجودة.", variant: "destructive" });
       return false;
@@ -135,12 +137,12 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
     return (sales || []).find(s => s.id === saleId);
   };
 
-  const replaceAllSales = (newSales: Sale[]): void => {
-    setSales(newSales);
+  const replaceAllSales = (newSalesData: Sale[]): void => {
+    setSales(newSalesData);
   };
 
   return (
-    <SalesContext.Provider value={{ sales: sales || [], addSale, returnSale, getSaleById, replaceAllSales }}>
+    <SalesContext.Provider value={{ sales: sales || [], addSale, returnSale, getSaleById, replaceAllSales, currentDiscount, setCurrentDiscount }}>
       {children}
     </SalesContext.Provider>
   );

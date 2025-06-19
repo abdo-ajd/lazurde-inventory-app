@@ -22,7 +22,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Input } from '@/components/ui/input';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useProducts } from '@/contexts/ProductContext';
-import { useSales } from '@/contexts/SalesContext';
+import { useSales } from '@/contexts/SalesContext'; // Import useSales
 import { useToast } from '@/hooks/use-toast';
 
 
@@ -37,12 +37,12 @@ export default function Header() {
   const pathname = usePathname();
 
   const { getProductByBarcode } = useProducts();
-  const { addSale } = useSales();
+  const { addSale, currentDiscount, setCurrentDiscount } = useSales(); // Get currentDiscount and setCurrentDiscount
   const { toast } = useToast();
 
   const [headerSearchValue, setHeaderSearchValue] = useState(searchParams.get('q') || '');
   const [scannedBarcode, setScannedBarcode] = useState('');
-  const [discountValue, setDiscountValue] = useState('');
+  // Removed local discountValue state, will use currentDiscount from SalesContext
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
 
@@ -84,13 +84,13 @@ export default function Header() {
   const handleBarcodeScan = async () => {
     if (!scannedBarcode.trim()) return;
     const product = getProductByBarcode(scannedBarcode.trim());
-    const discount = parseFloat(discountValue) || 0;
 
     if (product) {
       if (product.quantity > 0) {
         if (currentUser) {
+          // addSale will now use currentDiscount from SalesContext internally
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const saleResult = await addSale([{ productId: product.id, quantity: 1 }], discount);
+          const saleResult = await addSale([{ productId: product.id, quantity: 1 }]);
         } else {
           toast({ variant: "destructive", title: "خطأ", description: "يجب تسجيل الدخول لإتمام عملية البيع." });
         }
@@ -101,7 +101,7 @@ export default function Header() {
       toast({ variant: "destructive", title: "لم يتم العثور على المنتج", description: "الباركود المدخل غير صحيح أو المنتج غير موجود." });
     }
     setScannedBarcode(''); 
-    setDiscountValue(''); // Clear discount after sale attempt
+    // No need to clear currentDiscount from context here, it should persist
   };
 
   const handleBarcodeKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -114,8 +114,16 @@ export default function Header() {
   const handleDiscountKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       event.preventDefault();
-      handleBarcodeScan(); // Trigger sale on Enter in discount field too, if barcode is filled
+      // If barcode is also filled, trigger scan. Otherwise, just sets discount.
+      if (scannedBarcode.trim()) {
+        handleBarcodeScan(); 
+      }
     }
+  };
+
+  const handleDiscountInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value);
+    setCurrentDiscount(isNaN(value) || value < 0 ? 0 : value);
   };
 
 
@@ -229,8 +237,8 @@ export default function Header() {
                 <Input
                     type="number"
                     placeholder="خصم..."
-                    value={discountValue}
-                    onChange={(e) => setDiscountValue(e.target.value)}
+                    value={currentDiscount === 0 ? '' : String(currentDiscount)} // Display empty if 0 for better UX
+                    onChange={handleDiscountInputChange}
                     onKeyDown={handleDiscountKeyDown}
                     className="h-9 w-20 md:w-20 lg:w-24 pr-9 pl-2 py-2 text-sm appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     aria-label="إدخال قيمة الخصم"
@@ -295,3 +303,4 @@ export default function Header() {
     </TooltipProvider>
   );
 }
+
