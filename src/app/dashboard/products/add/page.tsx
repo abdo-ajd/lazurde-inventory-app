@@ -29,7 +29,7 @@ export default function AddProductPage() {
     const newProduct = await addProduct(data);
     setIsLoading(false);
     if (newProduct) {
-      router.push('/dashboard/products');
+      router.push('/dashboard'); // Navigate to the main product image listing page
     }
   };
 
@@ -53,3 +53,4 @@ export default function AddProductPage() {
     </div>
   );
 }
+

@@ -47,8 +47,8 @@ export default function EditProductPage() {
     const updatedProduct = await updateProduct(product.id, data);
     setIsLoading(false);
     if (updatedProduct) {
-      // After successful update, navigate to the product details page
-      router.push(`/dashboard/products/${updatedProduct.id}`);
+      // After successful update, navigate to the main product image listing page
+      router.push('/dashboard');
     }
   };
 
@@ -105,3 +105,4 @@ export default function EditProductPage() {
   // Fallback for safety, though logic above should cover states
   return <p>جاري تحميل بيانات المنتج...</p>;
 }
+
