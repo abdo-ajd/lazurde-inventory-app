@@ -38,12 +38,11 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       return null;
     }
     
-    const productIdTimestamp = Date.now(); // Timestamp for ID and potential barcode
+    const productIdTimestamp = Date.now();
     const generatedProductId = `prod_${productIdTimestamp}`;
     
-    // Barcode logic: Use provided if not empty, otherwise generate from timestamp
-    let finalBarcodeValue = productData.barcodeValue?.trim(); // Get trimmed value or undefined
-    if (!finalBarcodeValue) { // If undefined, null, or empty string after trim
+    let finalBarcodeValue = productData.barcodeValue?.trim();
+    if (!finalBarcodeValue) {
         finalBarcodeValue = String(productIdTimestamp);
     }
 
@@ -98,86 +97,103 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const originalProduct = currentProducts[productIndex];
-    let productChanged = false;
-    
-    // Create a mutable copy for building the updated product
     const updatedProductData = { ...originalProduct };
+    let hasChanges = false;
 
-    if (updates.name !== undefined && updates.name.trim() !== updatedProductData.name) {
-        const trimmedUpdateName = updates.name.trim();
-        if (currentProducts.some(p => p.id !== productId && p.name.trim().toLowerCase() === trimmedUpdateName.toLowerCase())) {
-            toast({ title: "خطأ", description: "منتج آخر بنفس الاسم الجديد موجود بالفعل.", variant: "destructive" });
-            return originalProduct; 
-        }
-        updatedProductData.name = trimmedUpdateName;
-        productChanged = true;
-    }
-    if (updates.price !== undefined && updates.price !== updatedProductData.price) {
-        updatedProductData.price = updates.price;
-        productChanged = true;
-    }
-    if (updates.quantity !== undefined && updates.quantity !== updatedProductData.quantity) {
-        updatedProductData.quantity = updates.quantity;
-        productChanged = true;
-    }
-    
-    const newBarcodeValue = updates.barcodeValue?.trim();
-    if (newBarcodeValue !== undefined && newBarcodeValue !== (updatedProductData.barcodeValue || '')) {
-        updatedProductData.barcodeValue = newBarcodeValue;
-        productChanged = true;
-    } else if (updates.barcodeValue !== undefined && newBarcodeValue === '' && updatedProductData.barcodeValue) {
-        // If user explicitly clears barcode, set it to empty string
-        updatedProductData.barcodeValue = '';
-        productChanged = true;
-    }
-
-
-    if (updates.imageUrl !== undefined) {
-        productChanged = true;
-        if (updates.imageUrl.startsWith('data:image')) {
-            const blob = dataUriToBlob(updates.imageUrl);
-            if (blob) {
-                try {
-                    await saveImageToDB(productId, blob);
-                    updatedProductData.imageUrl = ''; 
-                } catch (e) {
-                    console.error("Failed to save updated image to IndexedDB", e);
-                    updatedProductData.imageUrl = updates.imageUrl; 
-                    toast({variant: "destructive", title: "خطأ في حفظ الصورة", description: "لم يتم حفظ الصورة الجديدة في قاعدة البيانات المحلية."});
-                }
-            } else {
-                 console.warn(`Could not convert new data URI to Blob for product ${productId}.`);
-                 updatedProductData.imageUrl = updates.imageUrl; 
-            }
-        } else if (updates.imageUrl === '') { 
-            try {
-                await deleteImageFromDB(productId);
-                updatedProductData.imageUrl = '';
-            } catch (e) {
-                console.error("Failed to delete image from IndexedDB", e);
-                updatedProductData.imageUrl = ''; 
-            }
-        } else { 
-            updatedProductData.imageUrl = updates.imageUrl;
-            try { await deleteImageFromDB(productId); } catch (e) { /* ignore */ }
-        }
-    }
-    
-    if (!productChanged) {
-        toast({ title: "تم الحفظ", description: `لم يتم العثور على تغييرات لـ "${originalProduct.name}".` });
+    // Handle non-image fields first
+    if (updates.name !== undefined && updates.name.trim() !== originalProduct.name) {
+      const trimmedUpdateName = updates.name.trim();
+      if (currentProducts.some(p => p.id !== productId && p.name.trim().toLowerCase() === trimmedUpdateName.toLowerCase())) {
+        toast({ title: "خطأ", description: "منتج آخر بنفس الاسم الجديد موجود بالفعل.", variant: "destructive" });
         return originalProduct;
+      }
+      updatedProductData.name = trimmedUpdateName;
+      hasChanges = true;
+    }
+    if (updates.price !== undefined && updates.price !== originalProduct.price) {
+      updatedProductData.price = updates.price;
+      hasChanges = true;
+    }
+    if (updates.quantity !== undefined && updates.quantity !== originalProduct.quantity) {
+      updatedProductData.quantity = updates.quantity;
+      hasChanges = true;
+    }
+    const newBarcodeTrimmed = updates.barcodeValue?.trim();
+    const originalBarcodeTrimmed = originalProduct.barcodeValue?.trim() || '';
+    if (newBarcodeTrimmed !== undefined && newBarcodeTrimmed !== originalBarcodeTrimmed) {
+        updatedProductData.barcodeValue = newBarcodeTrimmed;
+        hasChanges = true;
+    }
+    
+
+    // Handle image update carefully
+    const newImageUrlFromForm = updates.imageUrl;
+
+    if (newImageUrlFromForm !== undefined) { // Only process if imageUrl is part of the updates
+      if (newImageUrlFromForm.startsWith('data:image')) { // Case 1: New Data URI uploaded
+        const blob = dataUriToBlob(newImageUrlFromForm);
+        if (blob) {
+          try {
+            await saveImageToDB(productId, blob);
+            updatedProductData.imageUrl = ''; // Mark as IDB stored
+            hasChanges = true;
+          } catch (e) {
+            console.error("Failed to save updated image to IndexedDB", e);
+            updatedProductData.imageUrl = newImageUrlFromForm; // Fallback
+            if (originalProduct.imageUrl !== newImageUrlFromForm) hasChanges = true;
+            toast({variant: "destructive", title: "خطأ في حفظ الصورة", description: "لم يتم حفظ الصورة الجديدة."});
+          }
+        } else {
+          console.warn(`Could not convert new data URI to Blob for product ${productId}.`);
+          updatedProductData.imageUrl = newImageUrlFromForm;
+          if (originalProduct.imageUrl !== newImageUrlFromForm) hasChanges = true;
+        }
+      } else if (newImageUrlFromForm === '') { // Case 2: Form submitted empty string for image
+        if (originalProduct.imageUrl && originalProduct.imageUrl !== '') { 
+          // Original image was a URL or some other non-empty, non-IDB placeholder that's now being cleared
+          try {
+            await deleteImageFromDB(productId); // Attempt to delete from IDB
+            updatedProductData.imageUrl = '';
+            hasChanges = true;
+          } catch (e) {
+            console.error("Failed to delete image from IndexedDB when clearing URL-based image", e);
+            updatedProductData.imageUrl = ''; // Still clear it
+            hasChanges = true;
+          }
+        } else {
+          // Original imageUrl was already '', meaning it was an IDB image or no image.
+          // Form submitting '' in this case means "don't change the IDB image / no image status".
+          // So, no actual change to imageUrl field storage representation.
+          // `hasChanges` will be true if other fields changed.
+          updatedProductData.imageUrl = ''; // Ensure it remains stored as empty
+        }
+      } else { // Case 3: Form submitted an external HTTP/S URL
+        if (originalProduct.imageUrl !== newImageUrlFromForm || originalProduct.imageUrl === '') { //If new URL or if it was IDB before
+            try {
+                await deleteImageFromDB(productId); // Remove any old IDB image
+                updatedProductData.imageUrl = newImageUrlFromForm;
+                hasChanges = true;
+            } catch (e) {
+                console.error("Failed to delete image from IndexedDB when setting new URL", e);
+                updatedProductData.imageUrl = newImageUrlFromForm; // Still set new URL
+                hasChanges = true;
+            }
+        }
+      }
+    }
+    // If newImageUrlFromForm was undefined, image isn't part of `updates`, so no image change.
+
+    if (!hasChanges) {
+      toast({ title: "تم الحفظ", description: `لم يتم العثور على تغييرات لـ "${originalProduct.name}".` });
+      return originalProduct;
     }
 
     updatedProductData.updatedAt = new Date().toISOString();
     
     try {
-      const finalUpdatedProduct = { ...updatedProductData }; 
-      setProducts(prevProducts => {
-        const newProductsList = (prevProducts || []).map(p => p.id === productId ? finalUpdatedProduct : p);
-        return newProductsList;
-      });
-      toast({ title: "نجاح", description: `تم تحديث المنتج "${finalUpdatedProduct.name}".` });
-      return finalUpdatedProduct;
+      setProducts(prevProducts => (prevProducts || []).map(p => p.id === productId ? updatedProductData : p));
+      toast({ title: "نجاح", description: `تم تحديث المنتج "${updatedProductData.name}".` });
+      return updatedProductData;
     } catch (error) {
       console.error("Failed to update product in localStorage:", error);
       if (error instanceof DOMException && (error.name === 'QuotaExceededError' || error.code === 22)) {
