@@ -9,11 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, TableFooter } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CalendarIcon, Undo2, Search } from 'lucide-react';
+import { CalendarIcon, Undo2, Search, MinusCircle } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format, parseISO, startOfDay, endOfDay, isEqual, isValid } from 'date-fns';
-import { enGB, arSA } from 'date-fns/locale'; // arSA for Arabic numerals in calendar if needed, enGB for formatting
+import { enGB, arSA } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription as ShadcnDialogDescription, DialogClose } from '@/components/ui/dialog';
@@ -37,10 +37,22 @@ export default function SalesReportPage() {
     return sales.filter(sale => {
       const saleDate = parseISO(sale.saleDate);
       return isValid(saleDate) && saleDate >= start && saleDate <= end;
-    });
+    }).sort((a,b) => parseISO(b.saleDate).getTime() - parseISO(a.saleDate).getTime()); // Sort by most recent first
   }, [sales, selectedDate]);
 
-  const totalActiveSalesAmount = useMemo(() => {
+  const totalActiveOriginalAmount = useMemo(() => {
+    return filteredSales
+      .filter(sale => sale.status === 'active')
+      .reduce((sum, sale) => sum + sale.originalTotalAmount, 0);
+  }, [filteredSales]);
+  
+  const totalActiveDiscountAmount = useMemo(() => {
+    return filteredSales
+      .filter(sale => sale.status === 'active')
+      .reduce((sum, sale) => sum + sale.discountAmount, 0);
+  }, [filteredSales]);
+
+  const totalActiveFinalAmount = useMemo(() => {
     return filteredSales
       .filter(sale => sale.status === 'active')
       .reduce((sum, sale) => sum + sale.totalAmount, 0);
@@ -48,11 +60,10 @@ export default function SalesReportPage() {
 
   const formatSaleTime = (isoString: string) => {
     if (!isoString || !isValid(parseISO(isoString))) return 'N/A';
-    return format(parseISO(isoString), 'hh:mm a', { locale: enGB }); // Changed to hh:mm a for 12-hour format
+    return format(parseISO(isoString), 'hh:mm a', { locale: enGB });
   };
   
   const handleReturnSale = async (saleId: string) => {
-    // Confirmation dialog is handled by DialogTrigger/DialogContent
     await returnSale(saleId);
   };
 
@@ -84,7 +95,7 @@ export default function SalesReportPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight font-headline">تقرير المبيعات اليومي</h1>
         <p className="text-muted-foreground font-body">
-          عرض المبيعات حسب تاريخ محدد.
+          عرض المبيعات حسب تاريخ محدد مع تفاصيل الخصومات.
         </p>
       </div>
 
@@ -120,35 +131,41 @@ export default function SalesReportPage() {
             <div className="overflow-x-auto">
               <Table>
                 <TableCaption>
-                  إجمالي المبيعات النشطة لليوم المحدد: {totalActiveSalesAmount} LYD
+                  إجمالي المبيعات النهائية النشطة لليوم المحدد: {totalActiveFinalAmount.toFixed(2)} LYD
                 </TableCaption>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="px-2 py-3">وقت البيع</TableHead>
-                    <TableHead className="px-2 py-3">المنتجات</TableHead>
-                    <TableHead className="text-center px-2 py-3">الإجمالي</TableHead>
-                    <TableHead className="px-2 py-3">البائع</TableHead>
-                    <TableHead className="text-center px-2 py-3">الحالة</TableHead>
-                    {hasRole(['admin', 'employee_return']) && <TableHead className="text-center px-2 py-3">إرجاع</TableHead>}
+                    <TableHead className="px-2 py-3 min-w-[100px]">وقت البيع</TableHead>
+                    <TableHead className="px-2 py-3 min-w-[150px]">المنتجات</TableHead>
+                    <TableHead className="text-center px-2 py-3 min-w-[100px]">الإجمالي الأصلي</TableHead>
+                    <TableHead className="text-center px-2 py-3 min-w-[100px]">الخصم</TableHead>
+                    <TableHead className="text-center px-2 py-3 min-w-[100px]">الإجمالي النهائي</TableHead>
+                    <TableHead className="px-2 py-3 min-w-[100px]">البائع</TableHead>
+                    <TableHead className="text-center px-2 py-3 min-w-[80px]">الحالة</TableHead>
+                    {hasRole(['admin', 'employee_return']) && <TableHead className="text-center px-2 py-3 min-w-[80px]">إرجاع</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredSales.map((sale) => (
-                    <TableRow key={sale.id}>
+                    <TableRow key={sale.id} className={sale.status === 'returned' ? 'opacity-60' : ''}>
                       <TableCell className="px-2 py-3">{formatSaleTime(sale.saleDate)}</TableCell>
                       <TableCell className="px-2 py-3">
-                        <ul className="list-disc list-inside">
+                        <ul className="list-disc list-inside text-xs">
                           {sale.items.map(item => (
                             <li key={item.productId}>
-                              {item.productName}
+                              {item.productName} (الكمية: {item.quantity})
                             </li>
                           ))}
                         </ul>
                       </TableCell>
-                      <TableCell className="text-center font-semibold px-2 py-3">{sale.totalAmount}</TableCell>
+                      <TableCell className="text-center px-2 py-3">{sale.originalTotalAmount.toFixed(2)}</TableCell>
+                      <TableCell className="text-center px-2 py-3 text-orange-600">
+                        {sale.discountAmount > 0 ? sale.discountAmount.toFixed(2) : '-'}
+                      </TableCell>
+                      <TableCell className="text-center font-semibold px-2 py-3">{sale.totalAmount.toFixed(2)}</TableCell>
                       <TableCell className="px-2 py-3">{sale.sellerUsername}</TableCell>
                       <TableCell className="text-center px-2 py-3">
-                        <Badge variant={sale.status === 'active' ? 'success' : 'destructive'} className={sale.status === 'active' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'}>
+                        <Badge variant={sale.status === 'active' ? 'success' : 'destructive'} className={`${sale.status === 'active' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'} text-xs`}>
                           {sale.status === 'active' ? 'نشط' : 'مرجع'}
                         </Badge>
                       </TableCell>
@@ -157,8 +174,8 @@ export default function SalesReportPage() {
                           {sale.status === 'active' ? (
                              <Dialog>
                                 <DialogTrigger asChild>
-                                <Button variant="outline" size="icon" title="إرجاع العملية">
-                                    <Undo2 className="h-4 w-4 text-orange-500" />
+                                <Button variant="outline" size="icon" title="إرجاع العملية" className="h-7 w-7">
+                                    <Undo2 className="h-3.5 w-3.5 text-orange-500" />
                                 </Button>
                                 </DialogTrigger>
                                 <DialogContent>
@@ -168,7 +185,7 @@ export default function SalesReportPage() {
                                     هل أنت متأكد أنك تريد إرجاع هذه العملية؟ سيتم إعادة المنتجات إلى المخزون.
                                     </ShadcnDialogDescription>
                                 </DialogHeader>
-                                <DialogFooter className="gap-2 sm:justify-start">
+                                <DialogFooter className="gap-2 sm:justify-start pt-2">
                                     <DialogClose asChild>
                                     <Button type="button" variant="secondary">إلغاء</Button>
                                     </DialogClose>
@@ -185,9 +202,12 @@ export default function SalesReportPage() {
                   ))}
                 </TableBody>
                  <TableFooter>
-                    <TableRow>
-                        <TableCell colSpan={hasRole(['admin', 'employee_return']) ? 3 : 2} className="font-bold text-lg px-2 py-3">الإجمالي النشط لليوم</TableCell>
-                        <TableCell colSpan={hasRole(['admin', 'employee_return']) ? 3 : 3} className="text-left font-bold text-lg px-2 py-3">{totalActiveSalesAmount} LYD</TableCell>
+                    <TableRow className="font-bold bg-muted/80">
+                        <TableCell colSpan={2} className="text-lg px-2 py-3">الإجماليات النشطة لليوم:</TableCell>
+                        <TableCell className="text-center text-lg px-2 py-3">{totalActiveOriginalAmount.toFixed(2)}</TableCell>
+                        <TableCell className="text-center text-lg px-2 py-3 text-orange-600">{totalActiveDiscountAmount.toFixed(2)}</TableCell>
+                        <TableCell className="text-center text-lg px-2 py-3">{totalActiveFinalAmount.toFixed(2)}</TableCell>
+                        <TableCell colSpan={hasRole(['admin', 'employee_return']) ? 3 : 2} className="px-2 py-3"></TableCell>
                     </TableRow>
                 </TableFooter>
               </Table>
@@ -204,10 +224,8 @@ export default function SalesReportPage() {
   );
 }
 
-// Helper Badge for success variant
 declare module "@/components/ui/badge" {
   interface BadgeProps {
     variant?: "default" | "secondary" | "destructive" | "outline" | "success";
   }
 }
-

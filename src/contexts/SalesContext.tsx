@@ -8,14 +8,14 @@ import { LOCALSTORAGE_KEYS, INITIAL_SALES } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { useProducts } from './ProductContext';
 import { useAuth } from './AuthContext';
-import { useAppSettings } from './AppSettingsContext'; // Import AppSettingsContext
+import { useAppSettings } from './AppSettingsContext';
 
 interface SalesContextType {
   sales: Sale[];
-  addSale: (items: Omit<SaleItem, 'productName' | 'pricePerUnit'>[]) => Promise<Sale | null>;
+  addSale: (items: Omit<SaleItem, 'productName' | 'pricePerUnit'>[], discountInput?: number) => Promise<Sale | null>;
   returnSale: (saleId: string) => Promise<boolean>;
   getSaleById: (saleId: string) => Sale | undefined;
-  replaceAllSales: (newSales: Sale[]) => void; // Added for backup/restore
+  replaceAllSales: (newSales: Sale[]) => void;
 }
 
 const SalesContext = createContext<SalesContextType | undefined>(undefined);
@@ -25,16 +25,16 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
   const { getProductById, updateProductQuantity } = useProducts();
   const { currentUser } = useAuth();
-  const { settings } = useAppSettings(); // Get settings from AppSettingsContext
+  const { settings } = useAppSettings();
 
-  const addSale = async (rawItems: Omit<SaleItem, 'productName' | 'pricePerUnit'>[]): Promise<Sale | null> => {
+  const addSale = async (rawItems: Omit<SaleItem, 'productName' | 'pricePerUnit'>[], discountInput: number = 0): Promise<Sale | null> => {
     if (!currentUser) {
       toast({ title: "خطأ", description: "يجب تسجيل الدخول لتسجيل عملية بيع.", variant: "destructive" });
       return null;
     }
 
     const saleItems: SaleItem[] = [];
-    let totalAmount = 0;
+    let currentOriginalTotalAmount = 0;
 
     for (const rawItem of rawItems) {
       const product = getProductById(rawItem.productId);
@@ -52,13 +52,22 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
         quantity: rawItem.quantity,
         pricePerUnit: product.price,
       });
-      totalAmount += product.price * rawItem.quantity;
+      currentOriginalTotalAmount += product.price * rawItem.quantity;
     }
+
+    const discountValue = Math.max(0, discountInput); // Ensure discount is not negative
+    const finalTotalAmount = Math.max(0, currentOriginalTotalAmount - discountValue); // Ensure total is not negative
+
+    if (discountValue > currentOriginalTotalAmount) {
+        toast({ title: "تنبيه", description: "قيمة الخصم أكبر من إجمالي الفاتورة. تم تطبيق خصم بقيمة الفاتورة.", variant: "default" });
+    }
+
 
     for (const item of saleItems) {
       const success = await updateProductQuantity(item.productId, -item.quantity);
       if (!success) {
         toast({ title: "خطأ فادح", description: "فشل تحديث كمية المنتج. تم إلغاء البيع.", variant: "destructive" });
+        // Optionally, revert any previously updated quantities here if needed
         return null;
       }
     }
@@ -66,7 +75,9 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
     const newSale: Sale = {
       id: `sale_${Date.now()}`,
       items: saleItems,
-      totalAmount,
+      originalTotalAmount: currentOriginalTotalAmount,
+      discountAmount: discountValue,
+      totalAmount: finalTotalAmount,
       saleDate: new Date().toISOString(),
       sellerId: currentUser.id,
       sellerUsername: currentUser.username,
@@ -74,9 +85,12 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
     };
 
     setSales(prevSales => [newSale, ...(prevSales || [])]);
-    toast({ title: "نجاح", description: `تم تسجيل عملية البيع بنجاح. الإجمالي: ${totalAmount}` });
+    let toastMessage = `تم تسجيل البيع بنجاح. الإجمالي: ${finalTotalAmount}`;
+    if (discountValue > 0) {
+        toastMessage += ` (بعد خصم ${discountValue})`;
+    }
+    toast({ title: "نجاح", description: toastMessage });
 
-    // Play custom sound effect if available, otherwise no sound
     if (settings.saleSuccessSound && settings.saleSuccessSound.startsWith('data:audio')) {
       try {
         const audio = new Audio(settings.saleSuccessSound);
@@ -85,7 +99,6 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
         console.warn("Could not play custom sale sound:", error);
       }
     }
-    // Removed default sound: /sounds/sale-success.mp3
 
     return newSale;
   };

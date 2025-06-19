@@ -5,7 +5,6 @@ export interface User {
   username: string;
   password?: string; // Password will be stored hashed in a real app, plain text here for simplicity
   role: UserRole;
-  // avatarUrl?: string; // Removed user avatar
 }
 
 export interface Product {
@@ -13,8 +12,8 @@ export interface Product {
   name: string;
   price: number;
   quantity: number;
-  imageUrl?: string; // Added for product image
-  barcodeValue?: string; // New field for editable barcode value
+  imageUrl?: string; 
+  barcodeValue?: string; 
   createdAt: string;
   updatedAt: string;
 }
@@ -31,7 +30,9 @@ export interface SaleItem {
 export interface Sale {
   id: string;
   items: SaleItem[];
-  totalAmount: number;
+  originalTotalAmount: number; // Sum of (item.pricePerUnit * item.quantity)
+  discountAmount: number;      // Discount applied to the sale
+  totalAmount: number;         // Final amount: originalTotalAmount - discountAmount
   saleDate: string; // ISO string
   sellerId: string;
   sellerUsername: string; // Denormalized

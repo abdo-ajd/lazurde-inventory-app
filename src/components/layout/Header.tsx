@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
-import { LogOut, Settings, Users, BarChart3, Sun, Moon, PlusCircle, Search as SearchIcon, ListOrdered, Package, Barcode as BarcodeIcon } from 'lucide-react';
+import { LogOut, Settings, Users, BarChart3, Sun, Moon, PlusCircle, Search as SearchIcon, ListOrdered, Package, Barcode as BarcodeIcon, MinusCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,6 +42,7 @@ export default function Header() {
 
   const [headerSearchValue, setHeaderSearchValue] = useState(searchParams.get('q') || '');
   const [scannedBarcode, setScannedBarcode] = useState('');
+  const [discountValue, setDiscountValue] = useState('');
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
 
@@ -83,12 +84,13 @@ export default function Header() {
   const handleBarcodeScan = async () => {
     if (!scannedBarcode.trim()) return;
     const product = getProductByBarcode(scannedBarcode.trim());
+    const discount = parseFloat(discountValue) || 0;
 
     if (product) {
       if (product.quantity > 0) {
         if (currentUser) {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const saleResult = await addSale([{ productId: product.id, quantity: 1 }]);
+          const saleResult = await addSale([{ productId: product.id, quantity: 1 }], discount);
         } else {
           toast({ variant: "destructive", title: "خطأ", description: "يجب تسجيل الدخول لإتمام عملية البيع." });
         }
@@ -99,6 +101,7 @@ export default function Header() {
       toast({ variant: "destructive", title: "لم يتم العثور على المنتج", description: "الباركود المدخل غير صحيح أو المنتج غير موجود." });
     }
     setScannedBarcode(''); 
+    setDiscountValue(''); // Clear discount after sale attempt
   };
 
   const handleBarcodeKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -107,6 +110,14 @@ export default function Header() {
       handleBarcodeScan();
     }
   };
+  
+  const handleDiscountKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      handleBarcodeScan(); // Trigger sale on Enter in discount field too, if barcode is filled
+    }
+  };
+
 
   const getInitials = (name?: string) => {
     if (!name) return '؟';
@@ -184,7 +195,7 @@ export default function Header() {
         </div>
 
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1 sm:gap-2">
           {showHeaderProductSearch && (
             <div className="relative hidden md:flex items-center">
               <SearchIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -193,28 +204,43 @@ export default function Header() {
                 placeholder={"ابحث عن منتج..."}
                 value={headerSearchValue}
                 onChange={handleSearchChange}
-                className="h-9 w-full md:w-40 lg:w-56 pr-10 text-sm"
+                className="h-9 w-full md:w-32 lg:w-48 pr-10 text-sm"
                 aria-label={"البحث عن منتج"}
               />
             </div>
           )}
           {showDashboardBarcodeScanner && (
-            <div className="relative hidden md:flex items-center">
-              <BarcodeIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                ref={barcodeInputRef}
-                type="text"
-                placeholder="امسح باركود للبيع..."
-                value={scannedBarcode}
-                onChange={(e) => setScannedBarcode(e.target.value)}
-                onKeyDown={handleBarcodeKeyDown}
-                className="h-9 w-full md:w-40 lg:w-48 pr-10 pl-4 py-2 text-sm"
-                aria-label="إدخال الباركود للبيع السريع"
-              />
+            <div className="relative hidden md:flex items-center gap-1">
+              <div className="relative">
+                <BarcodeIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                    ref={barcodeInputRef}
+                    type="text"
+                    placeholder="امسح باركود..."
+                    value={scannedBarcode}
+                    onChange={(e) => setScannedBarcode(e.target.value)}
+                    onKeyDown={handleBarcodeKeyDown}
+                    className="h-9 w-full md:w-32 lg:w-40 pr-10 pl-4 py-2 text-sm"
+                    aria-label="إدخال الباركود للبيع السريع"
+                />
+              </div>
+              <div className="relative">
+                <MinusCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                    type="number"
+                    placeholder="خصم..."
+                    value={discountValue}
+                    onChange={(e) => setDiscountValue(e.target.value)}
+                    onKeyDown={handleDiscountKeyDown}
+                    className="h-9 w-20 md:w-20 lg:w-24 pr-9 pl-2 py-2 text-sm appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    aria-label="إدخال قيمة الخصم"
+                    min="0"
+                />
+              </div>
             </div>
           )}
           {showHeaderAddProduct && (
-            <Button asChild size="sm" className="hidden md:inline-flex">
+            <Button asChild size="sm" className="hidden md:inline-flex h-9">
               <Link href="/dashboard/products/add">
                 <PlusCircle className="ml-1 h-4 w-4" /> إضافة
               </Link>
@@ -228,6 +254,7 @@ export default function Header() {
                 size="icon"
                 onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
                 aria-label={theme === 'light' ? 'التبديل إلى الوضع الداكن' : 'التبديل إلى الوضع الفاتح'}
+                className="h-9 w-9"
               >
                 {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
               </Button>
@@ -268,4 +295,3 @@ export default function Header() {
     </TooltipProvider>
   );
 }
-
