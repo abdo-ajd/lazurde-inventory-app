@@ -43,13 +43,13 @@ export default function SalesReportPage() {
   const totalActiveOriginalAmount = useMemo(() => {
     return filteredSales
       .filter(sale => sale.status === 'active')
-      .reduce((sum, sale) => sum + sale.originalTotalAmount, 0);
+      .reduce((sum, sale) => sum + (sale.originalTotalAmount ?? sale.totalAmount), 0);
   }, [filteredSales]);
   
   const totalActiveDiscountAmount = useMemo(() => {
     return filteredSales
       .filter(sale => sale.status === 'active')
-      .reduce((sum, sale) => sum + sale.discountAmount, 0);
+      .reduce((sum, sale) => sum + (sale.discountAmount ?? 0), 0);
   }, [filteredSales]);
 
   const totalActiveFinalAmount = useMemo(() => {
@@ -146,7 +146,10 @@ export default function SalesReportPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredSales.map((sale) => (
+                  {filteredSales.map((sale) => {
+                    const originalAmount = sale.originalTotalAmount ?? sale.totalAmount;
+                    const discountAmount = sale.discountAmount ?? 0;
+                    return (
                     <TableRow key={sale.id} className={sale.status === 'returned' ? 'opacity-60' : ''}>
                       <TableCell className="px-2 py-3">{formatSaleTime(sale.saleDate)}</TableCell>
                       <TableCell className="px-2 py-3">
@@ -158,9 +161,9 @@ export default function SalesReportPage() {
                           ))}
                         </ul>
                       </TableCell>
-                      <TableCell className="text-center px-2 py-3">{sale.originalTotalAmount.toFixed(2)}</TableCell>
+                      <TableCell className="text-center px-2 py-3">{originalAmount.toFixed(2)}</TableCell>
                       <TableCell className="text-center px-2 py-3 text-orange-600">
-                        {sale.discountAmount > 0 ? sale.discountAmount.toFixed(2) : '-'}
+                        {discountAmount > 0 ? discountAmount.toFixed(2) : '-'}
                       </TableCell>
                       <TableCell className="text-center font-semibold px-2 py-3">{sale.totalAmount.toFixed(2)}</TableCell>
                       <TableCell className="px-2 py-3">{sale.sellerUsername}</TableCell>
@@ -199,7 +202,8 @@ export default function SalesReportPage() {
                         </TableCell>
                       )}
                     </TableRow>
-                  ))}
+                  );
+                })}
                 </TableBody>
                  <TableFooter>
                     <TableRow className="font-bold bg-muted/80">
@@ -229,3 +233,4 @@ declare module "@/components/ui/badge" {
     variant?: "default" | "secondary" | "destructive" | "outline" | "success";
   }
 }
+
