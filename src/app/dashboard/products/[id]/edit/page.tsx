@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 
 export default function EditProductPage() {
-  const { getProductById, updateProduct } = useProducts();
+  const { getProductById, updateProduct, products: allProducts } = useProducts(); // Destructure allProducts
   const router = useRouter();
   const params = useParams();
   const { hasRole } = useAuth();
@@ -33,7 +33,7 @@ export default function EditProductPage() {
         setIsFetchingProduct(false);
         setProduct(null); // No ID, so product not found
     }
-  }, [productId, getProductById]);
+  }, [productId, getProductById, allProducts]); // Added allProducts to dependency array
 
   if (!hasRole(['admin'])) {
     // router.replace('/dashboard');
@@ -46,7 +46,12 @@ export default function EditProductPage() {
     const updatedProduct = await updateProduct(product.id, data);
     setIsLoading(false);
     if (updatedProduct) {
-      router.push(`/dashboard/products/${product.id}`);
+      // After successful update, the useEffect above should re-fetch the product
+      // due to `allProducts` changing in the context, which updates the local `product` state,
+      // which in turn updates `initialData` for `ProductForm`.
+      // Optionally, navigate away or confirm update.
+      // For now, staying on the page to see the updated form is fine.
+      // router.push(`/dashboard/products/${product.id}`); // This would navigate away
     }
   };
 
