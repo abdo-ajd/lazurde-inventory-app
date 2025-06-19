@@ -7,7 +7,7 @@ import { createContext, useContext, ReactNode, useCallback } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { LOCALSTORAGE_KEYS, INITIAL_PRODUCTS } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
-import { saveImage as saveImageToDB, deleteImage as deleteImageFromDB, dataUriToBlob } from '@/lib/indexedDBService';
+import { saveImage as saveImageToDB, deleteImage as deleteImageFromDB, getImage as getImageFromDB, dataUriToBlob, blobToDataUri } from '@/lib/indexedDBService';
 
 type ProductUpdatePayload = Partial<Pick<Product, "name" | "price" | "quantity" | "imageUrl" | "barcodeValue">>;
 
@@ -38,15 +38,16 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       return null;
     }
     
-    const productIdTimestamp = Date.now();
+    const productIdTimestamp = Date.now(); // Timestamp for ID and potential barcode
     const generatedProductId = `prod_${productIdTimestamp}`;
     
-    let finalBarcodeValue = String(productIdTimestamp);
-    if (productData.barcodeValue !== undefined) {
-        finalBarcodeValue = productData.barcodeValue.trim(); 
+    // Barcode logic: Use provided if not empty, otherwise generate from timestamp
+    let finalBarcodeValue = productData.barcodeValue?.trim(); // Get trimmed value or undefined
+    if (!finalBarcodeValue) { // If undefined, null, or empty string after trim
+        finalBarcodeValue = String(productIdTimestamp);
     }
 
-    let imageToSaveInDB = productData.imageUrl || ''; // Keep original value for now
+    let imageToSaveInDB = productData.imageUrl || '';
 
     const newProductToAdd: Product = {
       ...productData,
@@ -54,7 +55,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       name: trimmedNewName,
       price: productData.price,
       quantity: productData.quantity,
-      imageUrl: '', // Will be empty in localStorage if image goes to IDB
+      imageUrl: '', 
       barcodeValue: finalBarcodeValue, 
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -65,16 +66,13 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
         const blob = dataUriToBlob(imageToSaveInDB);
         if (blob) {
           await saveImageToDB(newProductToAdd.id, blob);
-          // newProductToAdd.imageUrl is already set to ''
         } else {
           console.warn(`Could not convert data URI to Blob for product ${newProductToAdd.id}. Image not saved to IndexedDB.`);
-          newProductToAdd.imageUrl = imageToSaveInDB; // Keep original Data URI if conversion fails
+          newProductToAdd.imageUrl = imageToSaveInDB; 
         }
       } else if (imageToSaveInDB) {
-        // If it's not a data URI, it might be a placeholder or external URL. Keep it.
         newProductToAdd.imageUrl = imageToSaveInDB;
       }
-
 
       setProducts(prevProducts => [newProductToAdd, ...(prevProducts || [])]);
       toast({ title: "نجاح", description: `تمت إضافة المنتج "${newProductToAdd.name}" بنجاح.` });
@@ -82,7 +80,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("Failed to add product:", error);
       if (error instanceof DOMException && (error.name === 'QuotaExceededError' || error.code === 22)) {
-        // Alert is handled by useLocalStorage
+         // Alert handled by useLocalStorage
       } else {
          toast({ title: "خطأ في الإضافة", description: "لم يتم حفظ المنتج بسبب خطأ غير متوقع.", variant: "destructive" });
       }
@@ -99,78 +97,83 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       return null;
     }
 
-    const productToUpdate = { ...currentProducts[productIndex] }; // Create a copy
+    const originalProduct = currentProducts[productIndex];
     let productChanged = false;
+    
+    // Create a mutable copy for building the updated product
+    const updatedProductData = { ...originalProduct };
 
-    if (updates.name !== undefined && updates.name.trim() !== productToUpdate.name) {
+    if (updates.name !== undefined && updates.name.trim() !== updatedProductData.name) {
         const trimmedUpdateName = updates.name.trim();
         if (currentProducts.some(p => p.id !== productId && p.name.trim().toLowerCase() === trimmedUpdateName.toLowerCase())) {
             toast({ title: "خطأ", description: "منتج آخر بنفس الاسم الجديد موجود بالفعل.", variant: "destructive" });
-            return productToUpdate; 
+            return originalProduct; 
         }
-        productToUpdate.name = trimmedUpdateName;
+        updatedProductData.name = trimmedUpdateName;
         productChanged = true;
     }
-    if (updates.price !== undefined && updates.price !== productToUpdate.price) {
-        productToUpdate.price = updates.price;
+    if (updates.price !== undefined && updates.price !== updatedProductData.price) {
+        updatedProductData.price = updates.price;
         productChanged = true;
     }
-    if (updates.quantity !== undefined && updates.quantity !== productToUpdate.quantity) {
-        productToUpdate.quantity = updates.quantity;
+    if (updates.quantity !== undefined && updates.quantity !== updatedProductData.quantity) {
+        updatedProductData.quantity = updates.quantity;
         productChanged = true;
     }
-    if (updates.barcodeValue !== undefined && updates.barcodeValue.trim() !== (productToUpdate.barcodeValue || '')) {
-        productToUpdate.barcodeValue = updates.barcodeValue.trim();
+    
+    const newBarcodeValue = updates.barcodeValue?.trim();
+    if (newBarcodeValue !== undefined && newBarcodeValue !== (updatedProductData.barcodeValue || '')) {
+        updatedProductData.barcodeValue = newBarcodeValue;
+        productChanged = true;
+    } else if (updates.barcodeValue !== undefined && newBarcodeValue === '' && updatedProductData.barcodeValue) {
+        // If user explicitly clears barcode, set it to empty string
+        updatedProductData.barcodeValue = '';
         productChanged = true;
     }
 
-    // Image handling
+
     if (updates.imageUrl !== undefined) {
-        productChanged = true; // Image change is considered a change
-        if (updates.imageUrl.startsWith('data:image')) { // New image data URI
+        productChanged = true;
+        if (updates.imageUrl.startsWith('data:image')) {
             const blob = dataUriToBlob(updates.imageUrl);
             if (blob) {
                 try {
                     await saveImageToDB(productId, blob);
-                    productToUpdate.imageUrl = ''; // Clear from localStorage version
+                    updatedProductData.imageUrl = ''; 
                 } catch (e) {
                     console.error("Failed to save updated image to IndexedDB", e);
-                    // Keep old image ref or new data URI if save fails? For now, assume it might fail, keep new URI.
-                    productToUpdate.imageUrl = updates.imageUrl; 
+                    updatedProductData.imageUrl = updates.imageUrl; 
                     toast({variant: "destructive", title: "خطأ في حفظ الصورة", description: "لم يتم حفظ الصورة الجديدة في قاعدة البيانات المحلية."});
                 }
             } else {
                  console.warn(`Could not convert new data URI to Blob for product ${productId}.`);
-                 productToUpdate.imageUrl = updates.imageUrl; // Keep new Data URI if conversion fails
+                 updatedProductData.imageUrl = updates.imageUrl; 
             }
-        } else if (updates.imageUrl === '') { // Image cleared by user
+        } else if (updates.imageUrl === '') { 
             try {
                 await deleteImageFromDB(productId);
-                productToUpdate.imageUrl = '';
+                updatedProductData.imageUrl = '';
             } catch (e) {
                 console.error("Failed to delete image from IndexedDB", e);
-                // If deletion fails, the image might still be in IDB. localStorage version is cleared.
-                productToUpdate.imageUrl = ''; 
+                updatedProductData.imageUrl = ''; 
             }
-        } else { // It's a placeholder or external URL
-            productToUpdate.imageUrl = updates.imageUrl;
-             // If it was previously in IDB, delete it
+        } else { 
+            updatedProductData.imageUrl = updates.imageUrl;
             try { await deleteImageFromDB(productId); } catch (e) { /* ignore */ }
         }
     }
     
     if (!productChanged) {
-        toast({ title: "تم الحفظ", description: `لم يتم العثور على تغييرات لـ "${productToUpdate.name}".` });
-        return productToUpdate;
+        toast({ title: "تم الحفظ", description: `لم يتم العثور على تغييرات لـ "${originalProduct.name}".` });
+        return originalProduct;
     }
 
-    productToUpdate.updatedAt = new Date().toISOString();
+    updatedProductData.updatedAt = new Date().toISOString();
     
     try {
-      const finalUpdatedProduct = { ...productToUpdate }; // Ensure a new object reference for the specific product
+      const finalUpdatedProduct = { ...updatedProductData }; 
       setProducts(prevProducts => {
-        const newProductsList = [...(prevProducts || [])];
-        newProductsList[productIndex] = finalUpdatedProduct;
+        const newProductsList = (prevProducts || []).map(p => p.id === productId ? finalUpdatedProduct : p);
         return newProductsList;
       });
       toast({ title: "نجاح", description: `تم تحديث المنتج "${finalUpdatedProduct.name}".` });
@@ -182,7 +185,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       } else {
         toast({ title: "خطأ في التحديث", description: "لم يتم حفظ التعديلات بسبب خطأ غير متوقع.", variant: "destructive" });
       }
-      return currentProducts[productIndex]; // Return original if update fails
+      return originalProduct; 
     }
   };
 
@@ -193,14 +196,13 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       return false;
     }
     try {
-      await deleteImageFromDB(productId); // Delete image from IDB first
+      await deleteImageFromDB(productId); 
       setProducts(prevProducts => (prevProducts || []).filter(p => p.id !== productId));
-      // Toast is shown by the calling component after success
       return true;
     } catch (error) {
       console.error("Failed to delete product or its image:", error);
        if (error instanceof DOMException && (error.name === 'QuotaExceededError' || error.code === 22)) {
-         // Alert handled by useLocalStorage if it was during setProducts
+         // Alert handled by useLocalStorage
        } else {
         toast({ title: "خطأ في الحذف", description: "لم يتم حذف المنتج بسبب خطأ.", variant: "destructive" });
        }
@@ -235,26 +237,23 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     try {
       const productsForLocalStorage: Product[] = [];
       for (const product of newProductsFromBackup) {
-        const productCopy = { ...product }; // Work on a copy
+        const productCopy = { ...product }; 
         if (productCopy.imageUrl && productCopy.imageUrl.startsWith('data:image')) {
           const blob = dataUriToBlob(productCopy.imageUrl);
           if (blob) {
             try {
               await saveImageToDB(productCopy.id, blob);
-              productCopy.imageUrl = ''; // Clear DataURI from localStorage version
+              productCopy.imageUrl = ''; 
             } catch (e) {
               console.warn(`Failed to migrate image to IndexedDB for product ${productCopy.id} during restore. Keeping Data URI.`, e);
-              // Keep productCopy.imageUrl as DataURI if IDB save fails
             }
           } else {
             console.warn(`Could not convert Data URI to Blob for product ${productCopy.id} during restore. Keeping Data URI.`);
-            // Keep productCopy.imageUrl as DataURI if conversion fails
           }
         }
         productsForLocalStorage.push(productCopy);
       }
       setProducts(productsForLocalStorage);
-      // Toast for restore success is usually handled in AppSettingsPage
     } catch (error) {
       console.error("Failed to replace all products:", error);
       if (error instanceof DOMException && (error.name === 'QuotaExceededError' || error.code === 22)) {
@@ -266,7 +265,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <ProductContext.Provider value={{ products: products || [], addProduct, updateProduct, deleteProduct, getProductById, getProductByBarcode, updateProductQuantity, replaceAllProducts: replaceAllProducts }}>
+    <ProductContext.Provider value={{ products: products || [], addProduct, updateProduct, deleteProduct, getProductById, getProductByBarcode, updateProductQuantity, replaceAllProducts }}>
       {children}
     </ProductContext.Provider>
   );
@@ -279,3 +278,4 @@ export const useProducts = () => {
   }
   return context;
 };
+

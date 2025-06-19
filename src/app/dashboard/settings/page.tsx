@@ -1,3 +1,4 @@
+
 // src/app/dashboard/settings/page.tsx
 "use client";
 
@@ -18,6 +19,7 @@ import { DEFAULT_APP_SETTINGS, LOCALSTORAGE_KEYS } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import type { User, Product, Sale, AppSettings as AppSettingsType } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { getImage as getImageFromDB, blobToDataUri } from '@/lib/indexedDBService';
 
 
 const hslColorSchema = z.string().regex(/^(\d{1,3})\s+(\d{1,3}%)\s+(\d{1,3}%)$/, {
@@ -37,7 +39,7 @@ type SettingsFormValues = z.infer<typeof settingsSchema>;
 
 interface BackupData {
   users: User[];
-  products: Product[];
+  products: Product[]; // Product in backup might have imageUrl as DataURI
   sales: Sale[];
   settings: AppSettingsType;
 }
@@ -87,11 +89,8 @@ interface BeforeInstallPromptEvent extends Event {
 
 export default function AppSettingsPage() {
   const { settings, updateSettings, resetToDefaults, applyTheme } = useAppSettings();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { users, replaceAllUsers, hasRole } = useAuth();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { products, replaceAllProducts } = useProducts();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { products: productsFromContext, replaceAllProducts } = useProducts(); // Rename to avoid conflict
   const { sales, replaceAllSales } = useSales();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -130,7 +129,7 @@ export default function AppSettingsPage() {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setCanInstallPWA(true);
-      setIsPWAInstalled(false); // If prompt is shown, it's not installed yet
+      setIsPWAInstalled(false); 
     };
 
     const handleAppInstalled = () => {
@@ -140,7 +139,6 @@ export default function AppSettingsPage() {
       toast({ title: "تم التثبيت", description: "تم تثبيت التطبيق بنجاح." });
     };
     
-    // Check if running as PWA
     if (typeof window !== 'undefined') {
         if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone) {
             setIsPWAInstalled(true);
@@ -185,12 +183,41 @@ export default function AppSettingsPage() {
     );
   };
 
-  const handleCreateBackup = () => {
+  const handleCreateBackup = async () => {
     try {
+      // Fetch current data directly from localStorage or context
+      const productsFromStorage: Product[] = JSON.parse(localStorage.getItem(LOCALSTORAGE_KEYS.PRODUCTS) || '[]');
+      const salesFromStorage: Sale[] = JSON.parse(localStorage.getItem(LOCALSTORAGE_KEYS.SALES) || '[]');
+      const usersFromStorage: User[] = JSON.parse(localStorage.getItem(LOCALSTORAGE_KEYS.USERS) || '[]');
+      // Settings are already available from useAppSettings hook (settings variable)
+
+      const productsForBackup: Product[] = [];
+      for (const product of productsFromStorage) {
+        const productCopy = { ...product }; // Create a copy to modify for backup
+        // If imageUrl is empty, it implies the image might be in IndexedDB
+        // Or, if it's not a data URI and not an external http(s) link, it might also be an IDB placeholder.
+        // For simplicity, we check if it's NOT a Data URI and NOT an HTTP/S link to consider fetching from IDB.
+        // A truly empty imageUrl or one that was meant for IDB would be ''
+        if (productCopy.imageUrl === '' || (!productCopy.imageUrl?.startsWith('data:image') && !productCopy.imageUrl?.startsWith('http'))) {
+          const imageBlob = await getImageFromDB(productCopy.id);
+          if (imageBlob) {
+            try {
+              productCopy.imageUrl = await blobToDataUri(imageBlob);
+            } catch (conversionError) {
+              console.error(`Error converting blob to data URI for product ${productCopy.id}:`, conversionError);
+              // Keep imageUrl as empty or original non-http value if conversion fails
+              productCopy.imageUrl = productCopy.imageUrl || ''; 
+            }
+          }
+        }
+        // If imageUrl is already a data URI or an external URL, it's kept as is.
+        productsForBackup.push(productCopy);
+      }
+
       const backupData: BackupData = {
-        users: JSON.parse(localStorage.getItem(LOCALSTORAGE_KEYS.USERS) || '[]'),
-        products: JSON.parse(localStorage.getItem(LOCALSTORAGE_KEYS.PRODUCTS) || '[]'),
-        sales: JSON.parse(localStorage.getItem(LOCALSTORAGE_KEYS.SALES) || '[]'),
+        users: usersFromStorage,
+        products: productsForBackup,
+        sales: salesFromStorage,
         settings: settings, 
       };
 
@@ -235,10 +262,12 @@ export default function AppSettingsPage() {
             throw new Error("تنسيق البيانات في ملف النسخ الاحتياطي غير صحيح.");
         }
 
+        // replaceAll methods will handle IndexedDB migration for images if needed
+        await replaceAllProducts(restoredData.products);
         replaceAllUsers(restoredData.users);
-        replaceAllProducts(restoredData.products);
         replaceAllSales(restoredData.sales);
         updateSettings(restoredData.settings);
+
 
         toast({ title: "نجاح", description: "تم استعادة البيانات بنجاح. سيتم إعادة تحميل الصفحة." });
         
@@ -291,15 +320,14 @@ export default function AppSettingsPage() {
   const handleInstallPWA = async () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
-      // Wait for the user to respond to the prompt
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
         // App was installed, appinstalled event will handle UI update
       } else {
         toast({ title: "ملاحظة", description: "تم إلغاء طلب التثبيت." });
       }
-      setDeferredPrompt(null); // Prompt can only be used once.
-      setCanInstallPWA(false); // No longer can install with this prompt
+      setDeferredPrompt(null); 
+      setCanInstallPWA(false); 
     }
   };
 
