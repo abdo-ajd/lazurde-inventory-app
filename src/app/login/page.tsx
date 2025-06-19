@@ -35,7 +35,7 @@ export default function LoginPage() {
             width={100} 
             height={100} 
             className="mx-auto mb-4 rounded-full"
-            data-ai-hint="store logo" 
+            data-ai-hint="woman building" 
           />
           <h1 className="text-3xl font-bold text-primary font-headline">تسجيل الدخول</h1>
           <p className="mt-2 text-muted-foreground font-body">مرحباً بك في لازوردي للمخزون</p>
