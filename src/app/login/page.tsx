@@ -30,12 +30,12 @@ export default function LoginPage() {
       <div className="w-full max-w-md p-8 space-y-8 bg-card rounded-xl shadow-2xl">
         <div className="text-center">
           <Image 
-            src="https://placehold.co/100x100.png" 
+            src="https://images.unsplash.com/photo-1483985988355-763728e1935b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxGYXNoaW9uJTIwfGVufDB8fHx8MTc1MDMyMjI4NHww&ixlib=rb-4.1.0&q=80&w=1080" 
             alt="شعار المتجر" 
             width={100} 
             height={100} 
-            className="mx-auto mb-4 rounded-full"
-            data-ai-hint="woman building" 
+            className="mx-auto mb-4 rounded-full object-cover"
+            data-ai-hint="fashion shopping" 
           />
           <h1 className="text-3xl font-bold text-primary font-headline">تسجيل الدخول</h1>
           <p className="mt-2 text-muted-foreground font-body">مرحباً بك في لازوردي للمخزون</p>
