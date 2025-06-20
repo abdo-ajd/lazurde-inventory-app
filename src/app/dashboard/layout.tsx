@@ -34,7 +34,7 @@ export default function DashboardLayout({
             <Skeleton className="h-8 w-8 rounded-full" />
           </div>
         </header>
-        <div className="container flex-1 px-4 md:px-6 py-6 md:py-8">
+        <div className="w-full flex-1 px-4 md:px-6 py-6 md:py-8"> {/* Removed container class */}
           {/* Removed sidebar skeleton part */}
           <main className="flex w-full flex-col overflow-hidden">
             <Skeleton className="h-96 w-full" />
@@ -48,8 +48,8 @@ export default function DashboardLayout({
     <NextThemesProvider attribute="class" defaultTheme="system" enableSystem>
       <div className="flex flex-col min-h-screen bg-background">
         <Header />
-        <div className="container flex-1 px-4 md:px-6 pt-6 pb-8 md:py-8">
-          {/* Removed aside/sidebar structure */}
+        {/* Removed 'container' class from this div to allow full width */}
+        <div className="w-full flex-1 px-4 md:px-6 pt-6 pb-8 md:py-8">
           <main className="flex w-full flex-col overflow-hidden">
             {children}
           </main>
