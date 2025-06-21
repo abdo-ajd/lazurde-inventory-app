@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { AppProviders } from '@/contexts/AppProviders';
@@ -24,7 +25,7 @@ export default function RootLayout({
         {/* PWA Meta Tags */}
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#42A5F5" /> 
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link id="apple-touch-icon" rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <meta name='apple-mobile-web-app-capable' content='yes' />
         <meta name='apple-mobile-web-app-status-bar-style' content='default' />
         <meta name='apple-mobile-web-app-title' content='لازوردي Lite' />
@@ -32,7 +33,7 @@ export default function RootLayout({
         <meta name='mobile-web-app-capable' content='yes' />
         {/* End PWA Meta Tags */}
 
-        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link id="favicon" rel="icon" href="/favicon.ico" sizes="any" />
       </head>
       <body className="font-body antialiased min-h-screen flex flex-col">
         <AppProviders>
@@ -42,3 +43,5 @@ export default function RootLayout({
     </html>
   );
 }
+
+    

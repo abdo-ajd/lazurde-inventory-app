@@ -14,7 +14,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProducts } from '@/contexts/ProductContext';
 import { useSales } from '@/contexts/SalesContext';
 import { useEffect, useRef, useState } from 'react';
-import { Save, RotateCcw, Download, Upload, Music, Trash2, Smartphone, DownloadCloud, AlertTriangle, CreditCard, Palette, Edit } from 'lucide-react';
+import { Save, RotateCcw, Download, Upload, Music, Trash2, Smartphone, DownloadCloud, AlertTriangle, CreditCard, Palette, Edit, Image as ImageLucide } from 'lucide-react';
+import Image from 'next/image';
 import { DEFAULT_APP_SETTINGS, LOCALSTORAGE_KEYS, DEFAULT_ADMIN_USER } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import type { User, Product, Sale, AppSettings as AppSettingsType } from '@/lib/types';
@@ -117,6 +118,8 @@ export default function AppSettingsPage() {
   const rejectedSoundInputRef = useRef<HTMLInputElement>(null);
   const [uploadedRejectedSoundName, setUploadedRejectedSoundName] = useState<string | null>(null);
   
+  const appIconInputRef = useRef<HTMLInputElement>(null);
+
   const [newServiceName, setNewServiceName] = useState('');
   const [newServiceColor, setNewServiceColor] = useState<string>(PREDEFINED_SERVICE_COLORS[0]?.value || '');
   
@@ -407,6 +410,30 @@ export default function AppSettingsPage() {
     updateSettings({ bankServices: updatedServices });
     toast({ title: "تم التحديث", description: `تم تحديث لون خدمة "${serviceToEdit.name}".` });
     setServiceToEdit(null);
+  };
+  
+  const handleAppIconFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+        if (file.size > 1 * 1024 * 1024) { // 1 MB limit
+            toast({ variant: "destructive", title: "خطأ", description: "حجم الملف كبير جداً. الرجاء اختيار ملف أصغر من 1 ميجابايت." });
+            if (appIconInputRef.current) appIconInputRef.current.value = "";
+            return;
+        }
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const dataUri = reader.result as string;
+            updateSettings({ appIcon: dataUri });
+            toast({ title: "نجاح", description: `تم رفع الأيقونة: ${file.name}` });
+        };
+        reader.readAsDataURL(file);
+    }
+  };
+
+  const handleClearAppIcon = () => {
+    updateSettings({ appIcon: '' });
+    if (appIconInputRef.current) appIconInputRef.current.value = "";
+    toast({ title: "نجاح", description: "تمت إزالة الأيقونة المخصصة." });
   };
 
 
@@ -704,6 +731,52 @@ export default function AppSettingsPage() {
            </p>
         </CardContent>
       </Card>
+      
+      {isDefaultAdmin && (
+        <Card className="mt-6">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <ImageLucide className="h-5 w-5 text-primary" />
+                    أيقونة التطبيق
+                </CardTitle>
+                <CardDescription>
+                    اختر أيقونة مخصصة للتطبيق. ستظهر في شريط المتصفح وعند تثبيت التطبيق على الجهاز.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-4 items-center">
+                    <Button onClick={() => appIconInputRef.current?.click()} variant="outline" className="w-full sm:w-auto">
+                        <Upload className="ml-2 h-4 w-4" /> {settings.appIcon ? "تغيير الأيقونة" : "اختيار ملف صورة"}
+                    </Button>
+                    <Input 
+                        type="file" 
+                        ref={appIconInputRef} 
+                        className="hidden" 
+                        accept="image/png, image/jpeg, image/svg+xml, image/x-icon" 
+                        onChange={handleAppIconFileChange}
+                    />
+                    {settings.appIcon && (
+                        <Button onClick={handleClearAppIcon} variant="destructive" size="sm" className="w-full sm:w-auto">
+                            <Trash2 className="ml-2 h-4 w-4" /> إزالة الأيقونة
+                        </Button>
+                    )}
+                </div>
+                
+                <div className="text-sm text-muted-foreground flex items-center gap-4">
+                    <span>المعاينة:</span>
+                    {settings.appIcon ? (
+                        <Image src={settings.appIcon} alt="معاينة الأيقونة" width={48} height={48} className="rounded-md border p-1" />
+                    ) : (
+                        <div className="w-12 h-12 flex items-center justify-center bg-muted rounded-md border text-xs">لا يوجد</div>
+                    )}
+                </div>
+
+                <p className="text-xs text-muted-foreground pt-2">
+                    (يفضل استخدام صورة مربعة بصيغة PNG. الحد الأقصى للحجم: 1 ميجابايت)
+                </p>
+            </CardContent>
+        </Card>
+      )}
 
       <Card className="mt-6">
         <CardHeader>
@@ -737,3 +810,5 @@ export default function AppSettingsPage() {
     </div>
   );
 }
+
+    
