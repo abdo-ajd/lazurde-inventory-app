@@ -19,6 +19,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription as ShadcnDialogDescription, DialogClose } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Sale } from '@/lib/types';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
 
 export default function SalesReportPage() {
   const { sales, returnSale } = useSales();
@@ -27,6 +34,9 @@ export default function SalesReportPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
+  const [isYearlyReportOpen, setIsYearlyReportOpen] = useState(false);
+  const [isMonthlyReportOpen, setIsMonthlyReportOpen] = useState(false);
+  const [isWeeklyReportOpen, setIsWeeklyReportOpen] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -213,6 +223,102 @@ export default function SalesReportPage() {
 
   return (
     <div className="space-y-6">
+      {/* ===== DIALOGS CONTROLLED BY STATE ===== */}
+      <Dialog open={isYearlyReportOpen} onOpenChange={setIsYearlyReportOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>ملخص المبيعات لسنة {yearlyReportData.year}</DialogTitle>
+            <ShadcnDialogDescription>
+              هذا هو ملخص المبيعات والخصومات والأرباح للسنة المحددة.
+            </ShadcnDialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-4">
+            <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
+              <span className="font-medium">إجمالي المبيعات</span>
+              <span className="font-bold text-lg">{yearlyReportData.totalSales} LYD</span>
+            </div>
+            <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
+              <span className="font-medium">إجمالي الخصومات</span>
+              <span className="font-bold text-lg text-orange-600">{yearlyReportData.totalDiscount} LYD</span>
+            </div>
+            {hasRole(['admin']) && (
+              <div className="flex justify-between items-center p-3 rounded-lg bg-green-100 dark:bg-green-900 border border-green-200 dark:border-green-800">
+                <span className="font-medium text-green-800 dark:text-green-200">إجمالي الربح</span>
+                <span className={`font-bold text-lg ${yearlyReportData.totalProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>{yearlyReportData.totalProfit} LYD</span>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+             <DialogClose asChild>
+                <Button type="button" variant="secondary">إغلاق</Button>
+             </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isWeeklyReportOpen} onOpenChange={setIsWeeklyReportOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>ملخص المبيعات للأسبوع</DialogTitle>
+            <ShadcnDialogDescription>
+             {weeklyReportData.weekRange}
+            </ShadcnDialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-4">
+            <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
+              <span className="font-medium">إجمالي المبيعات</span>
+              <span className="font-bold text-lg">{weeklyReportData.totalSales} LYD</span>
+            </div>
+            <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
+              <span className="font-medium">إجمالي الخصومات</span>
+              <span className="font-bold text-lg text-orange-600">{weeklyReportData.totalDiscount} LYD</span>
+            </div>
+            {hasRole(['admin']) && (
+              <div className="flex justify-between items-center p-3 rounded-lg bg-green-100 dark:bg-green-900 border border-green-200 dark:border-green-800">
+                <span className="font-medium text-green-800 dark:text-green-200">إجمالي الربح</span>
+                <span className={`font-bold text-lg ${weeklyReportData.totalProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>{weeklyReportData.totalProfit} LYD</span>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+             <DialogClose asChild>
+                <Button type="button" variant="secondary">إغلاق</Button>
+             </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isMonthlyReportOpen} onOpenChange={setIsMonthlyReportOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>ملخص المبيعات لـ {monthlyReportData.monthName}</DialogTitle>
+            <ShadcnDialogDescription>
+              هذا هو ملخص المبيعات والخصومات والأرباح للشهر المحدد.
+            </ShadcnDialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-4">
+            <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
+              <span className="font-medium">إجمالي المبيعات</span>
+              <span className="font-bold text-lg">{monthlyReportData.totalSales} LYD</span>
+            </div>
+            <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
+              <span className="font-medium">إجمالي الخصومات</span>
+              <span className="font-bold text-lg text-orange-600">{monthlyReportData.totalDiscount} LYD</span>
+            </div>
+            {hasRole(['admin']) && (
+              <div className="flex justify-between items-center p-3 rounded-lg bg-green-100 dark:bg-green-900 border border-green-200 dark:border-green-800">
+                <span className="font-medium text-green-800 dark:text-green-200">إجمالي الربح</span>
+                <span className={`font-bold text-lg ${monthlyReportData.totalProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>{monthlyReportData.totalProfit} LYD</span>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+             <DialogClose asChild>
+                <Button type="button" variant="secondary">إغلاق</Button>
+             </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* ===== END DIALOGS ===== */}
+
       <div>
         <h1 className="text-3xl font-bold tracking-tight font-headline">تقرير المبيعات</h1>
         <p className="text-muted-foreground font-body">
@@ -225,119 +331,25 @@ export default function SalesReportPage() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <CardTitle>عرض التقرير حسب التاريخ</CardTitle>
             <div className="flex items-center gap-2 flex-wrap justify-end">
-              <Dialog>
-                <DialogTrigger asChild>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="h-10">
                     <FileText className="ml-2 h-4 w-4" />
-                    تقرير سنوي
+                    تقارير مجمعة
                   </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>ملخص المبيعات لسنة {yearlyReportData.year}</DialogTitle>
-                    <CardDescription>
-                      هذا هو ملخص المبيعات والخصومات والأرباح للسنة المحددة.
-                    </CardDescription>
-                  </DialogHeader>
-                  <div className="space-y-3 py-4">
-                    <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
-                      <span className="font-medium">إجمالي المبيعات</span>
-                      <span className="font-bold text-lg">{yearlyReportData.totalSales} LYD</span>
-                    </div>
-                    <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
-                      <span className="font-medium">إجمالي الخصومات</span>
-                      <span className="font-bold text-lg text-orange-600">{yearlyReportData.totalDiscount} LYD</span>
-                    </div>
-                    {hasRole(['admin']) && (
-                      <div className="flex justify-between items-center p-3 rounded-lg bg-green-100 dark:bg-green-900 border border-green-200 dark:border-green-800">
-                        <span className="font-medium text-green-800 dark:text-green-200">إجمالي الربح</span>
-                        <span className={`font-bold text-lg ${yearlyReportData.totalProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>{yearlyReportData.totalProfit} LYD</span>
-                      </div>
-                    )}
-                  </div>
-                  <DialogFooter>
-                     <DialogClose asChild>
-                        <Button type="button" variant="secondary">إغلاق</Button>
-                     </DialogClose>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="h-10">
-                    <FileText className="ml-2 h-4 w-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={() => setIsWeeklyReportOpen(true)}>
                     تقرير أسبوعي
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>ملخص المبيعات للأسبوع</DialogTitle>
-                    <CardDescription>
-                     {weeklyReportData.weekRange}
-                    </CardDescription>
-                  </DialogHeader>
-                  <div className="space-y-3 py-4">
-                    <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
-                      <span className="font-medium">إجمالي المبيعات</span>
-                      <span className="font-bold text-lg">{weeklyReportData.totalSales} LYD</span>
-                    </div>
-                    <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
-                      <span className="font-medium">إجمالي الخصومات</span>
-                      <span className="font-bold text-lg text-orange-600">{weeklyReportData.totalDiscount} LYD</span>
-                    </div>
-                    {hasRole(['admin']) && (
-                      <div className="flex justify-between items-center p-3 rounded-lg bg-green-100 dark:bg-green-900 border border-green-200 dark:border-green-800">
-                        <span className="font-medium text-green-800 dark:text-green-200">إجمالي الربح</span>
-                        <span className={`font-bold text-lg ${weeklyReportData.totalProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>{weeklyReportData.totalProfit} LYD</span>
-                      </div>
-                    )}
-                  </div>
-                  <DialogFooter>
-                     <DialogClose asChild>
-                        <Button type="button" variant="secondary">إغلاق</Button>
-                     </DialogClose>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="h-10">
-                    <FileText className="ml-2 h-4 w-4" />
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setIsMonthlyReportOpen(true)}>
                     تقرير شهري
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>ملخص المبيعات لـ {monthlyReportData.monthName}</DialogTitle>
-                    <CardDescription>
-                      هذا هو ملخص المبيعات والخصومات والأرباح للشهر المحدد.
-                    </CardDescription>
-                  </DialogHeader>
-                  <div className="space-y-3 py-4">
-                    <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
-                      <span className="font-medium">إجمالي المبيعات</span>
-                      <span className="font-bold text-lg">{monthlyReportData.totalSales} LYD</span>
-                    </div>
-                    <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
-                      <span className="font-medium">إجمالي الخصومات</span>
-                      <span className="font-bold text-lg text-orange-600">{monthlyReportData.totalDiscount} LYD</span>
-                    </div>
-                    {hasRole(['admin']) && (
-                      <div className="flex justify-between items-center p-3 rounded-lg bg-green-100 dark:bg-green-900 border border-green-200 dark:border-green-800">
-                        <span className="font-medium text-green-800 dark:text-green-200">إجمالي الربح</span>
-                        <span className={`font-bold text-lg ${monthlyReportData.totalProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>{monthlyReportData.totalProfit} LYD</span>
-                      </div>
-                    )}
-                  </div>
-                  <DialogFooter>
-                     <DialogClose asChild>
-                        <Button type="button" variant="secondary">إغلاق</Button>
-                     </DialogClose>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setIsYearlyReportOpen(true)}>
+                    تقرير سنوي
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               <Popover>
                 <PopoverTrigger asChild>
