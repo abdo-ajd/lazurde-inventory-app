@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { DEFAULT_ADMIN_USER } from '@/lib/constants';
 
 export default function EditUserPage() {
   const { getUserById, updateUser, hasRole } = useAuth();
@@ -71,6 +72,8 @@ export default function EditUserPage() {
     );
   }
 
+  const isDefaultAdmin = user.id === DEFAULT_ADMIN_USER.id && user.username === DEFAULT_ADMIN_USER.username;
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -87,7 +90,13 @@ export default function EditUserPage() {
           </Link>
         </Button>
       </div>
-      <UserForm onSubmit={handleSubmit} initialData={user} isEditMode isLoading={isLoading} />
+      <UserForm 
+        onSubmit={handleSubmit} 
+        initialData={user} 
+        isEditMode 
+        isLoading={isLoading}
+        isDefaultAdmin={isDefaultAdmin}
+      />
     </div>
   );
 }

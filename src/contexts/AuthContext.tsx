@@ -97,10 +97,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       toast({ title: "خطأ", description: "المستخدم غير موجود.", variant: "destructive" });
       return false;
     }
-
+    
+    const userToUpdate = currentUsers[userIndex];
+    if (userToUpdate.id === DEFAULT_ADMIN_USER.id && userToUpdate.username === DEFAULT_ADMIN_USER.username && updates.role && updates.role !== 'admin') {
+      toast({ title: "خطأ", description: "لا يمكن تغيير صلاحيات المدير الافتراضي.", variant: "destructive" });
+      return false;
+    }
+    
     const actualUsers = users || []; 
     const currentAdmins = actualUsers.filter(u => u.role === 'admin');
-    if (actualUsers[userIndex].role === 'admin' && currentAdmins.length === 1 && updates.role && updates.role !== 'admin') {
+    if (userToUpdate.role === 'admin' && currentAdmins.length === 1 && updates.role && updates.role !== 'admin') {
         toast({ title: "خطأ", description: "لا يمكن تغيير دور المدير الوحيد.", variant: "destructive" });
         return false;
     }

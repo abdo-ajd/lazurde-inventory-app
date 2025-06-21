@@ -137,7 +137,7 @@ export default function ManageUsersPage() {
                 <TableBody>
                   {filteredUsers.map((user) => {
                     const RoleIcon = roleIcons[user.role];
-                    const isDefaultAdmin = user.id === DEFAULT_ADMIN_USER.id;
+                    const isDefaultAdmin = user.id === DEFAULT_ADMIN_USER.id && user.username === DEFAULT_ADMIN_USER.username;
                     
                     const adminUsers = users.filter(u => u.role === 'admin');
                     const isSoleAdmin = user.role === 'admin' && adminUsers.length === 1;
@@ -145,6 +145,7 @@ export default function ManageUsersPage() {
                     const isCurrentUser = currentUser?.id === user.id;
 
                     const canDelete = !isDefaultAdmin && !isSoleAdmin && !isCurrentUser;
+                    const canEdit = !(isDefaultAdmin && currentUser?.id !== DEFAULT_ADMIN_USER.id);
                     
                     return (
                       <TableRow key={user.id}>
@@ -152,7 +153,7 @@ export default function ManageUsersPage() {
                         <TableCell className="font-medium">{user.username}</TableCell>
                         <TableCell><span className="flex items-center"><RoleIcon className="ml-2 h-4 w-4 text-muted-foreground" />{roleTranslations[user.role]}</span></TableCell>
                         <TableCell className="text-center space-x-1 space-x-reverse">
-                          <Button variant="ghost" size="icon" asChild title="تعديل المستخدم" disabled={isDefaultAdmin && currentUser?.id !== DEFAULT_ADMIN_USER.id}>
+                          <Button variant="ghost" size="icon" asChild title="تعديل المستخدم" disabled={!canEdit}>
                             <Link href={`/dashboard/users/${user.id}/edit`}>
                               <Edit3 className="h-4 w-4" />
                             </Link>

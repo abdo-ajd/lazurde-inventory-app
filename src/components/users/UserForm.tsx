@@ -7,7 +7,7 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import type { User, UserRole } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription as ShadcnCardDescription } from '@/components/ui/card';
 import { Save } from 'lucide-react';
@@ -48,9 +48,10 @@ interface UserFormProps {
   initialData?: User | null;
   isEditMode?: boolean;
   isLoading?: boolean;
+  isDefaultAdmin?: boolean;
 }
 
-export default function UserForm({ onSubmit, initialData, isEditMode = false, isLoading = false }: UserFormProps) {
+export default function UserForm({ onSubmit, initialData, isEditMode = false, isLoading = false, isDefaultAdmin = false }: UserFormProps) {
   const formSchema = isEditMode ? editUserSchema : addUserSchema;
   // const { toast } = useToast(); // Removed as it's no longer used directly for camera
   
@@ -126,7 +127,7 @@ export default function UserForm({ onSubmit, initialData, isEditMode = false, is
               render={({ field }) => (
                 <FormItem>
                   <FormLabel htmlFor="role">الدور</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl">
+                  <Select onValueChange={field.onChange} defaultValue={field.value} dir="rtl" disabled={isEditMode && isDefaultAdmin}>
                     <FormControl>
                       <SelectTrigger id="role">
                         <SelectValue placeholder="اختر دورًا للمستخدم" />
@@ -140,6 +141,7 @@ export default function UserForm({ onSubmit, initialData, isEditMode = false, is
                       ))}
                     </SelectContent>
                   </Select>
+                  {isEditMode && isDefaultAdmin && <FormDescription>لا يمكن تغيير دور المدير الافتراضي.</FormDescription>}
                   <FormMessage />
                 </FormItem>
               )}
