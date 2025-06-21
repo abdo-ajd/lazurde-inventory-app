@@ -1,4 +1,3 @@
-
 // src/components/products/ProductList.tsx
 "use client";
 
@@ -76,8 +75,8 @@ export default function ProductList({ searchTerm }: ProductListProps) {
   
   if (!isClient) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3">
-        {[...Array(14)].map((_, i) => ( 
+      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-10 gap-2">
+        {[...Array(20)].map((_, i) => ( 
           <div key={i} className="rounded-lg border bg-card text-card-foreground shadow-sm animate-pulse">
             <div className="p-0 relative aspect-[3/4] w-full bg-muted rounded-t-lg"></div>
             <div className="p-2 space-y-1">
@@ -97,7 +96,7 @@ export default function ProductList({ searchTerm }: ProductListProps) {
   return (
     <>
       {filteredProducts.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-10 gap-2">
           {filteredProducts.map((product) => (
             <Card key={product.id} className="flex flex-col overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200">
               <Link href={`/dashboard/products/${product.id}`} passHref aria-label={`عرض تفاصيل ${product.name}`}>
@@ -123,25 +122,25 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                     <div className="flex items-center">
                       <Button 
                         variant="ghost"
-                        size="icon-xs" 
+                        size="icon-sm" 
                         onClick={() => handleSale(product)}
                         title="بيع نقدي" 
                         disabled={product.quantity === 0}
-                        className="hover:bg-primary/10 h-6 w-6 text-primary hover:text-primary/80"
+                        className="hover:bg-primary/10 text-primary hover:text-primary/80"
                       >
-                        <ShoppingCart className="h-3.5 w-3.5" />
+                        <ShoppingCart className="h-4 w-4" />
                       </Button>
 
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
-                            size="icon-xs"
+                            size="icon-sm"
                             title="بيع بخدمة مصرفية"
                             disabled={product.quantity === 0 || !settings.bankServices || settings.bankServices.length === 0}
-                            className="hover:bg-primary/10 h-6 w-6 text-primary hover:text-primary/80"
+                            className="hover:bg-primary/10 text-primary hover:text-primary/80"
                           >
-                            <CreditCard className="h-3.5 w-3.5" />
+                            <CreditCard className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
