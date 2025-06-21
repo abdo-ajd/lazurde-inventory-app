@@ -202,7 +202,7 @@ export default function ProductDetailsPage() {
   const formatDate = (isoString: string) => {
     if (!isoString) return 'N/A';
     try {
-      return new Date(isoString).toLocaleDateString('ar-EG', {
+      return new Date(isoString).toLocaleDateString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric',
       });
     } catch (e) {
