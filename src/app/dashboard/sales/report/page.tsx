@@ -40,12 +40,6 @@ export default function SalesReportPage() {
     }).sort((a,b) => parseISO(b.saleDate).getTime() - parseISO(a.saleDate).getTime()); // Sort by most recent first
   }, [sales, selectedDate]);
 
-  const totalActiveOriginalAmount = useMemo(() => {
-    return filteredSales
-      .filter(sale => sale.status === 'active')
-      .reduce((sum, sale) => sum + (sale.originalTotalAmount ?? sale.totalAmount), 0);
-  }, [filteredSales]);
-  
   const totalActiveDiscountAmount = useMemo(() => {
     return filteredSales
       .filter(sale => sale.status === 'active')
@@ -130,25 +124,17 @@ export default function SalesReportPage() {
           {filteredSales.length > 0 ? (
             <div className="overflow-x-auto">
               <Table>
-                <TableCaption>
-                  إجمالي المبيعات النهائية النشطة لليوم المحدد: {totalActiveFinalAmount.toFixed(2)} LYD
-                </TableCaption>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="px-2 py-3 min-w-[100px]">وقت البيع</TableHead>
                     <TableHead className="px-2 py-3 min-w-[150px]">المنتجات</TableHead>
-                    <TableHead className="text-center px-2 py-3 min-w-[100px]">الإجمالي الأصلي</TableHead>
-                    <TableHead className="text-center px-2 py-3 min-w-[100px]">الخصم</TableHead>
                     <TableHead className="text-center px-2 py-3 min-w-[100px]">الإجمالي النهائي</TableHead>
-                    <TableHead className="px-2 py-3 min-w-[100px]">البائع</TableHead>
                     <TableHead className="text-center px-2 py-3 min-w-[80px]">الحالة</TableHead>
                     {hasRole(['admin', 'employee_return']) && <TableHead className="text-center px-2 py-3 min-w-[80px]">إرجاع</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredSales.map((sale) => {
-                    const originalAmount = sale.originalTotalAmount ?? sale.totalAmount;
-                    const discountAmount = sale.discountAmount ?? 0;
                     return (
                     <TableRow key={sale.id} className={sale.status === 'returned' ? 'opacity-60' : ''}>
                       <TableCell className="px-2 py-3">{formatSaleTime(sale.saleDate)}</TableCell>
@@ -156,17 +142,12 @@ export default function SalesReportPage() {
                         <ul className="list-disc list-inside text-xs">
                           {sale.items.map(item => (
                             <li key={item.productId}>
-                              {item.productName} (الكمية: {item.quantity})
+                              {item.productName}
                             </li>
                           ))}
                         </ul>
                       </TableCell>
-                      <TableCell className="text-center px-2 py-3">{originalAmount.toFixed(2)}</TableCell>
-                      <TableCell className="text-center px-2 py-3 text-orange-600">
-                        {discountAmount > 0 ? discountAmount.toFixed(2) : '-'}
-                      </TableCell>
                       <TableCell className="text-center font-semibold px-2 py-3">{sale.totalAmount.toFixed(2)}</TableCell>
-                      <TableCell className="px-2 py-3">{sale.sellerUsername}</TableCell>
                       <TableCell className="text-center px-2 py-3">
                         <Badge variant={sale.status === 'active' ? 'success' : 'destructive'} className={`${sale.status === 'active' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'} text-xs`}>
                           {sale.status === 'active' ? 'نشط' : 'مرجع'}
@@ -207,11 +188,11 @@ export default function SalesReportPage() {
                 </TableBody>
                  <TableFooter>
                     <TableRow className="font-bold bg-muted/80">
-                        <TableCell colSpan={2} className="text-lg px-2 py-3">الإجماليات النشطة لليوم:</TableCell>
-                        <TableCell className="text-center text-lg px-2 py-3">{totalActiveOriginalAmount.toFixed(2)}</TableCell>
-                        <TableCell className="text-center text-lg px-2 py-3 text-orange-600">{totalActiveDiscountAmount.toFixed(2)}</TableCell>
-                        <TableCell className="text-center text-lg px-2 py-3">{totalActiveFinalAmount.toFixed(2)}</TableCell>
-                        <TableCell colSpan={hasRole(['admin', 'employee_return']) ? 3 : 2} className="px-2 py-3"></TableCell>
+                        <TableCell colSpan={2} className="text-lg px-2 py-3 text-right">الإجماليات النشطة لليوم:</TableCell>
+                        <TableCell className="text-center text-lg px-2 py-3">{totalActiveFinalAmount.toFixed(2)} LYD</TableCell>
+                        <TableCell colSpan={hasRole(['admin', 'employee_return']) ? 2 : 1} className="text-center text-sm text-orange-600 px-2 py-3">
+                            (إجمالي الخصومات: {totalActiveDiscountAmount.toFixed(2)})
+                        </TableCell>
                     </TableRow>
                 </TableFooter>
               </Table>
@@ -234,3 +215,4 @@ declare module "@/components/ui/badge" {
   }
 }
 
+    
