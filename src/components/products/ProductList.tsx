@@ -147,7 +147,7 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                         <DropdownMenuContent>
                           {(settings.bankServices || []).map(service => (
                             <DropdownMenuItem key={service} onSelect={() => handleSale(product, service)}>
-                              {`بيع عبر: ${service}`}
+                              {service}
                             </DropdownMenuItem>
                           ))}
                         </DropdownMenuContent>
