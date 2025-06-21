@@ -217,114 +217,6 @@ export default function AppSettingsPage() {
       currentThemeColors.accent === paletteColors.accent
     );
   };
-
-  const handleCreateBackup = async () => {
-    try {
-      // Fetch current data directly from localStorage or context
-      const productsFromStorage: Product[] = JSON.parse(localStorage.getItem(LOCALSTORAGE_KEYS.PRODUCTS) || '[]');
-      const salesFromStorage: Sale[] = JSON.parse(localStorage.getItem(LOCALSTORAGE_KEYS.SALES) || '[]');
-      const usersFromStorage: User[] = JSON.parse(localStorage.getItem(LOCALSTORAGE_KEYS.USERS) || '[]');
-      // Settings are already available from useAppSettings hook (settings variable)
-
-      const productsForBackup: Product[] = [];
-      for (const product of productsFromStorage) {
-        const productCopy = { ...product }; // Create a copy to modify for backup
-        // If imageUrl is empty, it implies the image might be in IndexedDB
-        // Or, if it's not a data URI and not an external http(s) link, it might also be an IDB placeholder.
-        // For simplicity, we check if it's NOT a Data URI and NOT an HTTP/S link to consider fetching from IDB.
-        // A truly empty imageUrl or one that was meant for IDB would be ''
-        if (productCopy.imageUrl === '' || (!productCopy.imageUrl?.startsWith('data:image') && !productCopy.imageUrl?.startsWith('http'))) {
-          const imageBlob = await getImageFromDB(productCopy.id);
-          if (imageBlob) {
-            try {
-              productCopy.imageUrl = await blobToDataUri(imageBlob);
-            } catch (conversionError) {
-              console.error(`Error converting blob to data URI for product ${productCopy.id}:`, conversionError);
-              // Keep imageUrl as empty or original non-http value if conversion fails
-              productCopy.imageUrl = productCopy.imageUrl || ''; 
-            }
-          }
-        }
-        // If imageUrl is already a data URI or an external URL, it's kept as is.
-        productsForBackup.push(productCopy);
-      }
-
-      const backupData: BackupData = {
-        users: usersFromStorage,
-        products: productsForBackup,
-        sales: salesFromStorage,
-        settings: settings, 
-      };
-
-      const jsonString = JSON.stringify(backupData, null, 2);
-      const blob = new Blob([jsonString], { type: 'application/json' });
-      const href = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = href;
-      const date = new Date().toISOString().split('T')[0];
-      link.download = `lazurde_backup_${date}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(href);
-      toast({ title: "نجاح", description: "تم إنشاء النسخة الاحتياطية بنجاح." });
-    } catch (error) {
-      console.error("Backup error:", error);
-      toast({ variant: "destructive", title: "خطأ", description: "فشل إنشاء النسخة الاحتياطية." });
-    }
-  };
-
-  const handleRestoreBackup = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const text = e.target?.result;
-        if (typeof text !== 'string') {
-          throw new Error("File content is not a string");
-        }
-        const restoredData = JSON.parse(text) as Partial<BackupData>;
-
-        if (!restoredData.users || !restoredData.products || !restoredData.sales || !restoredData.settings) {
-          throw new Error("ملف النسخ الاحتياطي غير صالح أو تالف.");
-        }
-        
-        if (!Array.isArray(restoredData.users) || !Array.isArray(restoredData.products) || !Array.isArray(restoredData.sales) || typeof restoredData.settings !== 'object') {
-            throw new Error("تنسيق البيانات في ملف النسخ الاحتياطي غير صحيح.");
-        }
-
-        // replaceAll methods will handle IndexedDB migration for images if needed
-        await replaceAllProducts(restoredData.products);
-        replaceAllUsers(restoredData.users);
-        replaceAllSales(restoredData.sales);
-        updateSettings(restoredData.settings);
-
-
-        toast({ title: "نجاح", description: "تم استعادة البيانات بنجاح. سيتم إعادة تحميل الصفحة." });
-        
-        if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-        }
-
-        setTimeout(() => {
-          window.location.reload();
-        }, 1500);
-
-      } catch (error) {
-        console.error("Restore error:", error);
-        const errorMessage = error instanceof Error ? error.message : "فشل استعادة النسخة الاحتياطية. تأكد من أن الملف صحيح.";
-        toast({ variant: "destructive", title: "خطأ في الاستعادة", description: errorMessage });
-         if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-        }
-      }
-    };
-    reader.readAsText(file);
-  };
   
   const handleSoundFileChange = (event: React.ChangeEvent<HTMLInputElement>, type: 'success' | 'rejected') => {
     const file = event.target.files?.[0];
@@ -706,14 +598,14 @@ export default function AppSettingsPage() {
       <Card className="mt-6">
         <CardHeader>
           <CardTitle>النسخ الاحتياطي والاستعادة</CardTitle>
-          <CardDescription>قم بإنشاء نسخة احتياطية من بيانات تطبيقك أو استعد بياناتك من نسخة سابقة.</CardDescription>
+          <CardDescription>تم ترحيل البيانات إلى السحابة، هذه الميزة غير متاحة حالياً.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
            <div className="flex flex-col sm:flex-row gap-4">
-            <Button onClick={handleCreateBackup} className="w-full sm:w-auto">
+            <Button disabled className="w-full sm:w-auto">
               <Download className="ml-2 h-4 w-4" /> إنشاء نسخة احتياطية
             </Button>
-            <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="w-full sm:w-auto">
+            <Button disabled variant="outline" className="w-full sm:w-auto">
               <Upload className="ml-2 h-4 w-4" /> استعادة من نسخة احتياطية
             </Button>
             <Input 
@@ -721,13 +613,11 @@ export default function AppSettingsPage() {
                 ref={fileInputRef} 
                 className="hidden" 
                 accept=".json" 
-                onChange={handleRestoreBackup}
+                disabled
             />
            </div>
            <p className="text-sm text-muted-foreground mt-2">
-            سيتم تنزيل النسخة الاحتياطية كملف JSON. عند الاستعادة، تأكد من اختيار ملف JSON صحيح تم إنشاؤه بواسطة هذا التطبيق.
-            <br/>
-            <strong className="text-destructive">تحذير:</strong> استعادة نسخة احتياطية سيقوم بالكتابة فوق جميع البيانات الحالية.
+            يتم الآن حفظ بياناتك تلقائيًا وبشكل آمن في السحابة، مما يسمح لك بالوصول إليها من أي جهاز. لم تعد هناك حاجة للنسخ الاحتياطي اليدوي.
            </p>
         </CardContent>
       </Card>
@@ -810,5 +700,3 @@ export default function AppSettingsPage() {
     </div>
   );
 }
-
-    
