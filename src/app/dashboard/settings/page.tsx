@@ -15,7 +15,7 @@ import { useProducts } from '@/contexts/ProductContext';
 import { useSales } from '@/contexts/SalesContext';
 import { useEffect, useRef, useState } from 'react';
 import { Save, RotateCcw, Download, Upload, Music, Trash2, Smartphone, DownloadCloud, AlertTriangle, CreditCard, Palette, Edit } from 'lucide-react';
-import { DEFAULT_APP_SETTINGS, LOCALSTORAGE_KEYS } from '@/lib/constants';
+import { DEFAULT_APP_SETTINGS, LOCALSTORAGE_KEYS, DEFAULT_ADMIN_USER } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import type { User, Product, Sale, AppSettings as AppSettingsType } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -105,7 +105,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 export default function AppSettingsPage() {
   const { settings, updateSettings, resetToDefaults, applyTheme } = useAppSettings();
-  const { users, replaceAllUsers, hasRole } = useAuth();
+  const { users, replaceAllUsers, hasRole, currentUser } = useAuth();
   const { products: productsFromContext, replaceAllProducts } = useProducts(); // Rename to avoid conflict
   const { sales, replaceAllSales } = useSales();
   const { toast } = useToast();
@@ -125,6 +125,8 @@ export default function AppSettingsPage() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [canInstallPWA, setCanInstallPWA] = useState(false);
   const [isPWAInstalled, setIsPWAInstalled] = useState(false);
+
+  const isDefaultAdmin = currentUser?.id === DEFAULT_ADMIN_USER.id;
 
 
   const form = useForm<SettingsFormValues>({
@@ -459,29 +461,31 @@ export default function AppSettingsPage() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <Card>
-            <CardHeader>
-              <CardTitle>إعدادات عامة</CardTitle>
-              <CardDescription>تخصيص اسم المتجر الظاهر في التطبيق.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <FormField
-                control={form.control}
-                name="storeName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel htmlFor="storeName">اسم المتجر</FormLabel>
-                    <FormControl>
-                      <Input id="storeName" placeholder="مثال: متجر النجوم" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
+          {isDefaultAdmin && (
+            <Card>
+              <CardHeader>
+                <CardTitle>إعدادات عامة</CardTitle>
+                <CardDescription>تخصيص اسم المتجر الظاهر في التطبيق.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FormField
+                  control={form.control}
+                  name="storeName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel htmlFor="storeName">اسم المتجر</FormLabel>
+                      <FormControl>
+                        <Input id="storeName" placeholder="مثال: متجر النجوم" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+          )}
 
-          <Card className="mt-6">
+          <Card className={isDefaultAdmin ? "mt-6" : ""}>
             <CardHeader>
               <CardTitle>ألوان الواجهة</CardTitle>
               <CardDescription>اختر نسق الألوان المفضل لديك. سيتم تطبيق النسق مباشرة كمعاينة.</CardDescription>
