@@ -24,6 +24,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useProducts } from '@/contexts/ProductContext';
 import { useSales } from '@/contexts/SalesContext'; // Import useSales
 import { useToast } from '@/hooks/use-toast';
+import type { UserRole } from '@/lib/types';
 
 
 export default function Header() {
@@ -44,6 +45,12 @@ export default function Header() {
   const [scannedBarcode, setScannedBarcode] = useState('');
   // Removed local discountValue state, will use currentDiscount from SalesContext
   const barcodeInputRef = useRef<HTMLInputElement>(null);
+
+  const roleTranslations: Record<UserRole, string> = {
+    admin: 'مدير',
+    employee: 'موظف',
+    employee_return: 'موظف إرجاع',
+  };
 
 
   useEffect(() => setMounted(true), []);
@@ -286,7 +293,7 @@ export default function Header() {
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">{currentUser.username}</p>
-                    <p className="text-xs leading-none text-muted-foreground">{currentUser.role}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{roleTranslations[currentUser.role]}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -303,4 +310,3 @@ export default function Header() {
     </TooltipProvider>
   );
 }
-
