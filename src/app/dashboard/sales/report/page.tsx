@@ -268,10 +268,10 @@ export default function SalesReportPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="px-2 py-3 min-w-[100px]">وقت البيع</TableHead>
-                    <TableHead className="px-2 py-3 min-w-[150px]">المنتجات</TableHead>
-                    <TableHead className="text-center px-2 py-3 min-w-[120px]">الإجمالي النهائي</TableHead>
-                    <TableHead className="text-center px-2 py-3 min-w-[120px]">الحالة</TableHead>
+                    <TableHead className="px-2 py-3 min-w-[80px]">وقت البيع</TableHead>
+                    <TableHead className="px-2 py-3 min-w-[120px] sm:min-w-[150px]">المنتجات</TableHead>
+                    <TableHead className="text-center px-2 py-3 min-w-[110px] sm:min-w-[120px]">الإجمالي النهائي</TableHead>
+                    <TableHead className="text-center px-2 py-3 min-w-[90px] sm:min-w-[120px]">الحالة</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -282,9 +282,9 @@ export default function SalesReportPage() {
                       <TableCell className="px-2 py-3">{formatSaleTime(sale.saleDate)}</TableCell>
                       <TableCell className="px-2 py-3"><ul className="list-disc list-inside text-xs">{sale.items.map(item => (<li key={item.productId}>{item.productName}</li>))}</ul></TableCell>
                       <TableCell className="px-2 py-3">
-                        <div className="flex items-center justify-center w-full gap-1">
+                        <div className="flex items-center justify-center w-full gap-0.5 sm:gap-1">
                           {/* Container for Payment Method (appears on the right in RTL) */}
-                          <div className="w-20 flex-shrink-0 flex justify-start"> {/* justify-start = align right in RTL */}
+                          <div className="w-14 sm:w-20 flex-shrink-0 flex justify-start"> {/* justify-start = align right in RTL */}
                             {sale.paymentMethod && sale.status === 'active' && salePaymentColor && (
                               <Badge style={{ backgroundColor: salePaymentColor, color: '#fff' }} className="border-none text-xs">
                                 {sale.paymentMethod}
@@ -300,7 +300,7 @@ export default function SalesReportPage() {
                           </div>
                           
                           {/* Container for Discount (appears on the left in RTL) */}
-                          <div className="w-16 flex-shrink-0 flex justify-end"> {/* justify-end = align left in RTL */}
+                          <div className="w-12 sm:w-16 flex-shrink-0 flex justify-end"> {/* justify-end = align left in RTL */}
                             {sale.discountAmount > 0 && sale.status === 'active' && (
                               <TooltipProvider delayDuration={100}>
                                 <Tooltip>
@@ -377,3 +377,5 @@ declare module "@/components/ui/badge" {
     variant?: "default" | "secondary" | "destructive" | "outline" | "success";
   }
 }
+
+    
