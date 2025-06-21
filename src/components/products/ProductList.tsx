@@ -10,10 +10,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSales } from '@/contexts/SalesContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { ShoppingCart, PackageSearch, Loader2 } from 'lucide-react';
+import { ShoppingCart, PackageSearch, Loader2, CreditCard } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Product } from '@/lib/types';
 import { useProductImage } from '@/hooks/useProductImage'; // Import the hook
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useAppSettings } from '@/contexts/AppSettingsContext';
 
 interface ProductListProps {
   searchTerm: string;
@@ -50,6 +52,7 @@ export default function ProductList({ searchTerm }: ProductListProps) {
   const { products } = useProducts();
   const { hasRole, currentUser } = useAuth();
   const { addSale } = useSales();
+  const { settings } = useAppSettings();
 
   const [isClient, setIsClient] = useState(false);
 
@@ -64,14 +67,11 @@ export default function ProductList({ searchTerm }: ProductListProps) {
     );
   }, [products, searchTerm]);
 
-  const handleQuickSell = async (product: Product) => {
-    if (!currentUser) {
+  const handleSale = async (product: Product, paymentMethod?: string) => {
+    if (!currentUser || product.quantity === 0) {
       return;
     }
-    if (product.quantity === 0) {
-      return;
-    }
-    const saleResult = await addSale([{ productId: product.id, quantity: 1 }]);
+    await addSale([{ productId: product.id, quantity: 1 }], paymentMethod);
   };
   
   if (!isClient) {
@@ -120,16 +120,40 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                     الكمية: {product.quantity}
                   </Badge>
                   {hasRole(['admin', 'employee', 'employee_return']) && (
-                    <Button 
-                      variant="ghost"
-                      size="icon-xs" 
-                      onClick={() => handleQuickSell(product)}
-                      title="بيع قطعة واحدة" 
-                      disabled={product.quantity === 0}
-                      className="hover:bg-primary/10 h-6 w-6 text-primary hover:text-primary/80"
-                    >
-                      <ShoppingCart className="h-3.5 w-3.5" />
-                    </Button>
+                    <div className="flex items-center">
+                      <Button 
+                        variant="ghost"
+                        size="icon-xs" 
+                        onClick={() => handleSale(product)}
+                        title="بيع نقدي" 
+                        disabled={product.quantity === 0}
+                        className="hover:bg-primary/10 h-6 w-6 text-primary hover:text-primary/80"
+                      >
+                        <ShoppingCart className="h-3.5 w-3.5" />
+                      </Button>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            title="بيع بخدمة مصرفية"
+                            disabled={product.quantity === 0 || !settings.bankServices || settings.bankServices.length === 0}
+                            className="hover:bg-primary/10 h-6 w-6 text-primary hover:text-primary/80"
+                          >
+                            <CreditCard className="h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          {(settings.bankServices || []).map(service => (
+                            <DropdownMenuItem key={service} onSelect={() => handleSale(product, service)}>
+                              {`بيع عبر: ${service}`}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -150,4 +174,3 @@ export default function ProductList({ searchTerm }: ProductListProps) {
     </>
   );
 }
-

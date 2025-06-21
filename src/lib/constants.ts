@@ -26,6 +26,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   },
   saleSuccessSound: '', // Default to no custom sound
   rejectedOperationSound: '', // Default to no custom sound for invalid discount
+  bankServices: ['ادفع لي', 'سداد', 'موبي كاش'],
 };
 
 export const INITIAL_PRODUCTS: Product[] = [

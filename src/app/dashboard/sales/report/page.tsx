@@ -9,7 +9,7 @@ import { useProducts } from '@/contexts/ProductContext'; // Import useProducts
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CalendarIcon, Undo2, Search, FileText } from 'lucide-react';
+import { CalendarIcon, Undo2, Search, FileText, CreditCard } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format, parseISO, startOfDay, endOfDay, isValid, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfYear, endOfYear } from 'date-fns';
@@ -439,25 +439,40 @@ export default function SalesReportPage() {
                         </ul>
                       </TableCell>
                       <TableCell className="text-center font-semibold px-2 py-3">
-                        {sale.discountAmount && sale.discountAmount > 0 && sale.status === 'active' ? (
-                          <div className="flex items-center justify-center gap-2">
-                            <span className="text-blue-600 dark:text-blue-400">{formatNumber(sale.totalAmount)}</span>
+                        <div className="flex items-center justify-center gap-2">
+                          {sale.discountAmount && sale.discountAmount > 0 && sale.status === 'active' ? (
+                            <>
+                              <span className="text-blue-600 dark:text-blue-400">{formatNumber(sale.totalAmount)}</span>
+                              <TooltipProvider delayDuration={100}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Badge variant="outline" className="text-xs font-mono border-orange-500/50 text-orange-600 dark:text-orange-400 cursor-help">
+                                      -{formatNumber(sale.discountAmount)}
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top">
+                                    <p>خصم: {formatNumber(sale.discountAmount)} LYD</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </>
+                          ) : (
+                            <span>{formatNumber(sale.totalAmount)}</span>
+                          )}
+
+                          {sale.paymentMethod && sale.status === 'active' && (
                             <TooltipProvider delayDuration={100}>
                               <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Badge variant="outline" className="text-xs font-mono border-orange-500/50 text-orange-600 dark:text-orange-400 cursor-help">
-                                    -{formatNumber(sale.discountAmount)}
-                                  </Badge>
+                                <TooltipTrigger>
+                                  <CreditCard className="h-4 w-4 text-blue-500" />
                                 </TooltipTrigger>
                                 <TooltipContent side="top">
-                                  <p>خصم: {formatNumber(sale.discountAmount)} LYD</p>
+                                  <p>دفع عبر: {sale.paymentMethod}</p>
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
-                          </div>
-                        ) : (
-                          <span>{formatNumber(sale.totalAmount)}</span>
-                        )}
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-center px-2 py-3">
                         <div className="flex items-center justify-center gap-2">

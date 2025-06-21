@@ -13,7 +13,7 @@ import { useAppSettings } from './AppSettingsContext';
 
 interface SalesContextType {
   sales: Sale[];
-  addSale: (items: Omit<SaleItem, 'productName' | 'pricePerUnit'>[]) => Promise<Sale | null>;
+  addSale: (items: Omit<SaleItem, 'productName' | 'pricePerUnit'>[], paymentMethod?: string) => Promise<Sale | null>;
   returnSale: (saleId: string) => Promise<boolean>;
   getSaleById: (saleId: string) => Sale | undefined;
   replaceAllSales: (newSales: Sale[]) => void;
@@ -36,7 +36,7 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
   };
 
 
-  const addSale = async (rawItems: Omit<SaleItem, 'productName' | 'pricePerUnit'>[]): Promise<Sale | null> => {
+  const addSale = async (rawItems: Omit<SaleItem, 'productName' | 'pricePerUnit'>[], paymentMethod?: string): Promise<Sale | null> => {
     if (!currentUser) {
       toast({ title: "خطأ", description: "يجب تسجيل الدخول لتسجيل عملية بيع.", variant: "destructive" });
       return null;
@@ -103,6 +103,7 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
       sellerId: currentUser.id,
       sellerUsername: currentUser.username,
       status: 'active',
+      paymentMethod: paymentMethod,
     };
 
     setSales(prevSales => [newSale, ...(prevSales || [])]);

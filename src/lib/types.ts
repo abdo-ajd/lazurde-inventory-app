@@ -41,6 +41,7 @@ export interface Sale {
   sellerUsername: string; // Denormalized
   status: SaleStatus;
   returnedDate?: string; // ISO string if returned
+  paymentMethod?: string;
 }
 
 export interface AppSettings {
@@ -52,6 +53,7 @@ export interface AppSettings {
   };
   saleSuccessSound?: string; // Data URI for the sound
   rejectedOperationSound?: string; // Data URI for any rejected/failed operation
+  bankServices?: string[];
 }
 
 export interface NavItem {

@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProducts } from '@/contexts/ProductContext';
 import { useSales } from '@/contexts/SalesContext';
 import { useEffect, useRef, useState } from 'react';
-import { Save, RotateCcw, Download, Upload, Music, Trash2, Smartphone, DownloadCloud, AlertTriangle } from 'lucide-react';
+import { Save, RotateCcw, Download, Upload, Music, Trash2, Smartphone, DownloadCloud, AlertTriangle, CreditCard } from 'lucide-react';
 import { DEFAULT_APP_SETTINGS, LOCALSTORAGE_KEYS } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import type { User, Product, Sale, AppSettings as AppSettingsType } from '@/lib/types';
@@ -100,6 +100,8 @@ export default function AppSettingsPage() {
 
   const rejectedSoundInputRef = useRef<HTMLInputElement>(null);
   const [uploadedRejectedSoundName, setUploadedRejectedSoundName] = useState<string | null>(null);
+  
+  const [newBankService, setNewBankService] = useState('');
 
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [canInstallPWA, setCanInstallPWA] = useState(false);
@@ -352,6 +354,24 @@ export default function AppSettingsPage() {
       setCanInstallPWA(false); 
     }
   };
+  
+  const handleAddBankService = () => {
+    if (newBankService.trim() === '') return;
+    const currentServices = settings.bankServices || [];
+    if (currentServices.map(s => s.toLowerCase()).includes(newBankService.trim().toLowerCase())) {
+        toast({ variant: "destructive", title: "موجود بالفعل", description: "هذه الخدمة المصرفية موجودة بالفعل." });
+        return;
+    }
+    const updatedServices = [...currentServices, newBankService.trim()];
+    updateSettings({ bankServices: updatedServices });
+    setNewBankService('');
+  };
+
+  const handleDeleteBankService = (serviceToDelete: string) => {
+    const updatedServices = (settings.bankServices || []).filter(s => s !== serviceToDelete);
+    updateSettings({ bankServices: updatedServices });
+  };
+
 
   return (
     <div className="space-y-6 pb-8">
@@ -513,6 +533,44 @@ export default function AppSettingsPage() {
            </p>
         </CardContent>
       </Card>
+      
+      {hasRole(['admin']) && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-primary" />
+              الخدمات المصرفية
+            </CardTitle>
+            <CardDescription>إدارة قائمة الخدمات المصرفية المتاحة للدفع الإلكتروني.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-2">
+              <Input
+                value={newBankService}
+                onChange={(e) => setNewBankService(e.target.value)}
+                placeholder="اسم خدمة مصرفية جديدة..."
+                onKeyDown={(e) => e.key === 'Enter' && handleAddBankService()}
+              />
+              <Button onClick={handleAddBankService}>إضافة</Button>
+            </div>
+            <div className="space-y-2">
+              {(settings.bankServices || []).length > 0 ? (
+                (settings.bankServices || []).map(service => (
+                  <div key={service} className="flex items-center justify-between rounded-md border p-2 bg-muted/50">
+                    <span className="font-medium">{service}</span>
+                    <Button variant="ghost" size="icon" onClick={() => handleDeleteBankService(service)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-2">لا توجد خدمات مصرفية مضافة.</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
 
       <Card className="mt-6">
         <CardHeader>
