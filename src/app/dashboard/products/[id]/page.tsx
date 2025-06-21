@@ -199,14 +199,12 @@ export default function ProductDetailsPage() {
     );
   }
 
-  const formatDateTime = (isoString: string) => {
+  const formatDate = (isoString: string) => {
     if (!isoString) return 'N/A';
     try {
-      return new Intl.DateTimeFormat('en-GB', {
-        year: 'numeric', month: 'numeric', day: 'numeric',
-        hour: 'numeric', minute: 'numeric',
-        hour12: true
-      }).format(new Date(isoString));
+      return new Date(isoString).toLocaleDateString('ar-EG', {
+        year: 'numeric', month: 'long', day: 'numeric',
+      });
     } catch (e) {
       return 'Invalid Date';
     }
@@ -305,7 +303,8 @@ export default function ProductDetailsPage() {
                   )}
                 </div>
 
-                <CardContent className="grid gap-5 sm:grid-cols-2 pt-4 px-6 pb-6"> 
+                <CardContent className="grid gap-x-6 gap-y-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 pt-4 px-6 pb-6">
+                    {/* Row 1 */}
                     <div className="flex items-start space-x-3 space-x-reverse"> 
                         <DollarSign className="h-5 w-5 mt-1 text-primary shrink-0" /> 
                         <div>
@@ -313,6 +312,26 @@ export default function ProductDetailsPage() {
                         <p className="font-semibold text-lg">{product.price === 0 ? 'لم يحدد السعر' : `${product.price.toFixed(2)} LYD`}</p> 
                         </div>
                     </div>
+                    {hasRole(['admin']) && (
+                        <div className="flex items-start space-x-3 space-x-reverse"> 
+                            <Archive className="h-5 w-5 mt-1 text-primary shrink-0" /> 
+                            <div>
+                            <p className="text-base text-muted-foreground">سعر التكلفة</p> 
+                            <p className="font-semibold text-lg">{product.costPrice ? `${product.costPrice.toFixed(2)} LYD` : 'لم يحدد'}</p> 
+                            </div>
+                        </div>
+                    )}
+                    {hasRole(['admin']) && (
+                        <div className="flex items-start space-x-3 space-x-reverse">
+                            <TrendingUp className="h-5 w-5 mt-1 text-green-600 shrink-0" />
+                            <div>
+                            <p className="text-base text-muted-foreground">المكسب</p>
+                            <p className={`font-semibold text-lg ${profit >= 0 ? 'text-green-600' : 'text-destructive'}`}>{`${profit.toFixed(2)} LYD`}</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Row 2 */}
                     <div className="flex items-start space-x-3 space-x-reverse">
                         <Layers className="h-5 w-5 mt-1 text-primary shrink-0" />
                         <div>
@@ -329,23 +348,7 @@ export default function ProductDetailsPage() {
                         <p className="font-semibold text-lg">{quantitySold}</p>
                         </div>
                     </div>
-                    
                     {hasRole(['admin']) && (
-                        <>
-                        <div className="flex items-start space-x-3 space-x-reverse"> 
-                            <Archive className="h-5 w-5 mt-1 text-primary shrink-0" /> 
-                            <div>
-                            <p className="text-base text-muted-foreground">سعر التكلفة</p> 
-                            <p className="font-semibold text-lg">{product.costPrice ? `${product.costPrice.toFixed(2)} LYD` : 'لم يحدد'}</p> 
-                            </div>
-                        </div>
-                        <div className="flex items-start space-x-3 space-x-reverse">
-                            <TrendingUp className="h-5 w-5 mt-1 text-green-600 shrink-0" />
-                            <div>
-                            <p className="text-base text-muted-foreground">المكسب</p>
-                            <p className={`font-semibold text-lg ${profit >= 0 ? 'text-green-600' : 'text-destructive'}`}>{`${profit.toFixed(2)} LYD`}</p>
-                            </div>
-                        </div>
                         <div className="flex items-start space-x-3 space-x-reverse">
                             <Wallet className="h-5 w-5 mt-1 text-green-600 shrink-0" />
                             <div>
@@ -353,23 +356,25 @@ export default function ProductDetailsPage() {
                             <p className={`font-semibold text-lg ${totalProfit >= 0 ? 'text-green-600' : 'text-destructive'}`}>{`${totalProfit.toFixed(2)} LYD`}</p>
                             </div>
                         </div>
-                        </>
                     )}
-                    <div className="flex items-start space-x-3 space-x-reverse sm:col-span-2 md:col-span-1">
+
+                    {/* Row 3 */}
+                    <div className="flex items-start space-x-3 space-x-reverse">
                         <CalendarDays className="h-5 w-5 mt-1 text-primary shrink-0" />
                         <div>
                         <p className="text-base text-muted-foreground">تاريخ الإنشاء</p>
-                        <p className="font-semibold text-base">{formatDateTime(product.createdAt)}</p> 
+                        <p className="font-semibold text-base">{formatDate(product.createdAt)}</p> 
                         </div>
                     </div>
                     <div className="flex items-start space-x-3 space-x-reverse">
                         <History className="h-5 w-5 mt-1 text-primary shrink-0" />
                         <div>
                         <p className="text-base text-muted-foreground">آخر تحديث</p>
-                        <p className="font-semibold text-base">{formatDateTime(product.updatedAt)}</p>
+                        <p className="font-semibold text-base">{formatDate(product.updatedAt)}</p>
                         </div>
                     </div>
                 </CardContent>
+                
                 {hasRole(['admin']) && (
                 <CardFooter className="flex justify-start gap-3 p-6 pt-4"> 
                     <Button size="default" asChild className="h-10 px-4 text-sm"> 
