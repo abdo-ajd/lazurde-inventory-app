@@ -32,7 +32,12 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
   const [currentDiscount, setCurrentDiscount] = useState<number>(0);
   
   const formatNumber = (num: number) => {
-    return Number(num.toFixed(2)); // Keep formatting for display consistency
+    // Check if the number has any decimal part
+    if (num % 1 !== 0) {
+      return parseFloat(num.toFixed(2));
+    }
+    // If it's a whole number, return it as is
+    return num;
   };
 
 
@@ -85,6 +90,7 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
           console.warn("Could not play invalid discount sound:", error);
         }
       }
+      setCurrentDiscount(0); // Reset discount on rejected sale
       return null; // Block the sale
     }
 
@@ -186,5 +192,3 @@ export const useSales = () => {
   }
   return context;
 };
-
-    
