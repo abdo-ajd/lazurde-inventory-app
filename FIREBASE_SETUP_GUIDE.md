@@ -60,7 +60,7 @@
 
 ---
 
-### المرحلة الخامسة: تحديث قواعد الأمان
+### المرحلة الخامسة: تحديث قواعد الأمان (لاختبار الاتصال)
 
 1.  اذهب إلى **Firestore Database** ثم تبويب **Rules**. استبدل المحتوى بالقاعدة التالية واضغط **Publish**:
 
@@ -69,8 +69,9 @@
     service cloud.firestore {
       match /databases/{database}/documents {
         match /{document=**} {
-          // السماح لأي مستخدم مسجل بالوصول
-          allow read, write: if request.auth != null;
+          // للسماح بأي عملية كتابة وقراءة للتحقق من الاتصال
+          // ملاحظة: هذه القاعدة غير آمنة للإنتاج. سنقوم بتأمينها لاحقاً.
+          allow read, write: if true;
         }
       }
     }
@@ -85,8 +86,9 @@
     service firebase.storage {
       match /b/{bucket}/o {
         match /{allPaths=**} {
-          // السماح لأي مستخدم مسجل بالوصول
-          allow read, write: if request.auth != null;
+          // للسماح بأي عملية كتابة وقراءة للتحقق من الاتصال
+          // ملاحظة: هذه القاعدة غير آمنة للإنتاج. سنقوم بتأمينها لاحقاً.
+          allow read, write: if true;
         }
       }
     }
