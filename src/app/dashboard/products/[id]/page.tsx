@@ -203,7 +203,7 @@ export default function ProductDetailsPage() {
     if (!isoString) return 'N/A';
     try {
       return new Date(isoString).toLocaleDateString('en-US', {
-        year: 'numeric', month: 'long', day: 'numeric',
+        year: 'numeric', month: '2-digit', day: '2-digit',
       });
     } catch (e) {
       return 'Invalid Date';
