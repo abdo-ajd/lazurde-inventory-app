@@ -14,13 +14,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProducts } from '@/contexts/ProductContext';
 import { useSales } from '@/contexts/SalesContext';
 import { useEffect, useRef, useState } from 'react';
-import { Save, RotateCcw, Download, Upload, Music, Trash2, Smartphone, DownloadCloud, AlertTriangle, CreditCard, Palette } from 'lucide-react';
+import { Save, RotateCcw, Download, Upload, Music, Trash2, Smartphone, DownloadCloud, AlertTriangle, CreditCard, Palette, Edit } from 'lucide-react';
 import { DEFAULT_APP_SETTINGS, LOCALSTORAGE_KEYS } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import type { User, Product, Sale, AppSettings as AppSettingsType } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { getImage as getImageFromDB, blobToDataUri } from '@/lib/indexedDBService';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as ShadcnDialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 
 
 const hslColorSchema = z.string().regex(/^(\d{1,3})\s+(\d{1,3}%)\s+(\d{1,3}%)$/, {
@@ -86,6 +87,9 @@ const PREDEFINED_SERVICE_COLORS: { name: string, value: string }[] = [
     { name: 'وردي', value: 'hsl(340, 82%, 52%)' },
     { name: 'سماوي', value: 'hsl(188, 83%, 45%)' },
     { name: 'رمادي', value: 'hsl(215, 14%, 47%)' },
+    { name: 'أحمر', value: 'hsl(0, 72%, 51%)' },
+    { name: 'أصفر', value: 'hsl(45, 100%, 51%)' },
+    { name: 'تركواز', value: 'hsl(170, 75%, 41%)' },
 ];
 
 
@@ -115,6 +119,8 @@ export default function AppSettingsPage() {
   
   const [newServiceName, setNewServiceName] = useState('');
   const [newServiceColor, setNewServiceColor] = useState<string>(PREDEFINED_SERVICE_COLORS[0]?.value || '');
+  
+  const [serviceToEdit, setServiceToEdit] = useState<{ name: string; color: string } | null>(null);
 
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [canInstallPWA, setCanInstallPWA] = useState(false);
@@ -391,6 +397,16 @@ export default function AppSettingsPage() {
     updateSettings({ bankServices: updatedServices });
   };
 
+  const handleUpdateServiceColor = () => {
+    if (!serviceToEdit) return;
+    const updatedServices = (settings.bankServices || []).map(s =>
+        s.name === serviceToEdit.name ? { ...s, color: serviceToEdit.color } : s
+    );
+    updateSettings({ bankServices: updatedServices });
+    toast({ title: "تم التحديث", description: `تم تحديث لون خدمة "${serviceToEdit.name}".` });
+    setServiceToEdit(null);
+  };
+
 
   return (
     <div className="space-y-6 pb-8">
@@ -400,6 +416,47 @@ export default function AppSettingsPage() {
           قم بتخصيص اسم المتجر، ألوان الواجهة، نغمات التنبيه، إدارة النسخ الاحتياطي، وتثبيت التطبيق.
         </p>
       </div>
+
+      <Dialog open={!!serviceToEdit} onOpenChange={(isOpen) => !isOpen && setServiceToEdit(null)}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>تعديل لون خدمة: {serviceToEdit?.name}</DialogTitle>
+                <ShadcnDialogDescription>اختر لونًا جديدًا للخدمة المصرفية.</ShadcnDialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+                <Select
+                    value={serviceToEdit?.color}
+                    onValueChange={(newColor) => {
+                        if (serviceToEdit) {
+                            setServiceToEdit({ ...serviceToEdit, color: newColor });
+                        }
+                    }}
+                    dir="rtl"
+                >
+                    <SelectTrigger>
+                        <SelectValue placeholder="اختر لونًا" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {PREDEFINED_SERVICE_COLORS.map(color => (
+                            <SelectItem key={color.value} value={color.value}>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 rounded-full" style={{ backgroundColor: color.value }} />
+                                    <span>{color.name}</span>
+                                </div>
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+            <DialogFooter className="gap-2 sm:justify-start">
+                <DialogClose asChild>
+                    <Button type="button" variant="secondary">إلغاء</Button>
+                </DialogClose>
+                <Button type="button" onClick={handleUpdateServiceColor}>حفظ التغييرات</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <Card>
@@ -571,7 +628,7 @@ export default function AppSettingsPage() {
                 className="flex-grow"
                 onKeyDown={(e) => e.key === 'Enter' && handleAddBankService()}
               />
-              <Select value={newServiceColor} onValueChange={setNewServiceColor}>
+              <Select value={newServiceColor} onValueChange={setNewServiceColor} dir="rtl">
                 <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="اختر لونًا" />
                 </SelectTrigger>
@@ -596,9 +653,14 @@ export default function AppSettingsPage() {
                         <div className="w-5 h-5 rounded-full" style={{ backgroundColor: service.color }} />
                         <span className="font-medium">{service.name}</span>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => handleDeleteBankService(service.name)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <div className="flex items-center">
+                        <Button variant="ghost" size="icon" onClick={() => setServiceToEdit(service)} title="تعديل اللون">
+                            <Edit className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteBankService(service.name)} title="حذف الخدمة">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                    </div>
                   </div>
                 ))
               ) : (

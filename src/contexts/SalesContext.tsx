@@ -27,7 +27,7 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
   const [sales, setSales] = useLocalStorage<Sale[]>(LOCALSTORAGE_KEYS.SALES, INITIAL_SALES);
   const { toast } = useToast();
   const { getProductById, updateProductQuantity } = useProducts();
-  const { currentUser } = useAuth();
+  const { currentUser, hasRole } = useAuth();
   const { settings } = useAppSettings();
   const [currentDiscount, setCurrentDiscount] = useState<number>(0);
   
@@ -36,7 +36,7 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
   };
 
 
-  const addSale = async (rawItems: Omit<SaleItem, 'productName' | 'pricePerUnit'>[], paymentMethod?: string): Promise<Sale | null> => {
+  const addSale = async (rawItems: Omit<SaleItem, 'productName' | 'pricePerUnit'>[], paymentMethod: string = 'نقدي'): Promise<Sale | null> => {
     if (!currentUser) {
       toast({ title: "خطأ", description: "يجب تسجيل الدخول لتسجيل عملية بيع.", variant: "destructive" });
       return null;
@@ -63,13 +63,19 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
         pricePerUnit: product.price,
       });
       currentOriginalTotalAmount += product.price * rawItem.quantity;
-      totalCostPrice += (product.costPrice || 0) * rawItem.quantity;
+      if (hasRole(['admin'])) {
+        totalCostPrice += (product.costPrice || 0) * rawItem.quantity;
+      }
     }
     
-    const totalProfit = currentOriginalTotalAmount - totalCostPrice;
+    let totalProfit = 0;
+    if (hasRole(['admin'])) {
+      totalProfit = currentOriginalTotalAmount - totalCostPrice;
+    }
+
     const discountToApply = Math.max(0, currentDiscount);
     
-    if (discountToApply > totalProfit) {
+    if (hasRole(['admin']) && discountToApply > totalProfit && totalProfit > 0) {
       toast({
         variant: "destructive",
         title: "خصم غير مقبول",

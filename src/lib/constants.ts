@@ -29,6 +29,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
     { name: 'ادفع لي', color: 'hsl(221, 83%, 53%)' }, // Blue
     { name: 'سداد', color: 'hsl(142, 71%, 45%)' }, // Green
     { name: 'موبي كاش', color: 'hsl(24, 94%, 53%)' }, // Orange
+    { name: 'نقدي', color: 'hsl(120, 60%, 35%)' }, // Cash - A distinct green
   ],
 };
 
