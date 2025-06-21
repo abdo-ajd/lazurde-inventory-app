@@ -328,20 +328,7 @@ export default function ProductDetailsPage() {
                         <p className="font-semibold text-lg">{quantitySold}</p>
                         </div>
                     </div>
-                    <div className="flex items-start space-x-3 space-x-reverse">
-                        <CalendarDays className="h-5 w-5 mt-1 text-primary shrink-0" />
-                        <div>
-                        <p className="text-base text-muted-foreground">تاريخ الإنشاء</p>
-                        <p className="font-semibold text-base">{formatDateTime(product.createdAt)}</p> 
-                        </div>
-                    </div>
-                    <div className="flex items-start space-x-3 space-x-reverse">
-                        <History className="h-5 w-5 mt-1 text-primary shrink-0" />
-                        <div>
-                        <p className="text-base text-muted-foreground">آخر تحديث</p>
-                        <p className="font-semibold text-base">{formatDateTime(product.updatedAt)}</p>
-                        </div>
-                    </div>
+                    
                     {hasRole(['admin']) && (
                         <>
                         <div className="flex items-start space-x-3 space-x-reverse"> 
@@ -360,6 +347,20 @@ export default function ProductDetailsPage() {
                         </div>
                         </>
                     )}
+                    <div className="flex items-start space-x-3 space-x-reverse">
+                        <CalendarDays className="h-5 w-5 mt-1 text-primary shrink-0" />
+                        <div>
+                        <p className="text-base text-muted-foreground">تاريخ الإنشاء</p>
+                        <p className="font-semibold text-base">{formatDateTime(product.createdAt)}</p> 
+                        </div>
+                    </div>
+                    <div className="flex items-start space-x-3 space-x-reverse">
+                        <History className="h-5 w-5 mt-1 text-primary shrink-0" />
+                        <div>
+                        <p className="text-base text-muted-foreground">آخر تحديث</p>
+                        <p className="font-semibold text-base">{formatDateTime(product.updatedAt)}</p>
+                        </div>
+                    </div>
                 </CardContent>
                 {hasRole(['admin']) && (
                 <CardFooter className="flex justify-start gap-3 p-6 pt-4"> 
