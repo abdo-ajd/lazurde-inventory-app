@@ -1,6 +1,8 @@
 "use client"
 
+import React, { useEffect, useRef } from "react"
 import { useToast } from "@/hooks/use-toast"
+import { useAppSettings } from "@/contexts/AppSettingsContext"
 import {
   Toast,
   ToastClose,
@@ -12,6 +14,35 @@ import {
 
 export function Toaster() {
   const { toasts } = useToast()
+  const { settings } = useAppSettings()
+  const playedToastsRef = useRef(new Set<string>())
+
+  useEffect(() => {
+    const newDestructiveToast = toasts.find(
+      (t) => t.variant === "destructive" && !playedToastsRef.current.has(t.id)
+    );
+
+    if (newDestructiveToast) {
+      if (settings.rejectedOperationSound && settings.rejectedOperationSound.startsWith('data:audio')) {
+        try {
+          const audio = new Audio(settings.rejectedOperationSound);
+          audio.play().catch(error => console.warn("Error playing rejected operation sound:", error));
+        } catch (error) {
+          console.warn("Could not play rejected operation sound:", error);
+        }
+      }
+      playedToastsRef.current.add(newDestructiveToast.id);
+    }
+    
+    // Clean up old toast IDs from the set to prevent it from growing indefinitely
+    const currentToastIds = new Set(toasts.map(t => t.id));
+    playedToastsRef.current.forEach(id => {
+        if (!currentToastIds.has(id)) {
+            playedToastsRef.current.delete(id);
+        }
+    });
+
+  }, [toasts, settings.rejectedOperationSound]);
 
   return (
     <ToastProvider>

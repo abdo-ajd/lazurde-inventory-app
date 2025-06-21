@@ -25,7 +25,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
     accent: '233 48% 59%',
   },
   saleSuccessSound: '', // Default to no custom sound
-  invalidDiscountSound: '', // Default to no custom sound for invalid discount
+  rejectedOperationSound: '', // Default to no custom sound for invalid discount
 };
 
 export const INITIAL_PRODUCTS: Product[] = [
@@ -65,5 +65,3 @@ export const INITIAL_PRODUCTS: Product[] = [
 ];
 
 export const INITIAL_SALES: Sale[] = []; // Start with no sales
-
-    

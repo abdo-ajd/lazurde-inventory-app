@@ -32,12 +32,7 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
   const [currentDiscount, setCurrentDiscount] = useState<number>(0);
   
   const formatNumber = (num: number) => {
-    // Check if the number has any decimal part
-    if (num % 1 !== 0) {
-      return parseFloat(num.toFixed(2));
-    }
-    // If it's a whole number, return it as is
-    return num;
+    return num % 1 !== 0 ? parseFloat(num.toFixed(2)) : num;
   };
 
 
@@ -74,24 +69,14 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
     const totalProfit = currentOriginalTotalAmount - totalCostPrice;
     const discountToApply = Math.max(0, currentDiscount);
     
-    // New validation: check if discount exceeds profit
     if (discountToApply > totalProfit) {
       toast({
         variant: "destructive",
         title: "خصم غير مقبول",
         description: "الخصم المطلوب يتجاوز الحد المسموح به لهذه العملية.",
       });
-
-      if (settings.invalidDiscountSound && settings.invalidDiscountSound.startsWith('data:audio')) {
-        try {
-          const audio = new Audio(settings.invalidDiscountSound);
-          audio.play().catch(error => console.warn("Error playing invalid discount sound:", error));
-        } catch (error) {
-          console.warn("Could not play invalid discount sound:", error);
-        }
-      }
-      setCurrentDiscount(0); // Reset discount on rejected sale
-      return null; // Block the sale
+      setCurrentDiscount(0);
+      return null;
     }
 
     const finalTotalAmount = Math.max(0, currentOriginalTotalAmount - discountToApply);

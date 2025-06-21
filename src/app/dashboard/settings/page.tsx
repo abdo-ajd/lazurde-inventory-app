@@ -98,8 +98,8 @@ export default function AppSettingsPage() {
   const successSoundInputRef = useRef<HTMLInputElement>(null);
   const [uploadedSuccessSoundName, setUploadedSuccessSoundName] = useState<string | null>(null);
 
-  const invalidSoundInputRef = useRef<HTMLInputElement>(null);
-  const [uploadedInvalidSoundName, setUploadedInvalidSoundName] = useState<string | null>(null);
+  const rejectedSoundInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedRejectedSoundName, setUploadedRejectedSoundName] = useState<string | null>(null);
 
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [canInstallPWA, setCanInstallPWA] = useState(false);
@@ -126,10 +126,10 @@ export default function AppSettingsPage() {
     } else {
         setUploadedSuccessSoundName(null);
     }
-     if (settings.invalidDiscountSound) {
-        setUploadedInvalidSoundName("نغمة تنبيه مخصصة");
+     if (settings.rejectedOperationSound) {
+        setUploadedRejectedSoundName("نغمة تنبيه مخصصة");
     } else {
-        setUploadedInvalidSoundName(null);
+        setUploadedRejectedSoundName(null);
     }
   }, [settings, form]);
 
@@ -300,13 +300,13 @@ export default function AppSettingsPage() {
     reader.readAsText(file);
   };
   
-  const handleSoundFileChange = (event: React.ChangeEvent<HTMLInputElement>, type: 'success' | 'invalid') => {
+  const handleSoundFileChange = (event: React.ChangeEvent<HTMLInputElement>, type: 'success' | 'rejected') => {
     const file = event.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) { 
         toast({ variant: "destructive", title: "خطأ", description: "حجم الملف كبير جداً. الرجاء اختيار ملف أصغر من 5 ميجابايت." });
         if(type === 'success' && successSoundInputRef.current) successSoundInputRef.current.value = "";
-        if(type === 'invalid' && invalidSoundInputRef.current) invalidSoundInputRef.current.value = "";
+        if(type === 'rejected' && rejectedSoundInputRef.current) rejectedSoundInputRef.current.value = "";
         return;
       }
       const reader = new FileReader();
@@ -316,8 +316,8 @@ export default function AppSettingsPage() {
             updateSettings({ saleSuccessSound: dataUri });
             setUploadedSuccessSoundName(file.name);
         } else {
-            updateSettings({ invalidDiscountSound: dataUri });
-            setUploadedInvalidSoundName(file.name);
+            updateSettings({ rejectedOperationSound: dataUri });
+            setUploadedRejectedSoundName(file.name);
         }
         toast({ title: "نجاح", description: `تم رفع النغمة: ${file.name}` });
       };
@@ -325,15 +325,15 @@ export default function AppSettingsPage() {
     }
   };
 
-  const handleClearSound = (type: 'success' | 'invalid') => {
+  const handleClearSound = (type: 'success' | 'rejected') => {
     if (type === 'success') {
         updateSettings({ saleSuccessSound: '' });
         setUploadedSuccessSoundName(null);
         if(successSoundInputRef.current) successSoundInputRef.current.value = "";
     } else {
-        updateSettings({ invalidDiscountSound: '' });
-        setUploadedInvalidSoundName(null);
-        if(invalidSoundInputRef.current) invalidSoundInputRef.current.value = "";
+        updateSettings({ rejectedOperationSound: '' });
+        setUploadedRejectedSoundName(null);
+        if(rejectedSoundInputRef.current) rejectedSoundInputRef.current.value = "";
     }
     toast({ title: "نجاح", description: "تمت إزالة النغمة المخصصة." });
   };
@@ -480,32 +480,32 @@ export default function AppSettingsPage() {
       <Card className="mt-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-amber-500" /> نغمة تنبيه الخصم غير المقبول
+            <AlertTriangle className="h-5 w-5 text-amber-500" /> نغمة العمليات المرفوضة
           </CardTitle>
-          <CardDescription>اختر ملفًا صوتيًا لتشغيله عند محاولة تطبيق خصم أكبر من الربح.</CardDescription>
+          <CardDescription>اختر ملفًا صوتيًا لتشغيله عند فشل عملية ما (مثل عدم توفر الكمية، خطأ في تسجيل الدخول، الخ).</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <Button onClick={() => invalidSoundInputRef.current?.click()} variant="outline" className="w-full sm:w-auto">
-              <Music className="ml-2 h-4 w-4" /> {uploadedInvalidSoundName ? "تغيير نغمة التنبيه" : "اختيار ملف صوتي"}
+            <Button onClick={() => rejectedSoundInputRef.current?.click()} variant="outline" className="w-full sm:w-auto">
+              <Music className="ml-2 h-4 w-4" /> {uploadedRejectedSoundName ? "تغيير نغمة التنبيه" : "اختيار ملف صوتي"}
             </Button>
             <Input 
                 type="file" 
-                ref={invalidSoundInputRef} 
+                ref={rejectedSoundInputRef} 
                 className="hidden" 
                 accept="audio/*" 
-                onChange={(e) => handleSoundFileChange(e, 'invalid')}
+                onChange={(e) => handleSoundFileChange(e, 'rejected')}
             />
-            {uploadedInvalidSoundName && (
-              <Button onClick={() => handleClearSound('invalid')} variant="destructive" size="sm" className="w-full sm:w-auto">
+            {uploadedRejectedSoundName && (
+              <Button onClick={() => handleClearSound('rejected')} variant="destructive" size="sm" className="w-full sm:w-auto">
                  <Trash2 className="ml-2 h-4 w-4" /> إزالة النغمة
               </Button>
             )}
           </div>
-          {uploadedInvalidSoundName && (
-            <p className="text-sm text-muted-foreground">نغمة التنبيه الحالية: {uploadedInvalidSoundName}</p>
+          {uploadedRejectedSoundName && (
+            <p className="text-sm text-muted-foreground">نغمة التنبيه الحالية: {uploadedRejectedSoundName}</p>
           )}
-          {!uploadedInvalidSoundName && (
+          {!uploadedRejectedSoundName && (
             <p className="text-sm text-muted-foreground">لم يتم اختيار نغمة تنبيه مخصصة.</p>
           )}
            <p className="text-xs text-muted-foreground pt-2">
@@ -575,5 +575,3 @@ export default function AppSettingsPage() {
     </div>
   );
 }
-
-    
