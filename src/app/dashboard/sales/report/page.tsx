@@ -6,17 +6,17 @@ import { useState, useMemo, useEffect } from 'react';
 import { useSales } from '@/contexts/SalesContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption, TableFooter } from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CalendarIcon, Undo2, Search, MinusCircle } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CalendarIcon, Undo2, Search } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { format, parseISO, startOfDay, endOfDay, isEqual, isValid } from 'date-fns';
+import { format, parseISO, startOfDay, endOfDay, isValid } from 'date-fns';
 import { enGB, arSA } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription as ShadcnDialogDescription, DialogClose } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Sale } from '@/lib/types';
 
 export default function SalesReportPage() {
@@ -147,7 +147,27 @@ export default function SalesReportPage() {
                           ))}
                         </ul>
                       </TableCell>
-                      <TableCell className="text-center font-semibold px-2 py-3">{sale.totalAmount.toFixed(2)}</TableCell>
+                      <TableCell className="text-center font-semibold px-2 py-3">
+                        {sale.discountAmount && sale.discountAmount > 0 && sale.status === 'active' ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <span className="text-blue-600 dark:text-blue-400">{sale.totalAmount.toFixed(2)}</span>
+                            <TooltipProvider delayDuration={100}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="outline" className="text-xs font-mono border-orange-500/50 text-orange-600 dark:text-orange-400 cursor-help">
+                                    -{sale.discountAmount.toFixed(2)}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  <p>خصم: {sale.discountAmount.toFixed(2)} LYD</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        ) : (
+                          <span>{sale.totalAmount.toFixed(2)}</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-center px-2 py-3">
                         <Badge variant={sale.status === 'active' ? 'success' : 'destructive'} className={`${sale.status === 'active' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'} text-xs`}>
                           {sale.status === 'active' ? 'نشط' : 'مرجع'}
@@ -214,5 +234,3 @@ declare module "@/components/ui/badge" {
     variant?: "default" | "secondary" | "destructive" | "outline" | "success";
   }
 }
-
-    
