@@ -32,7 +32,7 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
   const [currentDiscount, setCurrentDiscount] = useState<number>(0);
   
   const formatNumber = (num: number) => {
-    return Number.isInteger(num) ? num : num.toFixed(2);
+    return Number(num.toFixed(2)); // Keep formatting for display consistency
   };
 
 
@@ -74,7 +74,7 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
       toast({
         variant: "destructive",
         title: "خصم غير مقبول",
-        description: `قيمة الخصم (${formatNumber(discountToApply)}) أكبر من إجمالي الربح (${formatNumber(totalProfit)}). لا يمكن إتمام العملية.`,
+        description: "الخصم المطلوب يتجاوز الحد المسموح به لهذه العملية.",
       });
 
       if (settings.invalidDiscountSound && settings.invalidDiscountSound.startsWith('data:audio')) {
@@ -105,9 +105,9 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
     const newSale: Sale = {
       id: `sale_${Date.now()}`,
       items: saleItems,
-      originalTotalAmount: currentOriginalTotalAmount,
-      discountAmount: discountToApply,
-      totalAmount: finalTotalAmount,
+      originalTotalAmount: formatNumber(currentOriginalTotalAmount),
+      discountAmount: formatNumber(discountToApply),
+      totalAmount: formatNumber(finalTotalAmount),
       saleDate: new Date().toISOString(),
       sellerId: currentUser.id,
       sellerUsername: currentUser.username,
@@ -115,9 +115,9 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
     };
 
     setSales(prevSales => [newSale, ...(prevSales || [])]);
-    let toastMessage = `تم تسجيل البيع بنجاح. الإجمالي: ${formatNumber(finalTotalAmount)}`;
+    let toastMessage = `تم تسجيل البيع بنجاح. الإجمالي: ${newSale.totalAmount}`;
     if (discountToApply > 0) {
-        toastMessage += ` (بعد خصم ${formatNumber(discountToApply)})`;
+        toastMessage += ` (بعد خصم ${newSale.discountAmount})`;
     }
     toast({ title: "نجاح", description: toastMessage });
 
