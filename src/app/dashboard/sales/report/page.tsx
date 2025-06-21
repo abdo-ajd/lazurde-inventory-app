@@ -8,11 +8,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProducts } from '@/contexts/ProductContext'; // Import useProducts
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CalendarIcon, Undo2, Search } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { CalendarIcon, Undo2, Search, FileText } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { format, parseISO, startOfDay, endOfDay, isValid } from 'date-fns';
+import { format, parseISO, startOfDay, endOfDay, isValid, startOfMonth, endOfMonth } from 'date-fns';
 import { enGB, arSA } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
@@ -41,40 +41,71 @@ export default function SalesReportPage() {
       return isValid(saleDate) && saleDate >= start && saleDate <= end;
     }).sort((a,b) => parseISO(b.saleDate).getTime() - parseISO(a.saleDate).getTime()); // Sort by most recent first
   }, [sales, selectedDate]);
-
-  const totalActiveDiscountAmount = useMemo(() => {
-    return filteredSales
-      .filter(sale => sale.status === 'active')
-      .reduce((sum, sale) => sum + (sale.discountAmount ?? 0), 0);
-  }, [filteredSales]);
-
-  const totalActiveFinalAmount = useMemo(() => {
-    return filteredSales
-      .filter(sale => sale.status === 'active')
-      .reduce((sum, sale) => sum + sale.totalAmount, 0);
-  }, [filteredSales]);
-
-  const totalActiveProfit = useMemo(() => {
-    if (!hasRole(['admin'])) return 0;
-    return filteredSales
-      .filter(sale => sale.status === 'active')
-      .reduce((totalProfit, sale) => {
-        const saleProfit = sale.items.reduce((currentSaleProfit, item) => {
-          const product = getProductById(item.productId);
-          if (product) {
-            const costPrice = product.costPrice || 0;
-            const itemProfit = (item.pricePerUnit - costPrice) * item.quantity;
-            return currentSaleProfit + itemProfit;
-          }
-          return currentSaleProfit;
-        }, 0);
-        return totalProfit + saleProfit;
-      }, 0);
-  }, [filteredSales, getProductById, hasRole]);
-
+  
   const formatNumber = (num: number) => {
     return num % 1 !== 0 ? parseFloat(num.toFixed(2)) : num;
   };
+
+  const dailyReportData = useMemo(() => {
+    const activeSales = filteredSales.filter(sale => sale.status === 'active');
+    
+    const totalDiscount = activeSales.reduce((sum, sale) => sum + (sale.discountAmount ?? 0), 0);
+    const totalFinalAmount = activeSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+
+    let totalProfit = 0;
+    if (hasRole(['admin'])) {
+      totalProfit = activeSales.reduce((totalProfitSum, sale) => {
+        const saleCostOfGoods = sale.items.reduce((costSum, item) => {
+          const product = getProductById(item.productId);
+          return costSum + ((product?.costPrice || 0) * item.quantity);
+        }, 0);
+        return totalProfitSum + (sale.totalAmount - saleCostOfGoods);
+      }, 0);
+    }
+
+    return {
+      totalDiscount: formatNumber(totalDiscount),
+      totalFinalAmount: formatNumber(totalFinalAmount),
+      totalProfit: formatNumber(totalProfit)
+    };
+  }, [filteredSales, getProductById, hasRole]);
+
+  const monthlyReportData = useMemo(() => {
+    if (!sales || !selectedDate || !isValid(selectedDate)) {
+      return { totalSales: 0, totalDiscount: 0, totalProfit: 0, monthName: '' };
+    }
+
+    const start = startOfMonth(selectedDate);
+    const end = endOfMonth(selectedDate);
+    const monthName = format(selectedDate, 'MMMM yyyy', { locale: arSA });
+
+    const monthlyActiveSales = sales.filter(sale => {
+        const saleDate = parseISO(sale.saleDate);
+        return isValid(saleDate) && saleDate >= start && saleDate <= end && sale.status === 'active';
+    });
+
+    const totalSales = monthlyActiveSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+    const totalDiscount = monthlyActiveSales.reduce((sum, sale) => sum + (sale.discountAmount ?? 0), 0);
+
+    let totalProfit = 0;
+    if (hasRole(['admin'])) {
+      totalProfit = monthlyActiveSales.reduce((totalProfitSum, sale) => {
+        const saleCostOfGoods = sale.items.reduce((costSum, item) => {
+          const product = getProductById(item.productId);
+          return costSum + ((product?.costPrice || 0) * item.quantity);
+        }, 0);
+        return totalProfitSum + (sale.totalAmount - saleCostOfGoods);
+      }, 0);
+    }
+    
+    return {
+      totalSales: formatNumber(totalSales),
+      totalDiscount: formatNumber(totalDiscount),
+      totalProfit: formatNumber(totalProfit),
+      monthName
+    };
+  }, [sales, selectedDate, getProductById, hasRole]);
+
     
   const formatSaleTime = (isoString: string) => {
     if (!isoString || !isValid(parseISO(isoString))) return 'N/A';
@@ -111,37 +142,76 @@ export default function SalesReportPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight font-headline">تقرير المبيعات اليومي</h1>
+        <h1 className="text-3xl font-bold tracking-tight font-headline">تقرير المبيعات</h1>
         <p className="text-muted-foreground font-body">
-          عرض المبيعات حسب تاريخ محدد مع تفاصيل الخصومات.
+          عرض المبيعات اليومية أو الشهرية مع تفاصيل الأرباح والخصومات.
         </p>
       </div>
 
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <CardTitle>اختر تاريخًا لعرض المبيعات</CardTitle>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className="w-full md:w-[280px] justify-start text-right font-normal"
-                >
-                  <CalendarIcon className="ml-2 h-4 w-4" />
-                  {selectedDate ? format(selectedDate, 'PPP', { locale: arSA }) : <span>اختر تاريخًا</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  initialFocus
-                  locale={arSA} 
-                  dir="rtl" 
-                />
-              </PopoverContent>
-            </Popover>
+            <CardTitle>عرض التقرير حسب التاريخ</CardTitle>
+            <div className="flex items-center gap-2">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="h-10">
+                    <FileText className="ml-2 h-4 w-4" />
+                    تقرير شهري
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>ملخص المبيعات لـ {monthlyReportData.monthName}</DialogTitle>
+                    <CardDescription>
+                      هذا هو ملخص المبيعات والخصومات والأرباح للشهر المحدد.
+                    </CardDescription>
+                  </DialogHeader>
+                  <div className="space-y-3 py-4">
+                    <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
+                      <span className="font-medium">إجمالي المبيعات</span>
+                      <span className="font-bold text-lg">{monthlyReportData.totalSales} LYD</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
+                      <span className="font-medium">إجمالي الخصومات</span>
+                      <span className="font-bold text-lg text-orange-600">{monthlyReportData.totalDiscount} LYD</span>
+                    </div>
+                    {hasRole(['admin']) && (
+                      <div className="flex justify-between items-center p-3 rounded-lg bg-green-100 dark:bg-green-900 border border-green-200 dark:border-green-800">
+                        <span className="font-medium text-green-800 dark:text-green-200">إجمالي الربح</span>
+                        <span className={`font-bold text-lg ${monthlyReportData.totalProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>{monthlyReportData.totalProfit} LYD</span>
+                      </div>
+                    )}
+                  </div>
+                  <DialogFooter>
+                     <DialogClose asChild>
+                        <Button type="button" variant="secondary">إغلاق</Button>
+                     </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className="w-full md:w-[280px] justify-start text-right font-normal"
+                  >
+                    <CalendarIcon className="ml-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, 'PPP', { locale: arSA }) : <span>اختر تاريخًا</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    initialFocus
+                    locale={arSA} 
+                    dir="rtl" 
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -228,15 +298,15 @@ export default function SalesReportPage() {
                  <TableFooter>
                     <TableRow className="font-bold bg-muted/80">
                         <TableCell colSpan={2} className="text-lg px-2 py-3 text-right">الإجماليات النشطة لليوم:</TableCell>
-                        <TableCell className="text-center text-lg px-2 py-3">{formatNumber(totalActiveFinalAmount)} LYD</TableCell>
+                        <TableCell className="text-center text-lg px-2 py-3">{dailyReportData.totalFinalAmount} LYD</TableCell>
                         <TableCell className="text-center text-sm px-2 py-3">
                             <div className="flex flex-col items-center gap-1">
                                 <span className="text-orange-600 dark:text-orange-400">
-                                    (إجمالي الخصومات: {formatNumber(totalActiveDiscountAmount)})
+                                    (إجمالي الخصومات: {dailyReportData.totalDiscount})
                                 </span>
                                 {hasRole(['admin']) && (
-                                    <span className="text-green-600 dark:text-green-500">
-                                        (إجمالي الربح: {formatNumber(totalActiveProfit)})
+                                    <span className={` ${dailyReportData.totalProfit >= 0 ? 'text-green-600 dark:text-green-500' : 'text-destructive'}`}>
+                                        (إجمالي الربح: {dailyReportData.totalProfit})
                                     </span>
                                 )}
                             </div>
