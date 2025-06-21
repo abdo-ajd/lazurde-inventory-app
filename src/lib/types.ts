@@ -53,7 +53,7 @@ export interface AppSettings {
   };
   saleSuccessSound?: string; // Data URI for the sound
   rejectedOperationSound?: string; // Data URI for any rejected/failed operation
-  bankServices?: string[];
+  bankServices?: { name: string; color: string; }[];
 }
 
 export interface NavItem {

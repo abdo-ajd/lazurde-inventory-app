@@ -14,12 +14,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProducts } from '@/contexts/ProductContext';
 import { useSales } from '@/contexts/SalesContext';
 import { useEffect, useRef, useState } from 'react';
-import { Save, RotateCcw, Download, Upload, Music, Trash2, Smartphone, DownloadCloud, AlertTriangle, CreditCard } from 'lucide-react';
+import { Save, RotateCcw, Download, Upload, Music, Trash2, Smartphone, DownloadCloud, AlertTriangle, CreditCard, Palette } from 'lucide-react';
 import { DEFAULT_APP_SETTINGS, LOCALSTORAGE_KEYS } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import type { User, Product, Sale, AppSettings as AppSettingsType } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { getImage as getImageFromDB, blobToDataUri } from '@/lib/indexedDBService';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 const hslColorSchema = z.string().regex(/^(\d{1,3})\s+(\d{1,3}%)\s+(\d{1,3}%)$/, {
@@ -77,6 +78,17 @@ const PREDEFINED_PALETTES: { name: string; id: string; colors: AppSettingsType['
   },
 ];
 
+const PREDEFINED_SERVICE_COLORS: { name: string, value: string }[] = [
+    { name: 'أزرق', value: 'hsl(221, 83%, 53%)' },
+    { name: 'أخضر', value: 'hsl(142, 71%, 45%)' },
+    { name: 'برتقالي', value: 'hsl(24, 94%, 53%)' },
+    { name: 'بنفسجي', value: 'hsl(262, 83%, 62%)' },
+    { name: 'وردي', value: 'hsl(340, 82%, 52%)' },
+    { name: 'سماوي', value: 'hsl(188, 83%, 45%)' },
+    { name: 'رمادي', value: 'hsl(215, 14%, 47%)' },
+];
+
+
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: Array<string>;
   readonly userChoice: Promise<{
@@ -101,7 +113,8 @@ export default function AppSettingsPage() {
   const rejectedSoundInputRef = useRef<HTMLInputElement>(null);
   const [uploadedRejectedSoundName, setUploadedRejectedSoundName] = useState<string | null>(null);
   
-  const [newBankService, setNewBankService] = useState('');
+  const [newServiceName, setNewServiceName] = useState('');
+  const [newServiceColor, setNewServiceColor] = useState<string>(PREDEFINED_SERVICE_COLORS[0]?.value || '');
 
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [canInstallPWA, setCanInstallPWA] = useState(false);
@@ -356,19 +369,25 @@ export default function AppSettingsPage() {
   };
   
   const handleAddBankService = () => {
-    if (newBankService.trim() === '') return;
+    const name = newServiceName.trim();
+    if (name === '') return;
+    if (newServiceColor === '') {
+        toast({ variant: "destructive", title: "مطلوب", description: "الرجاء اختيار لون للخدمة." });
+        return;
+    }
+    
     const currentServices = settings.bankServices || [];
-    if (currentServices.map(s => s.toLowerCase()).includes(newBankService.trim().toLowerCase())) {
+    if (currentServices.map(s => s.name.toLowerCase()).includes(name.toLowerCase())) {
         toast({ variant: "destructive", title: "موجود بالفعل", description: "هذه الخدمة المصرفية موجودة بالفعل." });
         return;
     }
-    const updatedServices = [...currentServices, newBankService.trim()];
+    const updatedServices = [...currentServices, { name, color: newServiceColor }];
     updateSettings({ bankServices: updatedServices });
-    setNewBankService('');
+    setNewServiceName('');
   };
 
-  const handleDeleteBankService = (serviceToDelete: string) => {
-    const updatedServices = (settings.bankServices || []).filter(s => s !== serviceToDelete);
+  const handleDeleteBankService = (serviceNameToDelete: string) => {
+    const updatedServices = (settings.bankServices || []).filter(s => s.name !== serviceNameToDelete);
     updateSettings({ bankServices: updatedServices });
   };
 
@@ -541,24 +560,43 @@ export default function AppSettingsPage() {
               <CreditCard className="h-5 w-5 text-primary" />
               الخدمات المصرفية
             </CardTitle>
-            <CardDescription>إدارة قائمة الخدمات المصرفية المتاحة للدفع الإلكتروني.</CardDescription>
+            <CardDescription>إدارة قائمة الخدمات المصرفية وألوانها المميزة في التقارير.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Input
-                value={newBankService}
-                onChange={(e) => setNewBankService(e.target.value)}
+                value={newServiceName}
+                onChange={(e) => setNewServiceName(e.target.value)}
                 placeholder="اسم خدمة مصرفية جديدة..."
+                className="flex-grow"
                 onKeyDown={(e) => e.key === 'Enter' && handleAddBankService()}
               />
-              <Button onClick={handleAddBankService}>إضافة</Button>
+              <Select value={newServiceColor} onValueChange={setNewServiceColor}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="اختر لونًا" />
+                </SelectTrigger>
+                <SelectContent>
+                    {PREDEFINED_SERVICE_COLORS.map(color => (
+                        <SelectItem key={color.value} value={color.value}>
+                            <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: color.value }} />
+                                <span>{color.name}</span>
+                            </div>
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <Button onClick={handleAddBankService} className="w-full sm:w-auto">إضافة</Button>
             </div>
             <div className="space-y-2">
               {(settings.bankServices || []).length > 0 ? (
                 (settings.bankServices || []).map(service => (
-                  <div key={service} className="flex items-center justify-between rounded-md border p-2 bg-muted/50">
-                    <span className="font-medium">{service}</span>
-                    <Button variant="ghost" size="icon" onClick={() => handleDeleteBankService(service)}>
+                  <div key={service.name} className="flex items-center justify-between rounded-md border p-2 bg-muted/50">
+                    <div className="flex items-center gap-3">
+                        <div className="w-5 h-5 rounded-full" style={{ backgroundColor: service.color }} />
+                        <span className="font-medium">{service.name}</span>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => handleDeleteBankService(service.name)}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>

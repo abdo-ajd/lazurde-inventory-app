@@ -14,7 +14,6 @@ export const DEFAULT_ADMIN_USER: User = {
   username: 'abdo',
   password: '00123456', // In a real app, this would be hashed or handled by a proper auth system
   role: 'admin',
-  // avatarUrl: '', // Removed user avatar
 };
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
@@ -25,8 +24,12 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
     accent: '233 48% 59%',
   },
   saleSuccessSound: '', // Default to no custom sound
-  rejectedOperationSound: '', // Default to no custom sound for invalid discount
-  bankServices: ['ادفع لي', 'سداد', 'موبي كاش'],
+  rejectedOperationSound: '', // Default to no custom sound for rejected operations
+  bankServices: [
+    { name: 'ادفع لي', color: 'hsl(221, 83%, 53%)' }, // Blue
+    { name: 'سداد', color: 'hsl(142, 71%, 45%)' }, // Green
+    { name: 'موبي كاش', color: 'hsl(24, 94%, 53%)' }, // Orange
+  ],
 };
 
 export const INITIAL_PRODUCTS: Product[] = [
