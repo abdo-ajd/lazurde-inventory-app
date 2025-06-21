@@ -150,22 +150,22 @@ export default function SalesReportPage() {
                       <TableCell className="text-center font-semibold px-2 py-3">
                         {sale.discountAmount && sale.discountAmount > 0 && sale.status === 'active' ? (
                           <div className="flex items-center justify-center gap-2">
-                            <span className="text-blue-600 dark:text-blue-400">{sale.totalAmount.toFixed(2)}</span>
+                            <span className="text-blue-600 dark:text-blue-400">{sale.totalAmount}</span>
                             <TooltipProvider delayDuration={100}>
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Badge variant="outline" className="text-xs font-mono border-orange-500/50 text-orange-600 dark:text-orange-400 cursor-help">
-                                    -{sale.discountAmount.toFixed(2)}
+                                    -{sale.discountAmount}
                                   </Badge>
                                 </TooltipTrigger>
                                 <TooltipContent side="top">
-                                  <p>خصم: {sale.discountAmount.toFixed(2)} LYD</p>
+                                  <p>خصم: {sale.discountAmount} LYD</p>
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
                           </div>
                         ) : (
-                          <span>{sale.totalAmount.toFixed(2)}</span>
+                          <span>{sale.totalAmount}</span>
                         )}
                       </TableCell>
                       <TableCell className="text-center px-2 py-3">
@@ -209,9 +209,9 @@ export default function SalesReportPage() {
                  <TableFooter>
                     <TableRow className="font-bold bg-muted/80">
                         <TableCell colSpan={2} className="text-lg px-2 py-3 text-right">الإجماليات النشطة لليوم:</TableCell>
-                        <TableCell className="text-center text-lg px-2 py-3">{totalActiveFinalAmount.toFixed(2)} LYD</TableCell>
+                        <TableCell className="text-center text-lg px-2 py-3">{totalActiveFinalAmount} LYD</TableCell>
                         <TableCell colSpan={hasRole(['admin', 'employee_return']) ? 2 : 1} className="text-center text-sm text-orange-600 px-2 py-3">
-                            (إجمالي الخصومات: {totalActiveDiscountAmount.toFixed(2)})
+                            (إجمالي الخصومات: {totalActiveDiscountAmount})
                         </TableCell>
                     </TableRow>
                 </TableFooter>

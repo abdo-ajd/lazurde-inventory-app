@@ -88,9 +88,9 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
     };
 
     setSales(prevSales => [newSale, ...(prevSales || [])]);
-    let toastMessage = `تم تسجيل البيع بنجاح. الإجمالي: ${finalTotalAmount.toFixed(2)}`;
+    let toastMessage = `تم تسجيل البيع بنجاح. الإجمالي: ${finalTotalAmount}`;
     if (discountToApply > 0) {
-        toastMessage += ` (بعد خصم ${discountToApply.toFixed(2)})`;
+        toastMessage += ` (بعد خصم ${discountToApply})`;
     }
     toast({ title: "نجاح", description: toastMessage });
 
@@ -159,4 +159,3 @@ export const useSales = () => {
   }
   return context;
 };
-

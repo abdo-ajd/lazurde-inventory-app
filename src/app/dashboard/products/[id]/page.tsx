@@ -309,7 +309,7 @@ export default function ProductDetailsPage() {
                         <DollarSign className="h-5 w-5 mt-1 text-primary shrink-0" /> 
                         <div>
                         <p className="text-base text-muted-foreground">سعر البيع</p> 
-                        <p className="font-semibold text-lg">{product.price === 0 ? 'لم يحدد السعر' : `${product.price.toFixed(2)} LYD`}</p> 
+                        <p className="font-semibold text-lg">{product.price === 0 ? 'لم يحدد السعر' : `${product.price} LYD`}</p> 
                         </div>
                     </div>
                     {hasRole(['admin']) && (
@@ -317,7 +317,7 @@ export default function ProductDetailsPage() {
                             <Archive className="h-5 w-5 mt-1 text-primary shrink-0" /> 
                             <div>
                             <p className="text-base text-muted-foreground">سعر التكلفة</p> 
-                            <p className="font-semibold text-lg">{product.costPrice ? `${product.costPrice.toFixed(2)} LYD` : 'لم يحدد'}</p> 
+                            <p className="font-semibold text-lg">{product.costPrice ? `${product.costPrice} LYD` : 'لم يحدد'}</p> 
                             </div>
                         </div>
                     )}
@@ -326,7 +326,7 @@ export default function ProductDetailsPage() {
                             <TrendingUp className="h-5 w-5 mt-1 text-green-600 shrink-0" />
                             <div>
                             <p className="text-base text-muted-foreground">المكسب</p>
-                            <p className={`font-semibold text-lg ${profit >= 0 ? 'text-green-600' : 'text-destructive'}`}>{`${profit.toFixed(2)} LYD`}</p>
+                            <p className={`font-semibold text-lg ${profit >= 0 ? 'text-green-600' : 'text-destructive'}`}>{`${profit} LYD`}</p>
                             </div>
                         </div>
                     )}
@@ -353,7 +353,7 @@ export default function ProductDetailsPage() {
                             <Wallet className="h-5 w-5 mt-1 text-green-600 shrink-0" />
                             <div>
                             <p className="text-base text-muted-foreground">إجمالي المكسب</p>
-                            <p className={`font-semibold text-lg ${totalProfit >= 0 ? 'text-green-600' : 'text-destructive'}`}>{`${totalProfit.toFixed(2)} LYD`}</p>
+                            <p className={`font-semibold text-lg ${totalProfit >= 0 ? 'text-green-600' : 'text-destructive'}`}>{`${totalProfit} LYD`}</p>
                             </div>
                         </div>
                     )}
