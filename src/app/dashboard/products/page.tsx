@@ -4,7 +4,6 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useProducts } from '@/contexts/ProductContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -140,7 +139,6 @@ export default function ProductsManagementPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[80px]">الصورة</TableHead>
                     <TableHead>اسم المنتج</TableHead>
                     <TableHead className="text-right">السعر</TableHead>
                     <TableHead className="text-center">الكمية</TableHead>
@@ -150,31 +148,18 @@ export default function ProductsManagementPage() {
                 <TableBody>
                   {filteredProducts.map((product) => (
                     <TableRow key={product.id}>
-                      <TableCell>
-                        <Link href={`/dashboard/products/${product.id}`} passHref>
-                           <div className="relative w-16 h-20 rounded overflow-hidden border cursor-pointer hover:opacity-80 transition-opacity">
-                            <Image
-                                src={product.imageUrl || 'https://placehold.co/80x100.png'}
-                                alt={product.name}
-                                layout="fill"
-                                objectFit="cover"
-                                data-ai-hint="product thumbnail abaya"
-                            />
-                           </div>
-                        </Link>
-                      </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium px-4 py-2">
                         <Link href={`/dashboard/products/${product.id}`} className="hover:underline">
                           {product.name}
                         </Link>
                       </TableCell>
-                      <TableCell className="text-right">{product.price} LYD</TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-right px-4 py-2">{product.price} LYD</TableCell>
+                      <TableCell className="text-center px-4 py-2">
                         <Badge variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}>
                             {product.quantity}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-center space-x-1 space-x-reverse">
+                      <TableCell className="text-center space-x-1 space-x-reverse px-4 py-2">
                         <Button variant="ghost" size="icon" asChild title="تعديل المنتج">
                           <Link href={`/dashboard/products/${product.id}/edit`}>
                             <Edit3 className="h-4 w-4" />
@@ -229,4 +214,3 @@ export default function ProductsManagementPage() {
     </div>
   );
 }
-

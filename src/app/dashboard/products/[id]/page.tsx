@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowRight, Edit3, Package, Tag, DollarSign, Layers, CalendarDays, History, Trash2, ShoppingBag, Printer, Loader2 } from 'lucide-react';
+import { ArrowRight, Edit3, Package, Tag, DollarSign, Layers, CalendarDays, History, Trash2, ShoppingBag, Printer, Loader2, Archive, TrendingUp } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Product } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
@@ -212,6 +212,8 @@ export default function ProductDetailsPage() {
     }
   };
 
+  const profit = product.price - (product.costPrice || 0);
+
   return (
     <div className="space-y-6 p-4 md:p-6">
         <div className="flex justify-between items-center">
@@ -303,43 +305,61 @@ export default function ProductDetailsPage() {
                 </div>
 
                 <CardContent className="grid gap-5 sm:grid-cols-2 pt-4 px-6 pb-6"> 
-                <div className="flex items-start space-x-3 space-x-reverse"> 
-                    <DollarSign className="h-5 w-5 mt-1 text-primary shrink-0" /> 
-                    <div>
-                    <p className="text-base text-muted-foreground">السعر</p> 
-                    <p className="font-semibold text-lg">{product.price === 0 ? 'لم يحدد السعر' : `${product.price} LYD`}</p> 
+                    <div className="flex items-start space-x-3 space-x-reverse"> 
+                        <DollarSign className="h-5 w-5 mt-1 text-primary shrink-0" /> 
+                        <div>
+                        <p className="text-base text-muted-foreground">سعر البيع</p> 
+                        <p className="font-semibold text-lg">{product.price === 0 ? 'لم يحدد السعر' : `${product.price.toFixed(2)} LYD`}</p> 
+                        </div>
                     </div>
-                </div>
-                <div className="flex items-start space-x-3 space-x-reverse">
-                    <Layers className="h-5 w-5 mt-1 text-primary shrink-0" />
-                    <div>
-                    <p className="text-base text-muted-foreground">الكمية المتوفرة</p>
-                    <Badge variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"} className="text-sm px-2.5 py-1 font-medium"> 
-                        {product.quantity}
-                    </Badge>
+                    <div className="flex items-start space-x-3 space-x-reverse">
+                        <Layers className="h-5 w-5 mt-1 text-primary shrink-0" />
+                        <div>
+                        <p className="text-base text-muted-foreground">الكمية المتوفرة</p>
+                        <Badge variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"} className="text-sm px-2.5 py-1 font-medium"> 
+                            {product.quantity}
+                        </Badge>
+                        </div>
                     </div>
-                </div>
-                <div className="flex items-start space-x-3 space-x-reverse">
-                    <ShoppingBag className="h-5 w-5 mt-1 text-primary shrink-0" />
-                    <div>
-                    <p className="text-base text-muted-foreground">الكمية المباعة</p>
-                    <p className="font-semibold text-lg">{quantitySold}</p>
+                    <div className="flex items-start space-x-3 space-x-reverse">
+                        <ShoppingBag className="h-5 w-5 mt-1 text-primary shrink-0" />
+                        <div>
+                        <p className="text-base text-muted-foreground">الكمية المباعة</p>
+                        <p className="font-semibold text-lg">{quantitySold}</p>
+                        </div>
                     </div>
-                </div>
-                <div className="flex items-start space-x-3 space-x-reverse">
-                    <CalendarDays className="h-5 w-5 mt-1 text-primary shrink-0" />
-                    <div>
-                    <p className="text-base text-muted-foreground">تاريخ الإنشاء</p>
-                    <p className="font-semibold text-base">{formatDateTime(product.createdAt)}</p> 
+                    <div className="flex items-start space-x-3 space-x-reverse">
+                        <CalendarDays className="h-5 w-5 mt-1 text-primary shrink-0" />
+                        <div>
+                        <p className="text-base text-muted-foreground">تاريخ الإنشاء</p>
+                        <p className="font-semibold text-base">{formatDateTime(product.createdAt)}</p> 
+                        </div>
                     </div>
-                </div>
-                <div className="flex items-start space-x-3 space-x-reverse">
-                    <History className="h-5 w-5 mt-1 text-primary shrink-0" />
-                    <div>
-                    <p className="text-base text-muted-foreground">آخر تحديث</p>
-                    <p className="font-semibold text-base">{formatDateTime(product.updatedAt)}</p>
+                    <div className="flex items-start space-x-3 space-x-reverse">
+                        <History className="h-5 w-5 mt-1 text-primary shrink-0" />
+                        <div>
+                        <p className="text-base text-muted-foreground">آخر تحديث</p>
+                        <p className="font-semibold text-base">{formatDateTime(product.updatedAt)}</p>
+                        </div>
                     </div>
-                </div>
+                    {hasRole(['admin']) && (
+                        <>
+                        <div className="flex items-start space-x-3 space-x-reverse"> 
+                            <Archive className="h-5 w-5 mt-1 text-primary shrink-0" /> 
+                            <div>
+                            <p className="text-base text-muted-foreground">سعر التكلفة</p> 
+                            <p className="font-semibold text-lg">{product.costPrice ? `${product.costPrice.toFixed(2)} LYD` : 'لم يحدد'}</p> 
+                            </div>
+                        </div>
+                        <div className="flex items-start space-x-3 space-x-reverse">
+                            <TrendingUp className="h-5 w-5 mt-1 text-green-600 shrink-0" />
+                            <div>
+                            <p className="text-base text-muted-foreground">المكسب</p>
+                            <p className={`font-semibold text-lg ${profit >= 0 ? 'text-green-600' : 'text-destructive'}`}>{`${profit.toFixed(2)} LYD`}</p>
+                            </div>
+                        </div>
+                        </>
+                    )}
                 </CardContent>
                 {hasRole(['admin']) && (
                 <CardFooter className="flex justify-start gap-3 p-6 pt-4"> 
@@ -381,5 +401,3 @@ export default function ProductDetailsPage() {
     </div>
   );
 }
-
-

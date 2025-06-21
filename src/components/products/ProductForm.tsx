@@ -20,6 +20,7 @@ import { useProductImage } from '@/hooks/useProductImage'; // Import the hook
 const productSchema = z.object({
   name: z.string().min(1, { message: "اسم المنتج مطلوب" }),
   price: z.coerce.number().min(0, { message: "السعر يجب أن يكون رقمًا موجبًا" }),
+  costPrice: z.coerce.number().min(0, { message: "سعر التكلفة يجب أن يكون رقمًا موجبًا" }).optional(),
   quantity: z.coerce.number().int().min(0, { message: "الكمية يجب أن تكون رقمًا صحيحًا موجبًا" }),
   imageUrl: z.string().optional().or(z.literal('')), // This will store DataURI for new images, or be empty for IDB, or store external URL
   barcodeValue: z.string().optional().or(z.literal('')),
@@ -87,6 +88,7 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
     defaultValues: {
       name: initialData?.name || '',
       price: initialData?.price || 0,
+      costPrice: initialData?.costPrice || 0,
       quantity: initialData?.quantity || 0,
       imageUrl: initialData?.imageUrl || '', // Form's imageUrl holds the value to be submitted
       barcodeValue: initialData?.barcodeValue || '',
@@ -112,6 +114,7 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
     form.reset({
       name: initialData?.name || '',
       price: initialData?.price || 0,
+      costPrice: initialData?.costPrice || 0,
       quantity: initialData?.quantity || 0,
       imageUrl: initialData?.imageUrl || '',
       barcodeValue: initialData?.barcodeValue || '',
@@ -280,19 +283,34 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="price"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel htmlFor="price">السعر (LYD)</FormLabel>
-                  <FormControl>
-                    <Input id="price" type="number" placeholder="مثال: 350.00" {...field} step="0.01" disabled={isProcessingImage} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel htmlFor="price">سعر البيع (LYD)</FormLabel>
+                    <FormControl>
+                        <Input id="price" type="number" placeholder="مثال: 350.00" {...field} step="0.01" disabled={isProcessingImage} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="costPrice"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel htmlFor="costPrice">سعر التكلفة (LYD)</FormLabel>
+                    <FormControl>
+                        <Input id="costPrice" type="number" placeholder="مثال: 200.00" {...field} step="0.01" disabled={isProcessingImage} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            </div>
             <FormField
               control={form.control}
               name="quantity"

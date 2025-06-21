@@ -9,7 +9,7 @@ import { LOCALSTORAGE_KEYS, INITIAL_PRODUCTS } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { saveImage as saveImageToDB, deleteImage as deleteImageFromDB, getImage as getImageFromDB, dataUriToBlob, blobToDataUri } from '@/lib/indexedDBService';
 
-type ProductUpdatePayload = Partial<Pick<Product, "name" | "price" | "quantity" | "imageUrl" | "barcodeValue">>;
+type ProductUpdatePayload = Partial<Pick<Product, "name" | "price" | "quantity" | "imageUrl" | "barcodeValue" | "costPrice">>;
 
 interface ProductContextType {
   products: Product[];
@@ -53,6 +53,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       id: generatedProductId,
       name: trimmedNewName,
       price: productData.price,
+      costPrice: productData.costPrice,
       quantity: productData.quantity,
       imageUrl: '', 
       barcodeValue: finalBarcodeValue, 
@@ -113,6 +114,10 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     if (updates.price !== undefined && updates.price !== originalProduct.price) {
       updatedProductData.price = updates.price;
       hasChanges = true;
+    }
+    if (updates.costPrice !== undefined && updates.costPrice !== originalProduct.costPrice) {
+        updatedProductData.costPrice = updates.costPrice;
+        hasChanges = true;
     }
     if (updates.quantity !== undefined && updates.quantity !== originalProduct.quantity) {
       updatedProductData.quantity = updates.quantity;
@@ -294,4 +299,3 @@ export const useProducts = () => {
   }
   return context;
 };
-
