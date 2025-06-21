@@ -332,9 +332,11 @@ export default function SalesReportPage() {
                         <TableCell colSpan={2} className="text-left px-2 py-3">
                            <div className="flex flex-col items-start gap-1">
                                 <span>إجمالي المبيعات: {dailyReportData.totalSales} LYD</span>
-                                <span className="text-orange-600 dark:text-orange-400 text-sm">
-                                    (إجمالي الخصومات: {dailyReportData.totalDiscount})
-                                </span>
+                                {dailyReportData.totalDiscount > 0 && (
+                                    <span className="text-orange-600 dark:text-orange-400 text-sm">
+                                        (إجمالي الخصومات: {dailyReportData.totalDiscount})
+                                    </span>
+                                )}
                                 {hasRole(['admin']) && (
                                     <span className={`text-sm ${dailyReportData.totalProfit >= 0 ? 'text-green-600 dark:text-green-500' : 'text-destructive'}`}>
                                         (إجمالي الربح: {dailyReportData.totalProfit})
