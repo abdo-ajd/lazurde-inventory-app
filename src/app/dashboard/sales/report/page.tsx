@@ -5,6 +5,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSales } from '@/contexts/SalesContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProducts } from '@/contexts/ProductContext'; // Import useProducts
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +23,7 @@ import type { Sale } from '@/lib/types';
 export default function SalesReportPage() {
   const { sales, returnSale } = useSales();
   const { hasRole } = useAuth();
+  const { getProductById } = useProducts(); // Get product data
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
@@ -52,9 +54,27 @@ export default function SalesReportPage() {
       .reduce((sum, sale) => sum + sale.totalAmount, 0);
   }, [filteredSales]);
 
-    const formatNumber = (num: number) => {
-        return num % 1 !== 0 ? parseFloat(num.toFixed(2)) : num;
-    };
+  const totalActiveProfit = useMemo(() => {
+    if (!hasRole(['admin'])) return 0;
+    return filteredSales
+      .filter(sale => sale.status === 'active')
+      .reduce((totalProfit, sale) => {
+        const saleProfit = sale.items.reduce((currentSaleProfit, item) => {
+          const product = getProductById(item.productId);
+          if (product) {
+            const costPrice = product.costPrice || 0;
+            const itemProfit = (item.pricePerUnit - costPrice) * item.quantity;
+            return currentSaleProfit + itemProfit;
+          }
+          return currentSaleProfit;
+        }, 0);
+        return totalProfit + saleProfit;
+      }, 0);
+  }, [filteredSales, getProductById, hasRole]);
+
+  const formatNumber = (num: number) => {
+    return num % 1 !== 0 ? parseFloat(num.toFixed(2)) : num;
+  };
     
   const formatSaleTime = (isoString: string) => {
     if (!isoString || !isValid(parseISO(isoString))) return 'N/A';
@@ -209,8 +229,17 @@ export default function SalesReportPage() {
                     <TableRow className="font-bold bg-muted/80">
                         <TableCell colSpan={2} className="text-lg px-2 py-3 text-right">الإجماليات النشطة لليوم:</TableCell>
                         <TableCell className="text-center text-lg px-2 py-3">{formatNumber(totalActiveFinalAmount)} LYD</TableCell>
-                        <TableCell className="text-center text-sm text-orange-600 px-2 py-3">
-                            (إجمالي الخصومات: {formatNumber(totalActiveDiscountAmount)})
+                        <TableCell className="text-center text-sm px-2 py-3">
+                            <div className="flex flex-col items-center gap-1">
+                                <span className="text-orange-600 dark:text-orange-400">
+                                    (إجمالي الخصومات: {formatNumber(totalActiveDiscountAmount)})
+                                </span>
+                                {hasRole(['admin']) && (
+                                    <span className="text-green-600 dark:text-green-500">
+                                        (إجمالي الربح: {formatNumber(totalActiveProfit)})
+                                    </span>
+                                )}
+                            </div>
                         </TableCell>
                     </TableRow>
                 </TableFooter>
