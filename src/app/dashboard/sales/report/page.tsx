@@ -279,7 +279,7 @@ export default function SalesReportPage() {
                       <TableCell className="px-2 py-3"><ul className="list-disc list-inside text-xs">{sale.items.map(item => (<li key={item.productId}>{item.productName}</li>))}</ul></TableCell>
                       <TableCell className="text-center font-semibold px-2 py-3">
                         <div className="flex items-center justify-center gap-2 flex-wrap">
-                          <span className={`${sale.discountAmount && sale.discountAmount > 0 && sale.status === 'active' ? 'text-blue-600 dark:text-blue-400' : ''}`}>
+                          <span className={`${sale.discountAmount > 0 && sale.status === 'active' ? 'text-blue-600 dark:text-blue-400' : ''}`}>
                             {formatNumber(sale.totalAmount)}
                           </span>
                            {sale.paymentMethod && sale.status === 'active' && salePaymentColor && (
@@ -287,7 +287,7 @@ export default function SalesReportPage() {
                                 {sale.paymentMethod}
                               </Badge>
                            )}
-                          {sale.discountAmount && sale.discountAmount > 0 && sale.status === 'active' && (
+                          {sale.discountAmount > 0 && sale.status === 'active' && (
                             <TooltipProvider delayDuration={100}>
                                 <Tooltip>
                                   <TooltipTrigger asChild><Badge variant="outline" className="text-xs font-mono border-orange-500/50 text-orange-600 dark:text-orange-400 cursor-help">-{formatNumber(sale.discountAmount)}</Badge></TooltipTrigger>
