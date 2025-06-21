@@ -34,6 +34,7 @@ export default function SalesReportPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
+  const [isDailyReportOpen, setIsDailyReportOpen] = useState(false);
   const [isYearlyReportOpen, setIsYearlyReportOpen] = useState(false);
   const [isMonthlyReportOpen, setIsMonthlyReportOpen] = useState(false);
   const [isWeeklyReportOpen, setIsWeeklyReportOpen] = useState(false);
@@ -224,6 +225,39 @@ export default function SalesReportPage() {
   return (
     <div className="space-y-6">
       {/* ===== DIALOGS CONTROLLED BY STATE ===== */}
+      <Dialog open={isDailyReportOpen} onOpenChange={setIsDailyReportOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+                ملخص المبيعات ليوم {selectedDate ? format(selectedDate, 'PPP', { locale: arSA }) : ''}
+            </DialogTitle>
+            <ShadcnDialogDescription>
+              هذا هو ملخص المبيعات والخصومات والأرباح لليوم المحدد.
+            </ShadcnDialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-4">
+            <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
+              <span className="font-medium">إجمالي المبيعات</span>
+              <span className="font-bold text-lg">{dailyReportData.totalFinalAmount} LYD</span>
+            </div>
+            <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
+              <span className="font-medium">إجمالي الخصومات</span>
+              <span className="font-bold text-lg text-orange-600">{dailyReportData.totalDiscount} LYD</span>
+            </div>
+            {hasRole(['admin']) && (
+              <div className="flex justify-between items-center p-3 rounded-lg bg-green-100 dark:bg-green-900 border border-green-200 dark:border-green-800">
+                <span className="font-medium text-green-800 dark:text-green-200">إجمالي الربح</span>
+                <span className={`font-bold text-lg ${dailyReportData.totalProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>{dailyReportData.totalProfit} LYD</span>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+             <DialogClose asChild>
+                <Button type="button" variant="secondary">إغلاق</Button>
+             </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog open={isYearlyReportOpen} onOpenChange={setIsYearlyReportOpen}>
         <DialogContent>
           <DialogHeader>
@@ -339,6 +373,9 @@ export default function SalesReportPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={() => setIsDailyReportOpen(true)}>
+                    تقرير يومي
+                  </DropdownMenuItem>
                   <DropdownMenuItem onSelect={() => setIsWeeklyReportOpen(true)}>
                     تقرير أسبوعي
                   </DropdownMenuItem>
