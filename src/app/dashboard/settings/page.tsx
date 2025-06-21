@@ -328,6 +328,88 @@ export default function AppSettingsPage() {
     toast({ title: "نجاح", description: "تمت إزالة الأيقونة المخصصة." });
   };
 
+  const handleBackup = async () => {
+    toast({ title: "جاري التحضير...", description: "يتم تجميع بيانات النسخة الاحتياطية." });
+
+    // Fetch images from IndexedDB and embed them as data URIs
+    const productsWithImages = await Promise.all(
+      (productsFromContext || []).map(async (p) => {
+        // An empty imageUrl implies the image might be in IndexedDB
+        if (!p.imageUrl) { 
+          try {
+            const imageBlob = await getImageFromDB(p.id);
+            if (imageBlob) {
+              const dataUri = await blobToDataUri(imageBlob);
+              return { ...p, imageUrl: dataUri };
+            }
+          } catch (error) {
+            console.error(`Failed to get image for product ${p.id} from IndexedDB`, error);
+          }
+        }
+        // Return product as is if it has an external URL or no image at all
+        return p;
+      })
+    );
+    
+    const backupData: BackupData = {
+      users: users || [],
+      products: productsWithImages,
+      sales: sales || [],
+      settings: settings,
+    };
+
+    const jsonString = JSON.stringify(backupData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `lazurde_backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast({ title: "اكتمل", description: "تم تنزيل ملف النسخة الاحتياطية." });
+  };
+
+  const handleRestoreChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const jsonString = e.target?.result as string;
+          if (!jsonString) {
+             throw new Error("الملف فارغ.");
+          }
+          await handleRestore(jsonString);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : "صيغة الملف غير صحيحة.";
+          toast({ variant: "destructive", title: "خطأ في الاستعادة", description: errorMessage });
+        } finally {
+          // Reset file input to allow re-uploading the same file
+          if(fileInputRef.current) fileInputRef.current.value = "";
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+  
+  const handleRestore = async (jsonString: string) => {
+    const data: BackupData = JSON.parse(jsonString);
+    // Basic validation
+    if (!data.users || !data.products || !data.sales || !data.settings) {
+      throw new Error("ملف النسخة الاحتياطية غير مكتمل أو تالف.");
+    }
+    
+    replaceAllUsers(data.users);
+    await replaceAllProducts(data.products);
+    replaceAllSales(data.sales);
+    updateSettings(data.settings); // This will also apply theme and icon
+
+    toast({ title: "نجاح", description: "تم استعادة البيانات بنجاح!" });
+  };
+
+
 
   return (
     <div className="space-y-6 pb-8">
@@ -597,28 +679,30 @@ export default function AppSettingsPage() {
 
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle>النسخ الاحتياطي والاستعادة</CardTitle>
-          <CardDescription>تم ترحيل البيانات إلى السحابة، هذه الميزة غير متاحة حالياً.</CardDescription>
+            <CardTitle>النسخ الاحتياطي والاستعادة</CardTitle>
+            <CardDescription>
+                قم بإنشاء نسخة احتياطية من جميع بياناتك (منتجات، صور، مبيعات، إعدادات) في ملف واحد، أو قم باستعادة بياناتك من ملف نسخة احتياطية.
+            </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-           <div className="flex flex-col sm:flex-row gap-4">
-            <Button disabled className="w-full sm:w-auto">
-              <Download className="ml-2 h-4 w-4" /> إنشاء نسخة احتياطية
+            <div className="flex flex-col sm:flex-row gap-4">
+            <Button onClick={handleBackup} className="w-full sm:w-auto">
+                <Download className="ml-2 h-4 w-4" /> إنشاء نسخة احتياطية
             </Button>
-            <Button disabled variant="outline" className="w-full sm:w-auto">
-              <Upload className="ml-2 h-4 w-4" /> استعادة من نسخة احتياطية
+            <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="w-full sm:w-auto">
+                <Upload className="ml-2 h-4 w-4" /> استعادة من نسخة احتياطية
             </Button>
             <Input 
                 type="file" 
                 ref={fileInputRef} 
                 className="hidden" 
                 accept=".json" 
-                disabled
+                onChange={handleRestoreChange}
             />
-           </div>
-           <p className="text-sm text-muted-foreground mt-2">
-            يتم الآن حفظ بياناتك تلقائيًا وبشكل آمن في السحابة، مما يسمح لك بالوصول إليها من أي جهاز. لم تعد هناك حاجة للنسخ الاحتياطي اليدوي.
-           </p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+                تحذير: استعادة نسخة احتياطية سيقوم بمسح جميع البيانات الحالية واستبدالها بالبيانات الموجودة في الملف.
+            </p>
         </CardContent>
       </Card>
       

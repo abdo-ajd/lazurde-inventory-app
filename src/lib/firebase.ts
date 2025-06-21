@@ -10,23 +10,17 @@ import { getStorage } from "firebase/storage";
 // 2. In your project settings, find your web app's configuration.
 // 3. Copy the config object and paste it here, replacing the placeholder values.
 // ==========================================================================================
-// Import the functions you need from the SDKs you need
-
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyAbYXVUd12Zf81hT24xfuRtYVu4ONuTsdM",
-  authDomain: "lazorde.firebaseapp.com",
-  projectId: "lazorde",
-  storageBucket: "lazorde.firebasestorage.app",
-  messagingSenderId: "812678918588",
-  appId: "1:812678918588:web:2246df6fb4f8b3477a3bb9"
+  apiKey: "AIzaSyYOUR_API_KEY",
+  authDomain: "your-project-id.firebaseapp.com",
+  projectId: "your-project-id",
+  storageBucket: "your-project-id.appspot.com",
+  messagingSenderId: "123456789012",
+  appId: "1:123456789012:web:your-app-id"
 };
 
 // Initialize Firebase
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
 const storage = getStorage(app);
 
