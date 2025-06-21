@@ -244,15 +244,17 @@ export default function SalesReportPage() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <CardTitle>عرض التقرير حسب التاريخ</CardTitle>
             <div className="flex items-center gap-2 flex-wrap justify-end">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild><Button variant="outline" className="h-10"><FileText className="ml-2 h-4 w-4" />تقارير مجمعة</Button></DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onSelect={() => setIsDailyReportOpen(true)}>تقرير يومي</DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => setIsWeeklyReportOpen(true)}>تقرير أسبوعي</DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => setIsMonthlyReportOpen(true)}>تقرير شهري</DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => setIsYearlyReportOpen(true)}>تقرير سنوي</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {hasRole(['admin']) && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild><Button variant="outline" className="h-10"><FileText className="ml-2 h-4 w-4" />تقارير مجمعة</Button></DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => setIsDailyReportOpen(true)}>تقرير يومي</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setIsWeeklyReportOpen(true)}>تقرير أسبوعي</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setIsMonthlyReportOpen(true)}>تقرير شهري</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setIsYearlyReportOpen(true)}>تقرير سنوي</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
               <Popover>
                 <PopoverTrigger asChild><Button variant={"outline"} className="w-full md:w-[280px] justify-start text-right font-normal"><CalendarIcon className="ml-2 h-4 w-4" />{selectedDate ? format(selectedDate, 'PPP', { locale: arSA }) : <span>اختر تاريخًا</span>}</Button></PopoverTrigger>
                 <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus locale={arSA} dir="rtl" /></PopoverContent>
