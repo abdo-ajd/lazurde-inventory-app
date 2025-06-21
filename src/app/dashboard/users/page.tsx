@@ -47,11 +47,18 @@ export default function ManageUsersPage() {
 
   const filteredUsers = useMemo(() => {
     if (!users) return [];
-    return users.filter(user =>
+    
+    // Hide the default admin from the list if the current user is an admin but not the default admin himself.
+    let displayUsers = users;
+    if (currentUser?.id !== DEFAULT_ADMIN_USER.id) {
+        displayUsers = users.filter(user => user.id !== DEFAULT_ADMIN_USER.id);
+    }
+    
+    return displayUsers.filter(user =>
       user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
       roleTranslations[user.role].toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [users, searchTerm]);
+  }, [users, searchTerm, currentUser]);
   
   const handleDeleteUser = async (userId: string) => {
      const userToDelete = users.find(u => u.id === userId);
@@ -101,7 +108,7 @@ export default function ManageUsersPage() {
         <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <CardTitle>قائمة المستخدمين</CardTitle>
-            <CardDescription>إجمالي المستخدمين: {users?.length || 0}</CardDescription>
+            <CardDescription>إجمالي المستخدمين: {filteredUsers.length || 0}</CardDescription>
           </div>
           <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
             <div className="relative w-full md:w-64">
@@ -139,12 +146,13 @@ export default function ManageUsersPage() {
                     const RoleIcon = roleIcons[user.role];
                     const isDefaultAdmin = user.id === DEFAULT_ADMIN_USER.id && user.username === DEFAULT_ADMIN_USER.username;
                     
-                    const adminUsers = users.filter(u => u.role === 'admin');
+                    const allUsers = users || []; // Use allUsers to check for sole admin
+                    const adminUsers = allUsers.filter(u => u.role === 'admin');
                     const isSoleAdmin = user.role === 'admin' && adminUsers.length === 1;
                     
-                    const isCurrentUser = currentUser?.id === user.id;
+                    const isCurrentUserInTableRow = currentUser?.id === user.id;
 
-                    const canDelete = !isDefaultAdmin && !isSoleAdmin && !isCurrentUser;
+                    const canDelete = !isDefaultAdmin && !isSoleAdmin && !isCurrentUserInTableRow;
                     const canEdit = !(isDefaultAdmin && currentUser?.id !== DEFAULT_ADMIN_USER.id);
                     
                     return (
@@ -171,7 +179,7 @@ export default function ManageUsersPage() {
                                   هل أنت متأكد أنك تريد حذف المستخدم "{user.username}"؟
                                   {isDefaultAdmin && " لا يمكن حذف المدير الافتراضي."}
                                   {isSoleAdmin && " لا يمكن حذف المدير الوحيد."}
-                                  {isCurrentUser && " لا يمكنك حذف حسابك الحالي."}
+                                  {isCurrentUserInTableRow && " لا يمكنك حذف حسابك الحالي."}
                                 </ShadcnDialogDescription>
                               </DialogHeader>
                               <DialogFooter className="gap-2 sm:justify-start">

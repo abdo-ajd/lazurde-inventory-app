@@ -11,16 +11,30 @@ import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { DEFAULT_ADMIN_USER } from '@/lib/constants';
+import { useToast } from '@/hooks/use-toast';
 
 export default function EditUserPage() {
-  const { getUserById, updateUser, hasRole } = useAuth();
+  const { getUserById, updateUser, hasRole, currentUser } = useAuth();
   const router = useRouter();
   const params = useParams();
+  const { toast } = useToast();
   const [user, setUser] = useState<User | null | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingUser, setIsFetchingUser] = useState(true);
 
   const userId = typeof params.id === 'string' ? params.id : '';
+
+  useEffect(() => {
+    // Security check: Prevent other admins from editing the default admin
+    if (currentUser && userId === DEFAULT_ADMIN_USER.id && currentUser.id !== DEFAULT_ADMIN_USER.id) {
+      toast({
+        variant: "destructive",
+        title: "غير مصرح به",
+        description: "ليس لديك الصلاحية لتعديل بيانات هذا المستخدم.",
+      });
+      router.replace('/dashboard/users');
+    }
+  }, [userId, currentUser, router, toast]);
 
   useEffect(() => {
     if (userId) {
@@ -29,6 +43,11 @@ export default function EditUserPage() {
     }
     setIsFetchingUser(false);
   }, [userId, getUserById]);
+
+  // Secondary check while data is loading
+  if (userId === DEFAULT_ADMIN_USER.id && currentUser && currentUser.id !== DEFAULT_ADMIN_USER.id) {
+      return <p className="p-4">إعادة توجيه...</p>;
+  }
 
   if (!hasRole(['admin'])) {
     // router.replace('/dashboard');

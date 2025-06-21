@@ -91,6 +91,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateUser = async (userId: string, updates: Partial<Omit<User, 'id'>>): Promise<boolean> => {
+    // Security Guard: Prevent any admin other than the default admin from modifying the default admin.
+    if (userId === DEFAULT_ADMIN_USER.id && currentUser?.id !== DEFAULT_ADMIN_USER.id) {
+        toast({ title: "غير مصرح به", description: "ليس لديك صلاحية لتعديل بيانات هذا المستخدم.", variant: "destructive" });
+        return false;
+    }
+    
     const currentUsers = users || [];
     const userIndex = currentUsers.findIndex(u => u.id === userId);
     if (userIndex === -1) {
@@ -99,7 +105,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     
     const userToUpdate = currentUsers[userIndex];
-    if (userToUpdate.id === DEFAULT_ADMIN_USER.id && userToUpdate.username === DEFAULT_ADMIN_USER.username && updates.role && updates.role !== 'admin') {
+    if (userToUpdate.id === DEFAULT_ADMIN_USER.id && updates.role && updates.role !== 'admin') {
       toast({ title: "خطأ", description: "لا يمكن تغيير صلاحيات المدير الافتراضي.", variant: "destructive" });
       return false;
     }
