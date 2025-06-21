@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProducts } from '@/contexts/ProductContext';
 import { useSales } from '@/contexts/SalesContext';
 import { useEffect, useRef, useState } from 'react';
-import { Save, RotateCcw, Download, Upload, Music, Trash2, Smartphone, DownloadCloud } from 'lucide-react';
+import { Save, RotateCcw, Download, Upload, Music, Trash2, Smartphone, DownloadCloud, AlertTriangle } from 'lucide-react';
 import { DEFAULT_APP_SETTINGS, LOCALSTORAGE_KEYS } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import type { User, Product, Sale, AppSettings as AppSettingsType } from '@/lib/types';
@@ -94,8 +94,12 @@ export default function AppSettingsPage() {
   const { sales, replaceAllSales } = useSales();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const soundFileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadedSoundName, setUploadedSoundName] = useState<string | null>(null);
+  
+  const successSoundInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedSuccessSoundName, setUploadedSuccessSoundName] = useState<string | null>(null);
+
+  const invalidSoundInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedInvalidSoundName, setUploadedInvalidSoundName] = useState<string | null>(null);
 
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [canInstallPWA, setCanInstallPWA] = useState(false);
@@ -118,9 +122,14 @@ export default function AppSettingsPage() {
         themeColors: settings.themeColors,
     });
     if (settings.saleSuccessSound) {
-        setUploadedSoundName("نغمة مخصصة مرفوعة");
+        setUploadedSuccessSoundName("نغمة نجاح مخصصة");
     } else {
-        setUploadedSoundName(null);
+        setUploadedSuccessSoundName(null);
+    }
+     if (settings.invalidDiscountSound) {
+        setUploadedInvalidSoundName("نغمة تنبيه مخصصة");
+    } else {
+        setUploadedInvalidSoundName(null);
     }
   }, [settings, form]);
 
@@ -290,32 +299,45 @@ export default function AppSettingsPage() {
     };
     reader.readAsText(file);
   };
-
-  const handleSoundFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  
+  const handleSoundFileChange = (event: React.ChangeEvent<HTMLInputElement>, type: 'success' | 'invalid') => {
     const file = event.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) { 
         toast({ variant: "destructive", title: "خطأ", description: "حجم الملف كبير جداً. الرجاء اختيار ملف أصغر من 5 ميجابايت." });
-        if(soundFileInputRef.current) soundFileInputRef.current.value = "";
+        if(type === 'success' && successSoundInputRef.current) successSoundInputRef.current.value = "";
+        if(type === 'invalid' && invalidSoundInputRef.current) invalidSoundInputRef.current.value = "";
         return;
       }
       const reader = new FileReader();
       reader.onloadend = () => {
         const dataUri = reader.result as string;
-        updateSettings({ saleSuccessSound: dataUri });
-        setUploadedSoundName(file.name);
+        if (type === 'success') {
+            updateSettings({ saleSuccessSound: dataUri });
+            setUploadedSuccessSoundName(file.name);
+        } else {
+            updateSettings({ invalidDiscountSound: dataUri });
+            setUploadedInvalidSoundName(file.name);
+        }
         toast({ title: "نجاح", description: `تم رفع النغمة: ${file.name}` });
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleClearSound = () => {
-    updateSettings({ saleSuccessSound: '' });
-    setUploadedSoundName(null);
-    if(soundFileInputRef.current) soundFileInputRef.current.value = "";
+  const handleClearSound = (type: 'success' | 'invalid') => {
+    if (type === 'success') {
+        updateSettings({ saleSuccessSound: '' });
+        setUploadedSuccessSoundName(null);
+        if(successSoundInputRef.current) successSoundInputRef.current.value = "";
+    } else {
+        updateSettings({ invalidDiscountSound: '' });
+        setUploadedInvalidSoundName(null);
+        if(invalidSoundInputRef.current) invalidSoundInputRef.current.value = "";
+    }
     toast({ title: "نجاح", description: "تمت إزالة النغمة المخصصة." });
   };
+
 
   const handleInstallPWA = async () => {
     if (deferredPrompt) {
@@ -336,7 +358,7 @@ export default function AppSettingsPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight font-headline">إعدادات التطبيق</h1>
         <p className="text-muted-foreground font-body">
-          قم بتخصيص اسم المتجر، ألوان الواجهة، نغمة البيع، وإدارة النسخ الاحتياطي للبيانات، وتثبيت التطبيق.
+          قم بتخصيص اسم المتجر، ألوان الواجهة، نغمات التنبيه، إدارة النسخ الاحتياطي، وتثبيت التطبيق.
         </p>
       </div>
       <Form {...form}>
@@ -427,27 +449,64 @@ export default function AppSettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <Button onClick={() => soundFileInputRef.current?.click()} variant="outline" className="w-full sm:w-auto">
-              <Music className="ml-2 h-4 w-4" /> {uploadedSoundName ? "تغيير النغمة" : "اختيار ملف صوتي"}
+            <Button onClick={() => successSoundInputRef.current?.click()} variant="outline" className="w-full sm:w-auto">
+              <Music className="ml-2 h-4 w-4" /> {uploadedSuccessSoundName ? "تغيير النغمة" : "اختيار ملف صوتي"}
             </Button>
             <Input 
                 type="file" 
-                ref={soundFileInputRef} 
+                ref={successSoundInputRef} 
                 className="hidden" 
                 accept="audio/*" 
-                onChange={handleSoundFileChange}
+                onChange={(e) => handleSoundFileChange(e, 'success')}
             />
-            {uploadedSoundName && (
-              <Button onClick={handleClearSound} variant="destructive" size="sm" className="w-full sm:w-auto">
+            {uploadedSuccessSoundName && (
+              <Button onClick={() => handleClearSound('success')} variant="destructive" size="sm" className="w-full sm:w-auto">
                  <Trash2 className="ml-2 h-4 w-4" /> إزالة النغمة
               </Button>
             )}
           </div>
-          {uploadedSoundName && (
-            <p className="text-sm text-muted-foreground">النغمة الحالية: {uploadedSoundName}</p>
+          {uploadedSuccessSoundName && (
+            <p className="text-sm text-muted-foreground">النغمة الحالية: {uploadedSuccessSoundName}</p>
           )}
-          {!uploadedSoundName && (
+          {!uploadedSuccessSoundName && (
             <p className="text-sm text-muted-foreground">لم يتم اختيار نغمة مخصصة.</p>
+          )}
+           <p className="text-xs text-muted-foreground pt-2">
+            (الحد الأقصى لحجم الملف: 5 ميجابايت. الأنواع المدعومة: MP3, WAV, OGG, إلخ)
+           </p>
+        </CardContent>
+      </Card>
+      
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-amber-500" /> نغمة تنبيه الخصم غير المقبول
+          </CardTitle>
+          <CardDescription>اختر ملفًا صوتيًا لتشغيله عند محاولة تطبيق خصم أكبر من الربح.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <Button onClick={() => invalidSoundInputRef.current?.click()} variant="outline" className="w-full sm:w-auto">
+              <Music className="ml-2 h-4 w-4" /> {uploadedInvalidSoundName ? "تغيير نغمة التنبيه" : "اختيار ملف صوتي"}
+            </Button>
+            <Input 
+                type="file" 
+                ref={invalidSoundInputRef} 
+                className="hidden" 
+                accept="audio/*" 
+                onChange={(e) => handleSoundFileChange(e, 'invalid')}
+            />
+            {uploadedInvalidSoundName && (
+              <Button onClick={() => handleClearSound('invalid')} variant="destructive" size="sm" className="w-full sm:w-auto">
+                 <Trash2 className="ml-2 h-4 w-4" /> إزالة النغمة
+              </Button>
+            )}
+          </div>
+          {uploadedInvalidSoundName && (
+            <p className="text-sm text-muted-foreground">نغمة التنبيه الحالية: {uploadedInvalidSoundName}</p>
+          )}
+          {!uploadedInvalidSoundName && (
+            <p className="text-sm text-muted-foreground">لم يتم اختيار نغمة تنبيه مخصصة.</p>
           )}
            <p className="text-xs text-muted-foreground pt-2">
             (الحد الأقصى لحجم الملف: 5 ميجابايت. الأنواع المدعومة: MP3, WAV, OGG, إلخ)
@@ -516,3 +575,5 @@ export default function AppSettingsPage() {
     </div>
   );
 }
+
+    

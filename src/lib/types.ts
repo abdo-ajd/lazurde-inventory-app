@@ -1,3 +1,4 @@
+
 export type UserRole = 'admin' | 'employee' | 'employee_return';
 
 export interface User {
@@ -49,6 +50,7 @@ export interface AppSettings {
     accent: string;
   };
   saleSuccessSound?: string; // Data URI for the sound
+  invalidDiscountSound?: string; // Data URI for the invalid discount sound
 }
 
 export interface NavItem {
@@ -59,3 +61,5 @@ export interface NavItem {
   disabled?: boolean;
   external?: boolean;
 }
+
+    

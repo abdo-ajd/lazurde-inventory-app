@@ -30,6 +30,11 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
   const { currentUser } = useAuth();
   const { settings } = useAppSettings();
   const [currentDiscount, setCurrentDiscount] = useState<number>(0);
+  
+  const formatNumber = (num: number) => {
+    return Number.isInteger(num) ? num : num.toFixed(2);
+  };
+
 
   const addSale = async (rawItems: Omit<SaleItem, 'productName' | 'pricePerUnit'>[]): Promise<Sale | null> => {
     if (!currentUser) {
@@ -39,6 +44,7 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
 
     const saleItems: SaleItem[] = [];
     let currentOriginalTotalAmount = 0;
+    let totalCostPrice = 0;
 
     for (const rawItem of rawItems) {
       const product = getProductById(rawItem.productId);
@@ -57,10 +63,31 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
         pricePerUnit: product.price,
       });
       currentOriginalTotalAmount += product.price * rawItem.quantity;
+      totalCostPrice += (product.costPrice || 0) * rawItem.quantity;
     }
     
-    // Use currentDiscount from context state
-    const discountToApply = Math.max(0, currentDiscount); 
+    const totalProfit = currentOriginalTotalAmount - totalCostPrice;
+    const discountToApply = Math.max(0, currentDiscount);
+    
+    // New validation: check if discount exceeds profit
+    if (discountToApply > totalProfit) {
+      toast({
+        variant: "destructive",
+        title: "خصم غير مقبول",
+        description: `قيمة الخصم (${formatNumber(discountToApply)}) أكبر من إجمالي الربح (${formatNumber(totalProfit)}). لا يمكن إتمام العملية.`,
+      });
+
+      if (settings.invalidDiscountSound && settings.invalidDiscountSound.startsWith('data:audio')) {
+        try {
+          const audio = new Audio(settings.invalidDiscountSound);
+          audio.play().catch(error => console.warn("Error playing invalid discount sound:", error));
+        } catch (error) {
+          console.warn("Could not play invalid discount sound:", error);
+        }
+      }
+      return null; // Block the sale
+    }
+
     const finalTotalAmount = Math.max(0, currentOriginalTotalAmount - discountToApply);
 
     if (discountToApply > 0 && discountToApply > currentOriginalTotalAmount) {
@@ -88,9 +115,9 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
     };
 
     setSales(prevSales => [newSale, ...(prevSales || [])]);
-    let toastMessage = `تم تسجيل البيع بنجاح. الإجمالي: ${finalTotalAmount}`;
+    let toastMessage = `تم تسجيل البيع بنجاح. الإجمالي: ${formatNumber(finalTotalAmount)}`;
     if (discountToApply > 0) {
-        toastMessage += ` (بعد خصم ${discountToApply})`;
+        toastMessage += ` (بعد خصم ${formatNumber(discountToApply)})`;
     }
     toast({ title: "نجاح", description: toastMessage });
 
@@ -159,3 +186,5 @@ export const useSales = () => {
   }
   return context;
 };
+
+    

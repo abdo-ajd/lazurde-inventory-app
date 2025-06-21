@@ -1,3 +1,4 @@
+
 import type { User, Product, AppSettings, Sale } from './types';
 
 export const LOCALSTORAGE_KEYS = {
@@ -24,6 +25,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
     accent: '233 48% 59%',
   },
   saleSuccessSound: '', // Default to no custom sound
+  invalidDiscountSound: '', // Default to no custom sound for invalid discount
 };
 
 export const INITIAL_PRODUCTS: Product[] = [
@@ -31,6 +33,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     id: 'prod_1',
     name: 'عباية سوداء كلاسيكية',
     price: 350,
+    costPrice: 250,
     quantity: 15,
     imageUrl: 'https://placehold.co/300x450.png',
     barcodeValue: '123456789012', // Sample barcode value
@@ -41,6 +44,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     id: 'prod_2',
     name: 'عباية بتطريز فضي',
     price: 420,
+    costPrice: 300,
     quantity: 8,
     imageUrl: 'https://placehold.co/300x450.png',
     barcodeValue: '', // Empty barcode value
@@ -51,6 +55,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     id: 'prod_3',
     name: 'عباية يومية عملية',
     price: 280,
+    costPrice: 180,
     quantity: 25,
     imageUrl: 'https://placehold.co/300x450.png',
     barcodeValue: 'ABC987654321', // Another sample
@@ -60,3 +65,5 @@ export const INITIAL_PRODUCTS: Product[] = [
 ];
 
 export const INITIAL_SALES: Sale[] = []; // Start with no sales
+
+    
