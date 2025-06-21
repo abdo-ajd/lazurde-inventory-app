@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { CalendarIcon, Undo2, Search, FileText } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { format, parseISO, startOfDay, endOfDay, isValid, startOfMonth, endOfMonth } from 'date-fns';
+import { format, parseISO, startOfDay, endOfDay, isValid, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfYear, endOfYear } from 'date-fns';
 import { enGB, arSA } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
@@ -105,6 +105,78 @@ export default function SalesReportPage() {
       monthName
     };
   }, [sales, selectedDate, getProductById, hasRole]);
+  
+  const weeklyReportData = useMemo(() => {
+    if (!sales || !selectedDate || !isValid(selectedDate)) {
+      return { totalSales: 0, totalDiscount: 0, totalProfit: 0, weekRange: '' };
+    }
+
+    const start = startOfWeek(selectedDate, { locale: arSA });
+    const end = endOfWeek(selectedDate, { locale: arSA });
+    const weekRange = `${format(start, 'd MMM', { locale: arSA })} - ${format(end, 'd MMM yyyy', { locale: arSA })}`;
+
+    const weeklyActiveSales = sales.filter(sale => {
+        const saleDate = parseISO(sale.saleDate);
+        return isValid(saleDate) && saleDate >= start && saleDate <= end && sale.status === 'active';
+    });
+
+    const totalSales = weeklyActiveSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+    const totalDiscount = weeklyActiveSales.reduce((sum, sale) => sum + (sale.discountAmount ?? 0), 0);
+    
+    let totalProfit = 0;
+    if (hasRole(['admin'])) {
+      totalProfit = weeklyActiveSales.reduce((totalProfitSum, sale) => {
+        const saleCostOfGoods = sale.items.reduce((costSum, item) => {
+          const product = getProductById(item.productId);
+          return costSum + ((product?.costPrice || 0) * item.quantity);
+        }, 0);
+        return totalProfitSum + (sale.totalAmount - saleCostOfGoods);
+      }, 0);
+    }
+    
+    return {
+      totalSales: formatNumber(totalSales),
+      totalDiscount: formatNumber(totalDiscount),
+      totalProfit: formatNumber(totalProfit),
+      weekRange
+    };
+  }, [sales, selectedDate, getProductById, hasRole]);
+  
+  const yearlyReportData = useMemo(() => {
+    if (!sales || !selectedDate || !isValid(selectedDate)) {
+      return { totalSales: 0, totalDiscount: 0, totalProfit: 0, year: '' };
+    }
+
+    const start = startOfYear(selectedDate);
+    const end = endOfYear(selectedDate);
+    const year = format(selectedDate, 'yyyy');
+
+    const yearlyActiveSales = sales.filter(sale => {
+        const saleDate = parseISO(sale.saleDate);
+        return isValid(saleDate) && saleDate >= start && saleDate <= end && sale.status === 'active';
+    });
+
+    const totalSales = yearlyActiveSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+    const totalDiscount = yearlyActiveSales.reduce((sum, sale) => sum + (sale.discountAmount ?? 0), 0);
+    
+    let totalProfit = 0;
+    if (hasRole(['admin'])) {
+      totalProfit = yearlyActiveSales.reduce((totalProfitSum, sale) => {
+        const saleCostOfGoods = sale.items.reduce((costSum, item) => {
+          const product = getProductById(item.productId);
+          return costSum + ((product?.costPrice || 0) * item.quantity);
+        }, 0);
+        return totalProfitSum + (sale.totalAmount - saleCostOfGoods);
+      }, 0);
+    }
+    
+    return {
+      totalSales: formatNumber(totalSales),
+      totalDiscount: formatNumber(totalDiscount),
+      totalProfit: formatNumber(totalProfit),
+      year
+    };
+  }, [sales, selectedDate, getProductById, hasRole]);
 
     
   const formatSaleTime = (isoString: string) => {
@@ -152,7 +224,83 @@ export default function SalesReportPage() {
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <CardTitle>عرض التقرير حسب التاريخ</CardTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="h-10">
+                    <FileText className="ml-2 h-4 w-4" />
+                    تقرير سنوي
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>ملخص المبيعات لسنة {yearlyReportData.year}</DialogTitle>
+                    <CardDescription>
+                      هذا هو ملخص المبيعات والخصومات والأرباح للسنة المحددة.
+                    </CardDescription>
+                  </DialogHeader>
+                  <div className="space-y-3 py-4">
+                    <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
+                      <span className="font-medium">إجمالي المبيعات</span>
+                      <span className="font-bold text-lg">{yearlyReportData.totalSales} LYD</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
+                      <span className="font-medium">إجمالي الخصومات</span>
+                      <span className="font-bold text-lg text-orange-600">{yearlyReportData.totalDiscount} LYD</span>
+                    </div>
+                    {hasRole(['admin']) && (
+                      <div className="flex justify-between items-center p-3 rounded-lg bg-green-100 dark:bg-green-900 border border-green-200 dark:border-green-800">
+                        <span className="font-medium text-green-800 dark:text-green-200">إجمالي الربح</span>
+                        <span className={`font-bold text-lg ${yearlyReportData.totalProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>{yearlyReportData.totalProfit} LYD</span>
+                      </div>
+                    )}
+                  </div>
+                  <DialogFooter>
+                     <DialogClose asChild>
+                        <Button type="button" variant="secondary">إغلاق</Button>
+                     </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="h-10">
+                    <FileText className="ml-2 h-4 w-4" />
+                    تقرير أسبوعي
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>ملخص المبيعات للأسبوع</DialogTitle>
+                    <CardDescription>
+                     {weeklyReportData.weekRange}
+                    </CardDescription>
+                  </DialogHeader>
+                  <div className="space-y-3 py-4">
+                    <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
+                      <span className="font-medium">إجمالي المبيعات</span>
+                      <span className="font-bold text-lg">{weeklyReportData.totalSales} LYD</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
+                      <span className="font-medium">إجمالي الخصومات</span>
+                      <span className="font-bold text-lg text-orange-600">{weeklyReportData.totalDiscount} LYD</span>
+                    </div>
+                    {hasRole(['admin']) && (
+                      <div className="flex justify-between items-center p-3 rounded-lg bg-green-100 dark:bg-green-900 border border-green-200 dark:border-green-800">
+                        <span className="font-medium text-green-800 dark:text-green-200">إجمالي الربح</span>
+                        <span className={`font-bold text-lg ${weeklyReportData.totalProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>{weeklyReportData.totalProfit} LYD</span>
+                      </div>
+                    )}
+                  </div>
+                  <DialogFooter>
+                     <DialogClose asChild>
+                        <Button type="button" variant="secondary">إغلاق</Button>
+                     </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="outline" className="h-10">
@@ -190,6 +338,7 @@ export default function SalesReportPage() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
