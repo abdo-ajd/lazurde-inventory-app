@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowRight, Edit3, Package, Tag, DollarSign, Layers, CalendarDays, History, Trash2, ShoppingBag, Printer, Loader2, Archive, TrendingUp } from 'lucide-react';
+import { ArrowRight, Edit3, Package, Tag, DollarSign, Layers, CalendarDays, History, Trash2, ShoppingBag, Printer, Loader2, Archive, TrendingUp, Wallet } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Product } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
@@ -213,6 +213,7 @@ export default function ProductDetailsPage() {
   };
 
   const profit = product.price - (product.costPrice || 0);
+  const totalProfit = profit * quantitySold;
 
   return (
     <div className="space-y-6 p-4 md:p-6">
@@ -345,9 +346,16 @@ export default function ProductDetailsPage() {
                             <p className={`font-semibold text-lg ${profit >= 0 ? 'text-green-600' : 'text-destructive'}`}>{`${profit.toFixed(2)} LYD`}</p>
                             </div>
                         </div>
+                        <div className="flex items-start space-x-3 space-x-reverse">
+                            <Wallet className="h-5 w-5 mt-1 text-green-600 shrink-0" />
+                            <div>
+                            <p className="text-base text-muted-foreground">إجمالي المكسب</p>
+                            <p className={`font-semibold text-lg ${totalProfit >= 0 ? 'text-green-600' : 'text-destructive'}`}>{`${totalProfit.toFixed(2)} LYD`}</p>
+                            </div>
+                        </div>
                         </>
                     )}
-                    <div className="flex items-start space-x-3 space-x-reverse">
+                    <div className="flex items-start space-x-3 space-x-reverse sm:col-span-2 md:col-span-1">
                         <CalendarDays className="h-5 w-5 mt-1 text-primary shrink-0" />
                         <div>
                         <p className="text-base text-muted-foreground">تاريخ الإنشاء</p>
