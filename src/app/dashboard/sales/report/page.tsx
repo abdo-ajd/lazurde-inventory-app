@@ -185,10 +185,12 @@ export default function SalesReportPage() {
                 <span className="font-medium">إجمالي المبيعات</span>
                 <span className="font-bold text-lg">{data.totalSales} LYD</span>
             </div>
-            <div className="flex justify-between items-center p-3 rounded-lg bg-muted text-base">
-                <span className="font-medium">إجمالي الخصومات</span>
-                <span className="font-bold text-lg text-orange-600">{data.totalDiscount} LYD</span>
-            </div>
+            {data.totalDiscount > 0 && (
+              <div className="flex justify-between items-center p-3 rounded-lg bg-muted text-base">
+                  <span className="font-medium">إجمالي الخصومات</span>
+                  <span className="font-bold text-lg text-orange-600">{data.totalDiscount} LYD</span>
+              </div>
+            )}
             {hasRole(['admin']) && (
                 <div className="flex justify-between items-center p-3 rounded-lg bg-green-100 dark:bg-green-900 border border-green-200 dark:border-green-800 text-base">
                 <span className="font-medium text-green-800 dark:text-green-200">إجمالي الربح</span>
@@ -279,7 +281,7 @@ export default function SalesReportPage() {
                       <TableCell className="px-2 py-3"><ul className="list-disc list-inside text-xs">{sale.items.map(item => (<li key={item.productId}>{item.productName}</li>))}</ul></TableCell>
                       <TableCell className="text-center font-semibold px-2 py-3">
                         <div className="flex items-center justify-center gap-2 flex-wrap">
-                          <span className={`${sale.discountAmount > 0 && sale.status === 'active' ? 'text-blue-600 dark:text-blue-400' : ''}`}>
+                          <span style={sale.status === 'active' && salePaymentColor ? { color: salePaymentColor } : {}}>
                             {formatNumber(sale.totalAmount)}
                           </span>
                            {sale.paymentMethod && sale.status === 'active' && salePaymentColor && (
