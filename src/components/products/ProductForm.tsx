@@ -90,6 +90,14 @@ const suggestedImages = [
   '/suggested-images/6.jpg',
   '/suggested-images/7.jpg',
   '/suggested-images/8.jpg',
+  '/suggested-images/9.jpg',
+  '/suggested-images/10.jpg',
+  '/suggested-images/11.jpg',
+  '/suggested-images/12.jpg',
+  '/suggested-images/13.jpg',
+  '/suggested-images/14.jpg',
+  '/suggested-images/15.jpg',
+  '/suggested-images/16.jpg',
 ];
 
 const handleNumberInputWheel = (e: React.WheelEvent<HTMLInputElement>) => {
@@ -479,7 +487,7 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
               </div>
               <div className="space-y-4 pt-4 border-t mt-4">
                 <FormLabel>أو اختر من الصور المقترحة</FormLabel>
-                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                <div className="grid grid-cols-8 gap-1">
                   {suggestedImages.map((url, index) => (
                     <div
                       key={index}
@@ -500,7 +508,7 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
                   ))}
                 </div>
                  <FormDescription>
-                  لوضع صورك هنا، قم بإنشاء مجلد `public/suggested-images` وضع الصور بداخله بالأسماء `1.jpg`, `2.jpg`, إلخ.
+                  لوضع صورك هنا، قم بإنشاء مجلد `public/suggested-images` وضع الصور بداخله بالأسماء `1.jpg`, `2.jpg`, ... `16.jpg`.
                 </FormDescription>
               </div>
 
