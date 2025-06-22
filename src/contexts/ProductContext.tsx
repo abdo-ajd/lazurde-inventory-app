@@ -68,28 +68,35 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateProduct = async (productId: string, updates: ProductUpdatePayload): Promise<Product | null> => {
-    let finalImageUrl = updates.imageUrl;
-
-    // Handle new image upload
-    if (finalImageUrl && finalImageUrl.startsWith('data:image')) {
-      const imageBlob = dataUriToBlob(finalImageUrl);
-      if (imageBlob) {
-        await saveImage(productId, imageBlob);
-        finalImageUrl = ''; // Image now in IDB
+    // This function now receives a payload that might not include `imageUrl`.
+    // If `updates.imageUrl` is undefined, it means no change was intended for the image.
+    
+    // We only perform image operations if `imageUrl` is explicitly in the payload.
+    if (updates.imageUrl !== undefined) {
+      const finalImageUrl = updates.imageUrl;
+      // Case 1: A new image was uploaded (it's a data URI).
+      if (finalImageUrl && finalImageUrl.startsWith('data:image')) {
+        const imageBlob = dataUriToBlob(finalImageUrl);
+        if (imageBlob) {
+          await saveImage(productId, imageBlob);
+          updates.imageUrl = ''; // Set the update payload's URL to empty, as it's now in IDB.
+        }
+      } 
+      // Case 2: The image was explicitly cleared.
+      else if (finalImageUrl === '') {
+        await deleteImage(productId).catch(e => console.warn(e)); // Ignore errors if not found
       }
-    } else if (finalImageUrl === '') { // Image removal
-      await deleteImage(productId).catch(e => console.warn(e)); // Ignore errors if not found
     }
-    // If finalImageUrl is an external URL or undefined, it will be handled below
 
     let updatedProduct: Product | undefined;
     setProducts(prev =>
       prev.map(p => {
         if (p.id === productId) {
+          // The spread `...updates` will correctly apply the new imageUrl if it exists,
+          // or leave the existing `p.imageUrl` untouched if `updates.imageUrl` was undefined.
           updatedProduct = {
             ...p,
             ...updates,
-            imageUrl: finalImageUrl !== undefined ? finalImageUrl : p.imageUrl,
             updatedAt: new Date().toISOString(),
           };
           return updatedProduct;

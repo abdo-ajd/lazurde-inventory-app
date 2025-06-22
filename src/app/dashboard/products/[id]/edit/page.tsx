@@ -41,7 +41,7 @@ export default function EditProductPage() {
     // return <p className="p-4">ليس لديك صلاحية الوصول لهذه الصفحة.</p>;
   }
 
-  const handleSubmit = async (data: ProductFormValues) => {
+  const handleSubmit = async (data: Partial<ProductFormValues>) => {
     if (!product) return;
     setIsLoading(true);
     const updatedProduct = await updateProduct(product.id, data);
@@ -105,4 +105,3 @@ export default function EditProductPage() {
   // Fallback for safety, though logic above should cover states
   return <p>جاري تحميل بيانات المنتج...</p>;
 }
-

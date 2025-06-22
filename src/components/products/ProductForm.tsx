@@ -29,7 +29,7 @@ const productSchema = z.object({
 export type ProductFormValues = z.infer<typeof productSchema>;
 
 interface ProductFormProps {
-  onSubmit: (data: ProductFormValues) => Promise<void>;
+  onSubmit: (data: Partial<ProductFormValues>) => Promise<void>;
   initialData?: Product | null;
   isEditMode?: boolean;
   isLoading?: boolean;
@@ -108,6 +108,7 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [imageInteracted, setImageInteracted] = useState(false);
 
 
   useEffect(() => {
@@ -120,10 +121,12 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
       barcodeValue: initialData?.barcodeValue || '',
     });
     setNewlySelectedImagePreview(null);
+    setImageInteracted(false); // Reset interaction state on data change
   }, [initialData, form]);
 
 
   const startCamera = async () => {
+    setImageInteracted(true);
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
@@ -162,6 +165,7 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
   };
 
   const captureImage = async () => {
+    setImageInteracted(true);
     if (videoRef.current && canvasRef.current) { // canvasRef here is for initial capture
       setIsProcessingImage(true);
       const video = videoRef.current;
@@ -190,6 +194,7 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setImageInteracted(true);
     const file = event.target.files?.[0];
     if (file) {
       if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) { 
@@ -235,6 +240,7 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
   };
   
   const clearImage = () => {
+    setImageInteracted(true);
     form.setValue('imageUrl', '', { shouldValidate: true, shouldDirty: true });
     setNewlySelectedImagePreview(null);
     if (isCameraActive) stopCamera();
@@ -250,7 +256,16 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
   }, [videoStream]);
 
   const handleFormSubmit = async (data: ProductFormValues) => {
-    await onSubmit(data);
+    const payload: Partial<ProductFormValues> = { ...data };
+    
+    // If in edit mode and the user has not interacted with the image controls,
+    // do not include the `imageUrl` in the update payload to prevent accidental deletion.
+    if (isEditMode && !imageInteracted) {
+      delete payload.imageUrl;
+    }
+
+    await onSubmit(payload);
+
     if (!isEditMode) {
       setNewlySelectedImagePreview(null); 
       if (fileInputRef.current) fileInputRef.current.value = '';
