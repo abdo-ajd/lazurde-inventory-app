@@ -111,10 +111,10 @@ export default function ProductList({ searchTerm }: ProductListProps) {
               <CardContent className="p-3 flex-grow flex flex-col justify-between">
                 <div>
                   <h3 className="font-semibold text-xs truncate" title={product.name}>{product.name}</h3>
-                  <p className="font-semibold text-xs text-primary mt-1.5"><span className="text-muted-foreground font-normal text-xs">السعر: </span>{product.price} LYD</p>
+                  <p className="font-semibold text-xs mt-1.5"><span className="text-muted-foreground font-normal text-xs">السعر: </span>{product.price} LYD</p>
                 </div>
-                <div className="flex justify-between items-center mt-2.5">
-                  <Badge 
+                <div className="flex justify-between items-center mt-2">
+                   <Badge 
                       variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}
                       className="text-[10px] px-1.5 py-0 leading-tight"
                       title={`الكمية: ${product.quantity}`}
@@ -123,15 +123,15 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                   </Badge>
                 
                   {hasRole(['admin', 'employee', 'employee_return']) && (
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       <Button 
                         variant="ghost"
                         onClick={() => handleSale(product)}
                         title="بيع نقدي" 
                         disabled={product.quantity === 0}
-                        className="h-7 w-7 p-0 hover:bg-primary/10 text-primary hover:text-primary/80"
+                        className="h-8 w-8 p-0 hover:bg-primary/10 text-primary hover:text-primary/80"
                       >
-                        <ShoppingCart className="h-[1.1rem] w-[1.1rem]" />
+                        <ShoppingCart className="h-[1.2rem] w-[1.2rem]" />
                       </Button>
 
                       <DropdownMenu>
@@ -140,9 +140,9 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                             variant="ghost"
                             title="بيع بخدمة مصرفية"
                             disabled={product.quantity === 0 || !settings.bankServices || settings.bankServices.length === 0}
-                            className="h-7 w-7 p-0 hover:bg-accent/10 text-accent hover:text-accent/80"
+                            className="h-8 w-8 p-0 hover:bg-accent/10 text-accent hover:text-accent/80"
                           >
-                            <CreditCard className="h-[1.1rem] w-[1.1rem]" />
+                            <CreditCard className="h-[1.2rem] w-[1.2rem]" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
