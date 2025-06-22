@@ -81,6 +81,23 @@ const resizeAndCompressImage = (imageSrc: string, maxWidth: number, maxHeight: n
   });
 };
 
+const suggestedImages = [
+  '/suggested-images/1.jpg',
+  '/suggested-images/2.jpg',
+  '/suggested-images/3.jpg',
+  '/suggested-images/4.jpg',
+  '/suggested-images/5.jpg',
+  '/suggested-images/6.jpg',
+  '/suggested-images/7.jpg',
+  '/suggested-images/8.jpg',
+];
+
+const handleNumberInputWheel = (e: React.WheelEvent<HTMLInputElement>) => {
+    // Prevents the value from changing on mouse wheel scroll
+    (e.target as HTMLElement).blur();
+    e.stopPropagation();
+};
+
 
 export default function ProductForm({ onSubmit, initialData, isEditMode = false, isLoading = false }: ProductFormProps) {
   const form = useForm<ProductFormValues>({
@@ -238,6 +255,19 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
       reader.readAsDataURL(file);
     }
   };
+
+  const handleSuggestedImageSelect = (url: string) => {
+    setImageInteracted(true);
+    if (isCameraActive) stopCamera();
+    
+    // The image URL is a local path, so we can use it directly
+    form.setValue('imageUrl', url, { shouldValidate: true, shouldDirty: true });
+    
+    // Update the preview to show the selected suggested image
+    setNewlySelectedImagePreview(url); 
+    
+    toast({ title: "تم اختيار الصورة المقترحة" });
+  };
   
   const clearImage = () => {
     setImageInteracted(true);
@@ -306,7 +336,7 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
                     <FormItem>
                     <FormLabel htmlFor="price">سعر البيع (LYD)</FormLabel>
                     <FormControl>
-                        <Input id="price" type="number" placeholder="مثال: 350.00" {...field} step="0.01" disabled={isProcessingImage} />
+                        <Input id="price" type="number" onWheel={handleNumberInputWheel} placeholder="مثال: 350.00" {...field} step="0.01" disabled={isProcessingImage} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -319,7 +349,7 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
                     <FormItem>
                     <FormLabel htmlFor="costPrice">سعر التكلفة (LYD)</FormLabel>
                     <FormControl>
-                        <Input id="costPrice" type="number" placeholder="مثال: 200.00" {...field} step="0.01" disabled={isProcessingImage} />
+                        <Input id="costPrice" type="number" onWheel={handleNumberInputWheel} placeholder="مثال: 200.00" {...field} step="0.01" disabled={isProcessingImage} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -333,7 +363,7 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
                 <FormItem>
                   <FormLabel htmlFor="quantity">الكمية المتوفرة</FormLabel>
                   <FormControl>
-                    <Input id="quantity" type="number" placeholder="مثال: 10" {...field} disabled={isProcessingImage} />
+                    <Input id="quantity" type="number" onWheel={handleNumberInputWheel} placeholder="مثال: 10" {...field} disabled={isProcessingImage} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -447,6 +477,33 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
                   </Button>
                 )}
               </div>
+              <div className="space-y-4 pt-4 border-t mt-4">
+                <FormLabel>أو اختر من الصور المقترحة</FormLabel>
+                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                  {suggestedImages.map((url, index) => (
+                    <div
+                      key={index}
+                      onClick={() => handleSuggestedImageSelect(url)}
+                      className="relative aspect-[3/4] cursor-pointer rounded-md overflow-hidden border-2 border-transparent hover:border-primary focus:border-primary transition-all group"
+                      tabIndex={0}
+                      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSuggestedImageSelect(url)}
+                    >
+                      <Image
+                        src={url}
+                        alt={`صورة مقترحة ${index + 1}`}
+                        layout="fill"
+                        objectFit="cover"
+                        className="group-hover:scale-105 transition-transform"
+                        onError={(e) => { e.currentTarget.src = 'https://placehold.co/300x400.png'; }}
+                      />
+                    </div>
+                  ))}
+                </div>
+                 <FormDescription>
+                  لوضع صورك هنا، قم بإنشاء مجلد `public/suggested-images` وضع الصور بداخله بالأسماء `1.jpg`, `2.jpg`, إلخ.
+                </FormDescription>
+              </div>
+
               <FormField
                   control={form.control}
                   name="imageUrl" 
