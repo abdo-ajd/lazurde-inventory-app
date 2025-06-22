@@ -17,7 +17,7 @@ export default function DashboardHomePage() {
   const searchParams = useSearchParams();
   // const { hasRole, currentUser } = useAuth(); // Moved to Header for barcode
   // const { getProductByBarcode } = useProducts(); // Moved to Header
-  // const { addSale } = useSales(); // Moved to Header
+  // aconst { addSale } = useSales(); // Moved to Header
   // const { toast } = useToast(); // Moved to Header
 
   const searchTerm = searchParams.get('q') || '';
@@ -27,15 +27,8 @@ export default function DashboardHomePage() {
   // const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => { ... }; // Moved to Header
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight font-headline">المنتجات (صور)</h1>
-        </div>
-        {/* Barcode Scan Input - Moved to Header.tsx */}
-        {/* "Add Product" button for this page is now exclusively in Header.tsx, shown conditionally */}
-      </div>
-      
+    <div>
+      {/* Title has been removed as requested */}
       <ProductList searchTerm={searchTerm} />
     </div>
   );

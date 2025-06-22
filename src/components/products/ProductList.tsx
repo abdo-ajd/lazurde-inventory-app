@@ -75,8 +75,8 @@ export default function ProductList({ searchTerm }: ProductListProps) {
   
   if (!isClient) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
-        {[...Array(20)].map((_, i) => ( 
+      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 gap-3">
+        {[...Array(24)].map((_, i) => ( 
           <div key={i} className="rounded-lg border bg-card text-card-foreground shadow-sm animate-pulse">
             <div className="p-0 relative aspect-[3/4] w-full bg-muted rounded-t-lg"></div>
             <div className="p-3 space-y-2">
@@ -96,7 +96,7 @@ export default function ProductList({ searchTerm }: ProductListProps) {
   return (
     <>
       {filteredProducts.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 gap-3">
           {filteredProducts.map((product) => (
             <Card key={product.id} className="flex flex-col overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200">
               <Link href={`/dashboard/products/${product.id}`} passHref aria-label={`عرض تفاصيل ${product.name}`}>
