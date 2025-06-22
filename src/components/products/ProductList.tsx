@@ -1,3 +1,4 @@
+
 // src/components/products/ProductList.tsx
 "use client";
 
@@ -108,56 +109,56 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                   />
                 </CardHeader>
               </Link>
-              <CardContent className="p-3 flex-grow flex flex-col">
-                <h3 className="font-semibold text-sm truncate flex-grow" title={product.name}>{product.name}</h3>
+              <CardContent className="p-3 flex-grow flex flex-col justify-between">
+                <h3 className="font-semibold text-sm truncate" title={product.name}>{product.name}</h3>
                 <div className="flex justify-between items-center mt-2">
-                    <div className="flex items-center gap-2">
-                        <p className="text-[11px] text-muted-foreground font-semibold">{product.price} LYD</p>
-                        <Badge 
-                            variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}
-                            className="text-[10px] px-1.5 py-0 leading-tight"
-                            title={`الكمية: ${product.quantity}`}
-                        >
-                            {product.quantity}
-                        </Badge>
-                    </div>
+                  <p className="font-semibold text-sm">{product.price} LYD</p>
                   
-                  {hasRole(['admin', 'employee', 'employee_return']) && (
-                    <div className="flex items-center">
-                      <Button 
-                        variant="ghost"
-                        size="icon-sm" 
-                        onClick={() => handleSale(product)}
-                        title="بيع نقدي" 
-                        disabled={product.quantity === 0}
-                        className="hover:bg-primary/10 text-primary hover:text-primary/80"
-                      >
-                        <ShoppingCart className="h-5 w-5" />
-                      </Button>
+                  <div className="flex items-center gap-1">
+                    <Badge 
+                        variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}
+                        className="text-[10px] px-1.5 py-0 leading-tight"
+                        title={`الكمية: ${product.quantity}`}
+                    >
+                        {product.quantity}
+                    </Badge>
+                  
+                    {hasRole(['admin', 'employee', 'employee_return']) && (
+                      <div className="flex items-center">
+                        <Button 
+                          variant="ghost"
+                          size="icon-sm" 
+                          onClick={() => handleSale(product)}
+                          title="بيع نقدي" 
+                          disabled={product.quantity === 0}
+                          className="hover:bg-primary/10 text-primary hover:text-primary/80"
+                        >
+                          <ShoppingCart className="h-4 w-4" />
+                        </Button>
 
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            title="بيع بخدمة مصرفية"
-                            disabled={product.quantity === 0 || !settings.bankServices || settings.bankServices.length === 0}
-                            className="hover:bg-primary/10 text-primary hover:text-primary/80"
-                          >
-                            <CreditCard className="h-5 w-5" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          {(settings.bankServices || []).map(service => (
-                            <DropdownMenuItem key={service.name} onSelect={() => handleSale(product, service.name)}>
-                              {service.name}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-
-                    </div>
-                  )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              title="بيع بخدمة مصرفية"
+                              disabled={product.quantity === 0 || !settings.bankServices || settings.bankServices.length === 0}
+                              className="hover:bg-primary/10 text-primary hover:text-primary/80"
+                            >
+                              <CreditCard className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            {(settings.bankServices || []).map(service => (
+                              <DropdownMenuItem key={service.name} onSelect={() => handleSale(product, service.name)}>
+                                {service.name}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
