@@ -1,4 +1,3 @@
-
 // src/app/dashboard/products/page.tsx
 "use client";
 
@@ -180,9 +179,9 @@ export default function ProductsManagementPage() {
               <DialogContent className="max-w-4xl">
                   <DialogHeader>
                       <DialogTitle>تقرير جرد المخزون</DialogTitle>
-                      <DialogDescription>
+                      <ShadcnDialogDescription>
                           عرض شامل لجميع المنتجات في المخزون مع قيمها وتكاليفها الإجمالية.
-                      </DialogDescription>
+                      </ShadcnDialogDescription>
                   </DialogHeader>
                   <div className="max-h-[60vh] overflow-y-auto p-1" ref={inventoryReportRef}>
                       <Table>
