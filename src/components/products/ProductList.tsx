@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSales } from '@/contexts/SalesContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { ShoppingCart, PackageSearch, Loader2, CreditCard } from 'lucide-react';
+import { Banknote, PackageSearch, Loader2, CreditCard } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Product } from '@/lib/types';
 import { useProductImage } from '@/hooks/useProductImage'; // Import the hook
@@ -111,9 +111,8 @@ export default function ProductList({ searchTerm }: ProductListProps) {
               <CardContent className="p-3 flex-grow flex flex-col justify-between">
                 <div>
                   <h3 className="font-semibold text-xs truncate" title={product.name}>{product.name}</h3>
-                  <p className="text-xs mt-1.5 text-foreground">
-                    <span className="text-muted-foreground">السعر: </span>
-                    {product.price} LYD
+                  <p className="text-foreground text-sm mt-1.5">
+                     <span className="text-muted-foreground text-xs">السعر: </span>{product.price} LYD
                   </p>
                 </div>
                 <div className="flex justify-between items-center mt-2">
@@ -134,7 +133,7 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                         disabled={product.quantity === 0}
                         className="h-8 w-8 p-0 hover:bg-primary/10 text-primary hover:text-primary/80"
                       >
-                        <ShoppingCart className="h-[1.2rem] w-[1.2rem]" />
+                        <Banknote className="h-[1.2rem] w-[1.2rem]" />
                       </Button>
 
                       <DropdownMenu>
