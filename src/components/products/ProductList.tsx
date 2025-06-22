@@ -1,3 +1,4 @@
+
 // src/components/products/ProductList.tsx
 "use client";
 
@@ -108,14 +109,14 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                   />
                 </CardHeader>
               </Link>
-              <CardContent className="p-3 flex-grow flex flex-col justify-between">
-                <div>
+              <CardContent className="p-3 flex-grow flex flex-col">
+                <div className="flex-grow">
                   <h3 className="font-semibold text-xs truncate" title={product.name}>{product.name}</h3>
-                  <p className="text-foreground text-sm font-normal mt-1.5">
-                     <span className="text-muted-foreground text-xs">السعر: </span>{product.price} LYD
+                  <p className="text-xs font-normal text-foreground mt-1">
+                     <span className="text-muted-foreground">السعر: </span>{product.price} LYD
                   </p>
                 </div>
-                <div className="flex justify-between items-center mt-1.5">
+                <div className="flex justify-between items-center mt-2">
                    <Badge 
                       variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}
                       className="text-[10px] px-1.5 py-0 leading-tight"
@@ -125,15 +126,15 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                   </Badge>
                 
                   {hasRole(['admin', 'employee', 'employee_return']) && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       <Button 
                         variant="ghost"
                         onClick={() => handleSale(product)}
                         title="بيع نقدي" 
                         disabled={product.quantity === 0}
-                        className="h-9 w-9 p-0 hover:bg-primary/10 text-primary hover:text-primary/80"
+                        className="h-8 w-8 p-0 hover:bg-primary/10 text-primary hover:text-primary/80"
                       >
-                        <HandCoins className="h-5 w-5" />
+                        <HandCoins className="h-4 w-4" />
                       </Button>
 
                       <DropdownMenu>
@@ -142,9 +143,9 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                             variant="ghost"
                             title="بيع بخدمة مصرفية"
                             disabled={product.quantity === 0 || !settings.bankServices || settings.bankServices.length === 0}
-                            className="h-9 w-9 p-0 hover:bg-accent/10 text-accent hover:text-accent/80"
+                            className="h-8 w-8 p-0 hover:bg-accent/10 text-accent hover:text-accent/80"
                           >
-                            <CreditCard className="h-5 w-5" />
+                            <CreditCard className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
