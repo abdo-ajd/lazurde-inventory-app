@@ -125,15 +125,15 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                   </Badge>
                 
                   {hasRole(['admin', 'employee', 'employee_return']) && (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
                       <Button 
                         variant="ghost"
                         onClick={() => handleSale(product)}
                         title="بيع نقدي" 
                         disabled={product.quantity === 0}
-                        className="h-8 w-8 p-0 hover:bg-primary/10 text-primary hover:text-primary/80"
+                        className="h-9 w-9 p-0 hover:bg-primary/10 text-primary hover:text-primary/80"
                       >
-                        <HandCoins className="h-[1.2rem] w-[1.2rem]" />
+                        <HandCoins className="h-5 w-5" />
                       </Button>
 
                       <DropdownMenu>
@@ -142,9 +142,9 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                             variant="ghost"
                             title="بيع بخدمة مصرفية"
                             disabled={product.quantity === 0 || !settings.bankServices || settings.bankServices.length === 0}
-                            className="h-8 w-8 p-0 hover:bg-accent/10 text-accent hover:text-accent/80"
+                            className="h-9 w-9 p-0 hover:bg-accent/10 text-accent hover:text-accent/80"
                           >
-                            <CreditCard className="h-[1.2rem] w-[1.2rem]" />
+                            <CreditCard className="h-5 w-5" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
