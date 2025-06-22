@@ -75,16 +75,16 @@ export default function ProductList({ searchTerm }: ProductListProps) {
   
   if (!isClient) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-10 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
         {[...Array(20)].map((_, i) => ( 
           <div key={i} className="rounded-lg border bg-card text-card-foreground shadow-sm animate-pulse">
             <div className="p-0 relative aspect-[3/4] w-full bg-muted rounded-t-lg"></div>
-            <div className="p-2 space-y-1">
-              <div className="h-4 w-3/4 bg-muted rounded-md mb-1"></div>
-              <div className="h-3 w-1/2 bg-muted rounded-md mb-1"></div>
-              <div className="flex justify-between items-center">
-                <div className="h-4 w-1/4 bg-muted rounded-md"></div>
-                <div className="h-6 w-6 bg-muted rounded-full"></div>
+            <div className="p-3 space-y-2">
+              <div className="h-5 w-3/4 bg-muted rounded-md"></div>
+              <div className="h-4 w-1/2 bg-muted rounded-md"></div>
+              <div className="flex justify-between items-center mt-1">
+                <div className="h-5 w-1/4 bg-muted rounded-md"></div>
+                <div className="h-8 w-8 bg-muted rounded-full"></div>
               </div>
             </div>
           </div>
@@ -96,7 +96,7 @@ export default function ProductList({ searchTerm }: ProductListProps) {
   return (
     <>
       {filteredProducts.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-10 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4">
           {filteredProducts.map((product) => (
             <Card key={product.id} className="flex flex-col overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200">
               <Link href={`/dashboard/products/${product.id}`} passHref aria-label={`عرض تفاصيل ${product.name}`}>
@@ -108,13 +108,13 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                   />
                 </CardHeader>
               </Link>
-              <CardContent className="pt-2 pb-1.5 px-2 flex-grow flex flex-col">
-                <h3 className="font-semibold text-xs truncate flex-grow" title={product.name}>{product.name}</h3>
-                <p className="text-[11px] text-muted-foreground mt-0.5">السعر: {product.price} LYD</p>
-                <div className="flex justify-between items-center mt-1">
+              <CardContent className="p-3 flex-grow flex flex-col">
+                <h3 className="font-semibold text-sm truncate flex-grow" title={product.name}>{product.name}</h3>
+                <p className="text-xs text-muted-foreground mt-1">السعر: {product.price} LYD</p>
+                <div className="flex justify-between items-center mt-2">
                   <Badge 
                     variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}
-                    className="text-[10px] px-1.5 py-0 leading-tight"
+                    className="text-xs px-2 py-0.5"
                   >
                     الكمية: {product.quantity}
                   </Badge>
@@ -128,7 +128,7 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                         disabled={product.quantity === 0}
                         className="hover:bg-primary/10 text-primary hover:text-primary/80"
                       >
-                        <ShoppingCart className="h-4 w-4" />
+                        <ShoppingCart className="h-5 w-5" />
                       </Button>
 
                       <DropdownMenu>
@@ -140,7 +140,7 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                             disabled={product.quantity === 0 || !settings.bankServices || settings.bankServices.length === 0}
                             className="hover:bg-primary/10 text-primary hover:text-primary/80"
                           >
-                            <CreditCard className="h-4 w-4" />
+                            <CreditCard className="h-5 w-5" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
