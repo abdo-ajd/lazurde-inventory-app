@@ -1,4 +1,3 @@
-
 // src/components/products/ProductList.tsx
 "use client";
 
@@ -112,9 +111,9 @@ export default function ProductList({ searchTerm }: ProductListProps) {
               <CardContent className="p-3 flex-grow flex flex-col justify-between">
                 <div>
                   <h3 className="font-semibold text-xs truncate" title={product.name}>{product.name}</h3>
-                  <p className="font-semibold text-xs text-primary mt-1">{product.price} LYD</p>
+                  <p className="font-semibold text-sm text-primary mt-1.5"><span className="text-muted-foreground font-normal text-xs">السعر: </span>{product.price} LYD</p>
                 </div>
-                <div className="flex justify-between items-center mt-2">
+                <div className="flex justify-between items-center mt-2.5">
                   <Badge 
                       variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}
                       className="text-[10px] px-1.5 py-0 leading-tight"
@@ -124,28 +123,26 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                   </Badge>
                 
                   {hasRole(['admin', 'employee', 'employee_return']) && (
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-1">
                       <Button 
                         variant="ghost"
-                        size="icon-xs" 
                         onClick={() => handleSale(product)}
                         title="بيع نقدي" 
                         disabled={product.quantity === 0}
-                        className="hover:bg-primary/10 text-primary hover:text-primary/80"
+                        className="h-7 w-7 p-0 hover:bg-primary/10 text-primary hover:text-primary/80"
                       >
-                        <ShoppingCart className="h-4 w-4" />
+                        <ShoppingCart className="h-[1.1rem] w-[1.1rem]" />
                       </Button>
 
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
-                            size="icon-xs"
                             title="بيع بخدمة مصرفية"
                             disabled={product.quantity === 0 || !settings.bankServices || settings.bankServices.length === 0}
-                            className="hover:bg-primary/10 text-primary hover:text-primary/80"
+                            className="h-7 w-7 p-0 hover:bg-accent/10 text-accent hover:text-accent/80"
                           >
-                            <CreditCard className="h-4 w-4" />
+                            <CreditCard className="h-[1.1rem] w-[1.1rem]" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
