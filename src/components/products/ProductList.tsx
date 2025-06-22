@@ -114,7 +114,7 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                 <div className="flex justify-between items-center mt-2">
                   <Badge 
                     variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}
-                    className="text-xs px-2 py-0.5"
+                    className="text-[10px] px-1.5 py-0 leading-tight"
                   >
                     الكمية: {product.quantity}
                   </Badge>
