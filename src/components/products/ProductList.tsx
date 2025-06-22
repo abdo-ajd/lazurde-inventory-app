@@ -110,14 +110,18 @@ export default function ProductList({ searchTerm }: ProductListProps) {
               </Link>
               <CardContent className="p-3 flex-grow flex flex-col">
                 <h3 className="font-semibold text-sm truncate flex-grow" title={product.name}>{product.name}</h3>
-                <p className="text-xs text-muted-foreground mt-1">السعر: {product.price} LYD</p>
                 <div className="flex justify-between items-center mt-2">
-                  <Badge 
-                    variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}
-                    className="text-[10px] px-1.5 py-0 leading-tight"
-                  >
-                    الكمية: {product.quantity}
-                  </Badge>
+                    <div className="flex items-center gap-2">
+                        <p className="text-[11px] text-muted-foreground font-semibold">{product.price} LYD</p>
+                        <Badge 
+                            variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}
+                            className="text-[10px] px-1.5 py-0 leading-tight"
+                            title={`الكمية: ${product.quantity}`}
+                        >
+                            {product.quantity}
+                        </Badge>
+                    </div>
+                  
                   {hasRole(['admin', 'employee', 'employee_return']) && (
                     <div className="flex items-center">
                       <Button 
