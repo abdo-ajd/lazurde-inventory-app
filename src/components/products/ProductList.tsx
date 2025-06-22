@@ -111,7 +111,10 @@ export default function ProductList({ searchTerm }: ProductListProps) {
               <CardContent className="p-3 flex-grow flex flex-col justify-between">
                 <div>
                   <h3 className="font-semibold text-xs truncate" title={product.name}>{product.name}</h3>
-                  <p className="font-semibold text-xs mt-1.5"><span className="text-muted-foreground font-normal text-xs">السعر: </span>{product.price} LYD</p>
+                  <p className="text-xs mt-1.5 text-foreground">
+                    <span className="text-muted-foreground">السعر: </span>
+                    {product.price} LYD
+                  </p>
                 </div>
                 <div className="flex justify-between items-center mt-2">
                    <Badge 
