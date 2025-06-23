@@ -45,7 +45,7 @@ export default function LoginPage() {
         <LoginForm />
       </div>
       <footer className="mt-8 text-center text-sm text-muted-foreground">
-        <p>&copy; {new Date().getFullYear()} {settings.storeName}. جميع الحقوق محفوظة.</p>
+        <p>&copy; 2025 Abdulrahman. جميع الحقوق محفوظة.</p>
       </footer>
     </div>
   );
