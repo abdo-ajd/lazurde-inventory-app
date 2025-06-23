@@ -132,38 +132,43 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                       </Badge>
                   </div>
                 </div>
-                <div className="flex justify-center items-center mt-2">
+                <div className="flex justify-between items-center mt-2">
                   {hasRole(['admin', 'employee', 'employee_return']) && (
-                    <div className="flex items-center gap-4">
-                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="outline"
-                            disabled={product.quantity === 0 || !settings.bankServices || settings.bankServices.length === 0}
-                            className="h-12 w-12 rounded-full border-secondary text-secondary-foreground hover:bg-secondary/80"
-                            title="بيع بخدمة مصرفية"
-                          >
-                            <CreditCard className="h-6 w-6" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          {(settings.bankServices || []).map(service => (
-                            <DropdownMenuItem key={service.name} onSelect={() => handleSale(product, service.name)}>
-                              {service.name}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <Button 
-                        variant="outline"
-                        onClick={() => handleSale(product, 'نقدي')}
-                        title="بيع نقدي"
-                        disabled={product.quantity === 0}
-                        className="h-12 w-12 rounded-full"
-                      >
-                        <HandCoins className="h-6 w-6" />
-                      </Button>
-                    </div>
+                    <>
+                      <div /> 
+                      <div className="flex items-center gap-1">
+                         <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button 
+                              variant="outline"
+                              size="icon-sm"
+                              disabled={product.quantity === 0 || !settings.bankServices || settings.bankServices.length === 0}
+                              className="rounded-full border-secondary text-secondary-foreground hover:bg-secondary/80"
+                              title="بيع بخدمة مصرفية"
+                            >
+                              <CreditCard />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            {(settings.bankServices || []).map(service => (
+                              <DropdownMenuItem key={service.name} onSelect={() => handleSale(product, service.name)}>
+                                {service.name}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <Button 
+                          variant="outline"
+                          size="icon-sm"
+                          onClick={() => handleSale(product, 'نقدي')}
+                          title="بيع نقدي"
+                          disabled={product.quantity === 0}
+                          className="rounded-full"
+                        >
+                          <HandCoins />
+                        </Button>
+                      </div>
+                    </>
                   )}
                 </div>
               </CardContent>
