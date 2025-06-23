@@ -121,7 +121,7 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                   <h3 className="font-semibold text-sm truncate" title={product.name}>{product.name}</h3>
                   <div className="flex justify-between items-center mt-1">
                       <p className="text-sm font-normal text-foreground">
-                        {product.price}
+                        السعر: {product.price}
                       </p>
                       <Badge 
                         variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}
@@ -132,42 +132,38 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                       </Badge>
                   </div>
                 </div>
-                <div className="flex justify-between items-center mt-2">
+                <div className="flex justify-center items-center mt-2 gap-2">
                   {hasRole(['admin', 'employee', 'employee_return']) && (
                     <>
-                      <div /> 
-                      <div className="flex items-center gap-1">
-                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button 
-                              variant="outline"
-                              size="icon-sm"
-                              disabled={product.quantity === 0 || !settings.bankServices || settings.bankServices.length === 0}
-                              className="rounded-full border-secondary text-secondary-foreground hover:bg-secondary/80"
-                              title="بيع بخدمة مصرفية"
-                            >
-                              <CreditCard />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            {(settings.bankServices || []).map(service => (
-                              <DropdownMenuItem key={service.name} onSelect={() => handleSale(product, service.name)}>
-                                {service.name}
-                              </DropdownMenuItem>
-                            ))}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        <Button 
-                          variant="outline"
-                          size="icon-sm"
-                          onClick={() => handleSale(product, 'نقدي')}
-                          title="بيع نقدي"
-                          disabled={product.quantity === 0}
-                          className="rounded-full"
-                        >
-                          <HandCoins />
-                        </Button>
-                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            variant="outline"
+                            size="icon"
+                            disabled={product.quantity === 0 || !settings.bankServices || settings.bankServices.length === 0}
+                            className="border-secondary text-secondary-foreground hover:bg-secondary/80"
+                            title="بيع بخدمة مصرفية"
+                          >
+                            <CreditCard />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          {(settings.bankServices || []).map(service => (
+                            <DropdownMenuItem key={service.name} onSelect={() => handleSale(product, service.name)}>
+                              {service.name}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <Button 
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleSale(product, 'نقدي')}
+                        title="بيع نقدي"
+                        disabled={product.quantity === 0}
+                      >
+                        <HandCoins />
+                      </Button>
                     </>
                   )}
                 </div>
