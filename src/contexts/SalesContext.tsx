@@ -2,8 +2,8 @@
 // src/contexts/SalesContext.tsx
 "use client";
 
-import type { Sale, SaleItem } from '@/lib/types';
-import { createContext, useContext, ReactNode, useState } from 'react'; // Added useState
+import type { Product, Sale, SaleItem } from '@/lib/types';
+import { createContext, useContext, ReactNode, useState } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { LOCALSTORAGE_KEYS, INITIAL_SALES } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
@@ -13,10 +13,20 @@ import { useAppSettings } from './AppSettingsContext';
 
 interface SalesContextType {
   sales: Sale[];
-  addSale: (items: Omit<SaleItem, 'productName' | 'pricePerUnit'>[], paymentMethod?: string) => Promise<Sale | null>;
+  addSale: (items: Omit<SaleItem, 'productName' | 'pricePerUnit'>[], paymentMethod?: string) => Promise<Sale | null>; // For barcode scanner
   returnSale: (saleId: string) => Promise<boolean>;
   getSaleById: (saleId: string) => Sale | undefined;
   replaceAllSales: (newSales: Sale[]) => void;
+  
+  // Invoice functionality
+  invoice: SaleItem[];
+  addToInvoice: (product: Product) => void;
+  removeFromInvoice: (productId: string) => void;
+  updateInvoiceQuantity: (productId: string, newQuantity: number) => void;
+  clearInvoice: () => void;
+  confirmInvoiceSale: (paymentMethod?: string) => Promise<Sale | null>;
+
+  // Discount for both flows
   currentDiscount: number;
   setCurrentDiscount: (value: number) => void;
 }
@@ -30,18 +40,18 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
   const { currentUser, hasRole } = useAuth();
   const { settings } = useAppSettings();
   const [currentDiscount, setCurrentDiscount] = useState<number>(0);
-  
+  const [invoice, setInvoice] = useState<SaleItem[]>([]);
+
   const formatNumber = (num: number) => {
     return num % 1 !== 0 ? parseFloat(num.toFixed(2)) : num;
   };
 
-
+  // The original addSale for the barcode scanner
   const addSale = async (rawItems: Omit<SaleItem, 'productName' | 'pricePerUnit'>[], paymentMethod: string = 'نقدي'): Promise<Sale | null> => {
     if (!currentUser) {
       toast({ title: "خطأ", description: "يجب تسجيل الدخول لتسجيل عملية بيع.", variant: "destructive" });
       return null;
     }
-
     const saleItems: SaleItem[] = [];
     let currentOriginalTotalAmount = 0;
     let totalCostPrice = 0;
@@ -132,6 +142,148 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
 
     return newSale;
   };
+  
+  const addToInvoice = (product: Product) => {
+    setInvoice(currentInvoice => {
+      const existingItem = currentInvoice.find(item => item.productId === product.id);
+      const stock = getProductById(product.id)?.quantity ?? 0;
+      
+      if (existingItem) {
+        const newQuantity = existingItem.quantity + 1;
+        if (newQuantity > stock) {
+          toast({ variant: "destructive", title: "نفذت الكمية", description: `لا يمكن إضافة المزيد من "${product.name}". المتوفر: ${stock}`});
+          return currentInvoice;
+        }
+        return currentInvoice.map(item => 
+          item.productId === product.id ? { ...item, quantity: newQuantity } : item
+        );
+      } else {
+        if (1 > stock) {
+          toast({ variant: "destructive", title: "نفذت الكمية", description: `المنتج "${product.name}" غير متوفر حالياً.`});
+          return currentInvoice;
+        }
+        return [...currentInvoice, {
+          productId: product.id,
+          productName: product.name,
+          quantity: 1,
+          pricePerUnit: product.price
+        }];
+      }
+    });
+  };
+
+  const removeFromInvoice = (productId: string) => {
+    setInvoice(currentInvoice => currentInvoice.filter(item => item.productId !== productId));
+  };
+  
+  const updateInvoiceQuantity = (productId: string, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      removeFromInvoice(productId);
+      return;
+    }
+
+    const product = getProductById(productId);
+    const stock = product?.quantity ?? 0;
+    if (newQuantity > stock) {
+      toast({ variant: "destructive", title: "نفذت الكمية", description: `لا يمكن طلب ${newQuantity}. المتوفر: ${stock}`});
+      setInvoice(currentInvoice => currentInvoice.map(item =>
+        item.productId === productId ? { ...item, quantity: stock } : item
+      ));
+      return;
+    }
+
+    setInvoice(currentInvoice => currentInvoice.map(item => 
+      item.productId === productId ? { ...item, quantity: newQuantity } : item
+    ));
+  };
+
+  const clearInvoice = () => {
+    setInvoice([]);
+    setCurrentDiscount(0);
+  };
+  
+  const confirmInvoiceSale = async (paymentMethod: string = 'نقدي'): Promise<Sale | null> => {
+    if (!currentUser) {
+      toast({ title: "خطأ", description: "يجب تسجيل الدخول لتسجيل عملية بيع.", variant: "destructive" });
+      return null;
+    }
+    if (invoice.length === 0) {
+        toast({ variant: "destructive", title: "فاتورة فارغة", description: "لا يمكن تأكيد فاتورة فارغة."});
+        return null;
+    }
+
+    let currentOriginalTotalAmount = 0;
+    let totalCostPrice = 0;
+
+    for (const item of invoice) {
+        const product = getProductById(item.productId);
+        if (!product || product.quantity < item.quantity) {
+             toast({ variant: "destructive", title: "خطأ في الكمية", description: `كمية غير كافية من المنتج "${item.productName}".`});
+             return null;
+        }
+        currentOriginalTotalAmount += item.pricePerUnit * item.quantity;
+        if (hasRole(['admin'])) {
+             totalCostPrice += (product.costPrice || 0) * item.quantity;
+        }
+    }
+    
+    let totalProfit = 0;
+    if (hasRole(['admin'])) {
+      totalProfit = currentOriginalTotalAmount - totalCostPrice;
+    }
+
+    const discountToApply = Math.max(0, currentDiscount);
+    
+    if (hasRole(['admin']) && discountToApply > totalProfit && totalProfit > 0) {
+      toast({ variant: "destructive", title: "خصم غير مقبول", description: "الخصم المطلوب يتجاوز الحد المسموح به لهذه العملية."});
+      return null;
+    }
+
+    const finalTotalAmount = Math.max(0, currentOriginalTotalAmount - discountToApply);
+    if (discountToApply > 0 && discountToApply > currentOriginalTotalAmount) {
+        toast({ title: "تنبيه", description: "قيمة الخصم أكبر من إجمالي الفاتورة. تم تطبيق خصم بقيمة الفاتورة.", variant: "default" });
+    }
+    
+    for (const item of invoice) {
+      const success = await updateProductQuantity(item.productId, -item.quantity);
+      if (!success) {
+        toast({ title: "خطأ فادح", description: "فشل تحديث كمية المنتج. تم إلغاء البيع.", variant: "destructive" });
+        return null;
+      }
+    }
+
+    const newSale: Sale = {
+      id: `sale_${Date.now()}`,
+      items: invoice,
+      originalTotalAmount: formatNumber(currentOriginalTotalAmount),
+      discountAmount: formatNumber(discountToApply),
+      totalAmount: formatNumber(finalTotalAmount),
+      saleDate: new Date().toISOString(),
+      sellerId: currentUser.id,
+      sellerUsername: currentUser.username,
+      status: 'active',
+      paymentMethod: paymentMethod,
+    };
+    
+    setSales(prevSales => [newSale, ...(prevSales || [])]);
+    let toastMessage = `تم بيع الفاتورة بنجاح. الإجمالي: ${newSale.totalAmount}`;
+    if (discountToApply > 0) {
+        toastMessage += ` (بعد خصم ${newSale.discountAmount})`;
+    }
+    toast({ title: "نجاح", description: toastMessage });
+
+    if (settings.saleSuccessSound && settings.saleSuccessSound.startsWith('data:audio')) {
+      try {
+        const audio = new Audio(settings.saleSuccessSound);
+        audio.play().catch(error => console.warn("Error playing custom sale sound:", error));
+      } catch (error) {
+        console.warn("Could not play custom sale sound:", error);
+      }
+    }
+    
+    clearInvoice();
+    return newSale;
+  };
 
   const returnSale = async (saleId: string): Promise<boolean> => {
     const currentSalesData = sales || [];
@@ -148,7 +300,6 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
     for (const item of saleToReturn.items) {
       const success = await updateProductQuantity(item.productId, item.quantity); // Return items to stock
       if (!success) {
-        // Even if one item fails, proceed to mark sale as returned but log error or notify
         toast({ title: "خطأ في الإرجاع", description: `فشل تحديث كمية المنتج "${item.productName}"، ولكن سيتم إكمال عملية الإرجاع.`, variant: "destructive" });
       }
     }
@@ -171,7 +322,7 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <SalesContext.Provider value={{ sales: sales || [], addSale, returnSale, getSaleById, replaceAllSales, currentDiscount, setCurrentDiscount }}>
+    <SalesContext.Provider value={{ sales: sales || [], addSale, returnSale, getSaleById, replaceAllSales, currentDiscount, setCurrentDiscount, invoice, addToInvoice, removeFromInvoice, updateInvoiceQuantity, clearInvoice, confirmInvoiceSale }}>
       {children}
     </SalesContext.Provider>
   );
