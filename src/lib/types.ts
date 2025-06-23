@@ -51,8 +51,6 @@ export interface AppSettings {
     background: string;
     accent: string;
   };
-  saleSuccessSound?: string; // Data URI for the sound
-  rejectedOperationSound?: string; // Data URI for any rejected/failed operation
   bankServices?: { name: string; color: string; }[];
 }
 
@@ -64,5 +62,7 @@ export interface NavItem {
   disabled?: boolean;
   external?: boolean;
 }
+
+    
 
     

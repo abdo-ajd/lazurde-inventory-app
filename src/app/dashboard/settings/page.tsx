@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProducts } from '@/contexts/ProductContext';
 import { useSales } from '@/contexts/SalesContext';
 import { useEffect, useRef, useState } from 'react';
-import { Save, RotateCcw, Download, Upload, Music, Trash2, Smartphone, DownloadCloud, AlertTriangle, CreditCard, Palette, Edit } from 'lucide-react';
+import { Save, RotateCcw, Download, Upload, Trash2, Smartphone, DownloadCloud, AlertTriangle, CreditCard, Edit } from 'lucide-react';
 import { DEFAULT_APP_SETTINGS, LOCALSTORAGE_KEYS, DEFAULT_ADMIN_USER } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import type { User, Product, Sale, AppSettings as AppSettingsType } from '@/lib/types';
@@ -111,12 +111,6 @@ export default function AppSettingsPage() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const successSoundInputRef = useRef<HTMLInputElement>(null);
-  const [uploadedSuccessSoundName, setUploadedSuccessSoundName] = useState<string | null>(null);
-
-  const rejectedSoundInputRef = useRef<HTMLInputElement>(null);
-  const [uploadedRejectedSoundName, setUploadedRejectedSoundName] = useState<string | null>(null);
-  
   const [newServiceName, setNewServiceName] = useState('');
   const [newServiceColor, setNewServiceColor] = useState<string>(PREDEFINED_SERVICE_COLORS[0]?.value || '');
   
@@ -144,16 +138,6 @@ export default function AppSettingsPage() {
         storeName: settings.storeName,
         themeColors: settings.themeColors,
     });
-    if (settings.saleSuccessSound) {
-        setUploadedSuccessSoundName("نغمة نجاح مخصصة");
-    } else {
-        setUploadedSuccessSoundName(null);
-    }
-     if (settings.rejectedOperationSound) {
-        setUploadedRejectedSoundName("نغمة تنبيه مخصصة");
-    } else {
-        setUploadedRejectedSoundName(null);
-    }
   }, [settings, form]);
 
   useEffect(() => {
@@ -213,44 +197,6 @@ export default function AppSettingsPage() {
       currentThemeColors.background === paletteColors.background &&
       currentThemeColors.accent === paletteColors.accent
     );
-  };
-  
-  const handleSoundFileChange = (event: React.ChangeEvent<HTMLInputElement>, type: 'success' | 'rejected') => {
-    const file = event.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) { 
-        toast({ variant: "destructive", title: "خطأ", description: "حجم الملف كبير جداً. الرجاء اختيار ملف أصغر من 5 ميجابايت." });
-        if(type === 'success' && successSoundInputRef.current) successSoundInputRef.current.value = "";
-        if(type === 'rejected' && rejectedSoundInputRef.current) rejectedSoundInputRef.current.value = "";
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUri = reader.result as string;
-        if (type === 'success') {
-            updateSettings({ saleSuccessSound: dataUri });
-            setUploadedSuccessSoundName(file.name);
-        } else {
-            updateSettings({ rejectedOperationSound: dataUri });
-            setUploadedRejectedSoundName(file.name);
-        }
-        toast({ title: "نجاح", description: `تم رفع النغمة: ${file.name}` });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleClearSound = (type: 'success' | 'rejected') => {
-    if (type === 'success') {
-        updateSettings({ saleSuccessSound: '' });
-        setUploadedSuccessSoundName(null);
-        if(successSoundInputRef.current) successSoundInputRef.current.value = "";
-    } else {
-        updateSettings({ rejectedOperationSound: '' });
-        setUploadedRejectedSoundName(null);
-        if(rejectedSoundInputRef.current) rejectedSoundInputRef.current.value = "";
-    }
-    toast({ title: "نجاح", description: "تمت إزالة النغمة المخصصة." });
   };
 
 
@@ -389,7 +335,7 @@ export default function AppSettingsPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight font-headline">إعدادات التطبيق</h1>
         <p className="text-muted-foreground font-body">
-          قم بتخصيص اسم المتجر، ألوان الواجهة، نغمات التنبيه، إدارة النسخ الاحتياطي، وتثبيت التطبيق.
+          قم بتخصيص اسم المتجر، ألوان الواجهة، إدارة النسخ الاحتياطي، وتثبيت التطبيق.
         </p>
       </div>
 
@@ -515,78 +461,6 @@ export default function AppSettingsPage() {
 
         </form>
       </Form>
-
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>نغمة إتمام البيع</CardTitle>
-          <CardDescription>اختر ملفًا صوتيًا لتشغيله عند إتمام عملية بيع ناجحة.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <Button onClick={() => successSoundInputRef.current?.click()} variant="outline" className="w-full sm:w-auto">
-              <Music className="ml-2 h-4 w-4" /> {uploadedSuccessSoundName ? "تغيير النغمة" : "اختيار ملف صوتي"}
-            </Button>
-            <Input 
-                type="file" 
-                ref={successSoundInputRef} 
-                className="hidden" 
-                accept="audio/*" 
-                onChange={(e) => handleSoundFileChange(e, 'success')}
-            />
-            {uploadedSuccessSoundName && (
-              <Button onClick={() => handleClearSound('success')} variant="destructive" size="sm" className="w-full sm:w-auto">
-                 <Trash2 className="ml-2 h-4 w-4" /> إزالة النغمة
-              </Button>
-            )}
-          </div>
-          {uploadedSuccessSoundName && (
-            <p className="text-sm text-muted-foreground">النغمة الحالية: {uploadedSuccessSoundName}</p>
-          )}
-          {!uploadedSuccessSoundName && (
-            <p className="text-sm text-muted-foreground">لم يتم اختيار نغمة مخصصة.</p>
-          )}
-           <p className="text-xs text-muted-foreground pt-2">
-            (الحد الأقصى لحجم الملف: 5 ميجابايت. الأنواع المدعومة: MP3, WAV, OGG, إلخ)
-           </p>
-        </CardContent>
-      </Card>
-      
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-amber-500" /> نغمة العمليات المرفوضة
-          </CardTitle>
-          <CardDescription>اختر ملفًا صوتيًا لتشغيله عند فشل عملية ما (مثل عدم توفر الكمية، خطأ في تسجيل الدخول، الخ).</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <Button onClick={() => rejectedSoundInputRef.current?.click()} variant="outline" className="w-full sm:w-auto">
-              <Music className="ml-2 h-4 w-4" /> {uploadedRejectedSoundName ? "تغيير نغمة التنبيه" : "اختيار ملف صوتي"}
-            </Button>
-            <Input 
-                type="file" 
-                ref={rejectedSoundInputRef} 
-                className="hidden" 
-                accept="audio/*" 
-                onChange={(e) => handleSoundFileChange(e, 'rejected')}
-            />
-            {uploadedRejectedSoundName && (
-              <Button onClick={() => handleClearSound('rejected')} variant="destructive" size="sm" className="w-full sm:w-auto">
-                 <Trash2 className="ml-2 h-4 w-4" /> إزالة النغمة
-              </Button>
-            )}
-          </div>
-          {uploadedRejectedSoundName && (
-            <p className="text-sm text-muted-foreground">نغمة التنبيه الحالية: {uploadedRejectedSoundName}</p>
-          )}
-          {!uploadedRejectedSoundName && (
-            <p className="text-sm text-muted-foreground">لم يتم اختيار نغمة تنبيه مخصصة.</p>
-          )}
-           <p className="text-xs text-muted-foreground pt-2">
-            (الحد الأقصى لحجم الملف: 5 ميجابايت. الأنواع المدعومة: MP3, WAV, OGG, إلخ)
-           </p>
-        </CardContent>
-      </Card>
       
       {hasRole(['admin']) && (
         <Card className="mt-6">
@@ -711,3 +585,5 @@ export default function AppSettingsPage() {
     </div>
   );
 }
+
+    

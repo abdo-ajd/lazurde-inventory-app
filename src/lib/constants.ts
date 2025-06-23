@@ -17,14 +17,12 @@ export const DEFAULT_ADMIN_USER: User = {
 };
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
-  storeName: 'متجر لازوردي للعبايات', // Updated store name
+  storeName: 'متجر لازوردي للعبايات',
   themeColors: {
     primary: '207 89% 61%',
     background: '0 0% 98%', 
     accent: '233 48% 59%',
   },
-  saleSuccessSound: '', // Default to no custom sound
-  rejectedOperationSound: '', // Default to no custom sound for rejected operations
   bankServices: [
     { name: 'ادفع لي', color: 'hsl(221, 83%, 53%)' }, // Blue
     { name: 'سداد', color: 'hsl(142, 71%, 45%)' }, // Green
@@ -70,5 +68,7 @@ export const INITIAL_PRODUCTS: Product[] = [
 ];
 
 export const INITIAL_SALES: Sale[] = []; // Start with no sales
+
+    
 
     

@@ -1,8 +1,8 @@
+
 "use client"
 
 import React, { useEffect, useRef } from "react"
 import { useToast } from "@/hooks/use-toast"
-import { useAppSettings } from "@/contexts/AppSettingsContext"
 import {
   Toast,
   ToastClose,
@@ -14,7 +14,6 @@ import {
 
 export function Toaster() {
   const { toasts } = useToast()
-  const { settings } = useAppSettings()
   const playedToastsRef = useRef(new Set<string>())
 
   useEffect(() => {
@@ -23,13 +22,12 @@ export function Toaster() {
     );
 
     if (newDestructiveToast) {
-      if (settings.rejectedOperationSound && settings.rejectedOperationSound.startsWith('data:audio')) {
-        try {
-          const audio = new Audio(settings.rejectedOperationSound);
-          audio.play().catch(error => console.warn("Error playing rejected operation sound:", error));
-        } catch (error) {
-          console.warn("Could not play rejected operation sound:", error);
-        }
+      try {
+        // Play the hardcoded sound for a rejected operation
+        const audio = new Audio('/sounds/operation-rejected.mp3');
+        audio.play().catch(error => console.warn("Error playing rejected operation sound:", error));
+      } catch (error) {
+        console.warn("Could not play rejected operation sound:", error);
       }
       playedToastsRef.current.add(newDestructiveToast.id);
     }
@@ -42,7 +40,7 @@ export function Toaster() {
         }
     });
 
-  }, [toasts, settings.rejectedOperationSound]);
+  }, [toasts]);
 
   return (
     <ToastProvider>
@@ -64,3 +62,5 @@ export function Toaster() {
     </ToastProvider>
   )
 }
+
+    

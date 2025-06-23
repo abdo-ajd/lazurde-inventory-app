@@ -9,7 +9,6 @@ import { LOCALSTORAGE_KEYS, INITIAL_SALES } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { useProducts } from './ProductContext';
 import { useAuth } from './AuthContext';
-import { useAppSettings } from './AppSettingsContext';
 
 interface SalesContextType {
   sales: Sale[];
@@ -28,7 +27,6 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
   const { getProductById, updateProductQuantity } = useProducts();
   const { currentUser, hasRole } = useAuth();
-  const { settings } = useAppSettings();
   const [currentDiscount, setCurrentDiscount] = useState<number>(0);
 
   const formatNumber = (num: number) => {
@@ -117,13 +115,12 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
     }
     toast({ title: "نجاح", description: toastMessage });
 
-    if (settings.saleSuccessSound && settings.saleSuccessSound.startsWith('data:audio')) {
-      try {
-        const audio = new Audio(settings.saleSuccessSound);
-        audio.play().catch(error => console.warn("Error playing custom sale sound:", error));
-      } catch (error) {
-        console.warn("Could not play custom sale sound:", error);
-      }
+    try {
+      // Play the hardcoded sound for a successful sale
+      const audio = new Audio('/sounds/sale-success.mp3');
+      audio.play().catch(error => console.warn("Error playing sale success sound:", error));
+    } catch (error) {
+      console.warn("Could not play sale success sound:", error);
     }
     
     setCurrentDiscount(0); // Reset discount after successful sale
@@ -181,3 +178,5 @@ export const useSales = () => {
   }
   return context;
 };
+
+    
