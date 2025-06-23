@@ -118,10 +118,10 @@ export default function ProductList({ searchTerm }: ProductListProps) {
               </Link>
               <CardContent className="p-3 flex-grow flex flex-col">
                 <div className="flex-grow">
-                  <h3 className="font-semibold text-xs truncate" title={product.name}>{product.name}</h3>
+                  <h3 className="font-semibold text-sm truncate" title={product.name}>{product.name}</h3>
                   <div className="flex justify-between items-center mt-1">
-                      <p className="text-xs font-normal text-foreground">
-                        <span className="text-muted-foreground">السعر: </span>{product.price}
+                      <p className="text-sm font-normal text-foreground">
+                        {product.price}
                       </p>
                       <Badge 
                         variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}
@@ -132,19 +132,18 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                       </Badge>
                   </div>
                 </div>
-                <div className="flex justify-end items-center mt-2">
+                <div className="flex justify-center items-center mt-2">
                   {hasRole(['admin', 'employee', 'employee_return']) && (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-4">
                        <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button 
                             variant="outline"
-                            size="icon"
                             disabled={product.quantity === 0 || !settings.bankServices || settings.bankServices.length === 0}
-                            className="h-8 w-8 border-secondary text-secondary-foreground hover:bg-secondary/80"
+                            className="h-12 w-12 rounded-full border-secondary text-secondary-foreground hover:bg-secondary/80"
                             title="بيع بخدمة مصرفية"
                           >
-                            <CreditCard className="h-4 w-4" />
+                            <CreditCard className="h-6 w-6" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
@@ -157,13 +156,12 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                       </DropdownMenu>
                       <Button 
                         variant="outline"
-                        size="icon"
                         onClick={() => handleSale(product, 'نقدي')}
                         title="بيع نقدي"
                         disabled={product.quantity === 0}
-                        className="h-8 w-8"
+                        className="h-12 w-12 rounded-full"
                       >
-                        <HandCoins className="h-4 w-4" />
+                        <HandCoins className="h-6 w-6" />
                       </Button>
                     </div>
                   )}
