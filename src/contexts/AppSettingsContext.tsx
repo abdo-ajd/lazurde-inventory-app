@@ -24,28 +24,64 @@ export const AppSettingsProvider = ({ children }: { children: ReactNode }) => {
   const applyTheme = useCallback((colors: AppSettings['themeColors']) => {
     if (typeof document !== 'undefined') {
       const root = document.documentElement;
-      // These set the HSL values that the light theme's --primary, --background, --accent derive from.
-      // The .dark block in globals.css will directly set --primary, --background, --accent for dark mode.
       root.style.setProperty('--theme-primary-hsl', colors.primary);
       root.style.setProperty('--theme-background-hsl', colors.background);
       root.style.setProperty('--theme-accent-hsl', colors.accent);
     }
   }, []);
   
-  const applyAppIcon = useCallback((iconDataUri: string | undefined) => {
+  const applyAppIconAndManifest = useCallback((iconDataUri: string | undefined, storeName: string, themeColors: AppSettings['themeColors']) => {
     if (typeof document !== 'undefined') {
         const favicon = document.getElementById('favicon') as HTMLLinkElement | null;
         const appleIcon = document.getElementById('apple-touch-icon') as HTMLLinkElement | null;
-        
+        const manifestLink = document.getElementById('manifest') as HTMLLinkElement | null;
+        const themeColorMeta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+
         const defaultFavicon = '/favicon.ico';
         const defaultAppleIcon = '/icons/icon-192x192.png';
 
-        if (iconDataUri) {
-            if (favicon) favicon.href = iconDataUri;
-            if (appleIcon) appleIcon.href = iconDataUri;
-        } else {
-            if (favicon) favicon.href = defaultFavicon;
-            if (appleIcon) appleIcon.href = defaultAppleIcon;
+        const customIcon512 = iconDataUri;
+        const customIcon192 = iconDataUri || defaultAppleIcon;
+
+        if (favicon) favicon.href = iconDataUri || defaultFavicon;
+        if (appleIcon) appleIcon.href = customIcon192;
+
+        const primaryThemeColor = `hsl(${themeColors.primary})`;
+        if (themeColorMeta) themeColorMeta.content = primaryThemeColor;
+
+        const manifest = {
+            name: storeName,
+            short_name: storeName,
+            description: 'نظام إدارة مخزون للشركات الصغيرة والمتوسطة',
+            start_url: '/',
+            display: 'standalone',
+            background_color: `hsl(${themeColors.background})`,
+            theme_color: primaryThemeColor,
+            icons: [
+                {
+                    src: customIcon192,
+                    sizes: '192x192',
+                    type: 'image/png',
+                    purpose: 'any maskable',
+                },
+                {
+                    src: customIcon512,
+                    sizes: '512x512',
+                    type: 'image/png',
+                    purpose: 'any maskable',
+                }
+            ],
+        };
+
+        const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+        const manifestURL = URL.createObjectURL(blob);
+
+        if (manifestLink) {
+            const oldUrl = manifestLink.href;
+            if (oldUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(oldUrl);
+            }
+            manifestLink.href = manifestURL;
         }
     }
   }, []);
@@ -56,9 +92,6 @@ export const AppSettingsProvider = ({ children }: { children: ReactNode }) => {
       if (newSettings.themeColors) {
         updatedSettings.themeColors = { ...prev.themeColors, ...newSettings.themeColors };
       }
-      
-      // No need to call applyTheme and applyAppIcon here, useEffect will handle it
-      
       return updatedSettings;
     });
     toast({ title: "تم حفظ الإعدادات بنجاح" });
@@ -66,24 +99,21 @@ export const AppSettingsProvider = ({ children }: { children: ReactNode }) => {
   
   const resetToDefaults = () => {
     setSettings(DEFAULT_APP_SETTINGS);
-    // No need to call applyTheme/applyAppIcon here, useEffect will handle it
     toast({ title: "تم استعادة الإعدادات الافتراضية" });
   };
 
 
   useEffect(() => {
-    // Apply theme and icon on initial load and when settings change
     if(settings) {
         if (settings.themeColors) {
             applyTheme(settings.themeColors);
         }
-        applyAppIcon(settings.appIcon);
+        applyAppIconAndManifest(settings.appIcon, settings.storeName, settings.themeColors);
     } else {
-        // This ensures default theme is applied if settings are somehow null/undefined initially
         applyTheme(DEFAULT_APP_SETTINGS.themeColors);
-        applyAppIcon(DEFAULT_APP_SETTINGS.appIcon);
+        applyAppIconAndManifest(DEFAULT_APP_SETTINGS.appIcon, DEFAULT_APP_SETTINGS.storeName, DEFAULT_APP_SETTINGS.themeColors);
     }
-  }, [settings, applyTheme, applyAppIcon]);
+  }, [settings, applyTheme, applyAppIconAndManifest]);
 
   return (
     <AppSettingsContext.Provider value={{ settings: settings || DEFAULT_APP_SETTINGS, updateSettings, resetToDefaults, applyTheme }}>
@@ -99,5 +129,3 @@ export const useAppSettings = () => {
   }
   return context;
 };
-
-    
