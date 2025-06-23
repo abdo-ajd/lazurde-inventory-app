@@ -3,12 +3,14 @@
 
 import LoginForm from '@/components/auth/LoginForm';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Image from 'next/image';
 
 export default function LoginPage() {
   const { currentUser, isLoading } = useAuth();
+  const { settings } = useAppSettings();
   const router = useRouter();
 
   useEffect(() => {
@@ -38,12 +40,12 @@ export default function LoginPage() {
             data-ai-hint="fashion shopping" 
           />
           <h1 className="text-3xl font-bold text-primary font-headline">تسجيل الدخول</h1>
-          <p className="mt-2 text-muted-foreground font-body">مرحباً بك في لازوردي للمخزون</p>
+          <p className="mt-2 text-muted-foreground font-body">مرحباً بك في {settings.storeName}</p>
         </div>
         <LoginForm />
       </div>
       <footer className="mt-8 text-center text-sm text-muted-foreground">
-        <p>&copy; {new Date().getFullYear()} لازوردي. جميع الحقوق محفوظة.</p>
+        <p>&copy; {new Date().getFullYear()} {settings.storeName}. جميع الحقوق محفوظة.</p>
       </footer>
     </div>
   );
