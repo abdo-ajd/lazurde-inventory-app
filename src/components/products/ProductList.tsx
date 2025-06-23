@@ -120,7 +120,7 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                 <div className="flex-grow">
                   <h3 className="font-semibold text-sm truncate" title={product.name}>{product.name}</h3>
                   <div className="flex justify-between items-center mt-1">
-                      <p className="text-sm font-normal text-foreground">
+                      <p className="text-xs font-normal text-foreground">
                         السعر: {product.price}
                       </p>
                       <Badge 
@@ -139,12 +139,12 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                         <DropdownMenuTrigger asChild>
                           <Button 
                             variant="outline"
-                            size="icon"
+                            size="default"
                             disabled={product.quantity === 0 || !settings.bankServices || settings.bankServices.length === 0}
-                            className="border-secondary text-secondary-foreground hover:bg-secondary/80"
+                            className="border-secondary text-secondary-foreground hover:bg-secondary/80 flex-1 h-auto p-2"
                             title="بيع بخدمة مصرفية"
                           >
-                            <CreditCard />
+                            <CreditCard className="h-5 w-5"/>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
@@ -157,12 +157,13 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                       </DropdownMenu>
                       <Button 
                         variant="outline"
-                        size="icon"
+                        size="default"
                         onClick={() => handleSale(product, 'نقدي')}
                         title="بيع نقدي"
                         disabled={product.quantity === 0}
+                        className="flex-1 h-auto p-2"
                       >
-                        <HandCoins />
+                        <HandCoins className="h-5 w-5"/>
                       </Button>
                     </>
                   )}
