@@ -6,7 +6,11 @@ import { AppProviders } from '@/contexts/AppProviders';
 export const metadata: Metadata = {
   title: 'لازوردي للمخزون',
   description: 'نظام إدارة مخزون للشركات الصغيرة والمتوسطة',
-  // manifest: '/manifest.json', // Removed to allow for dynamic injection
+  manifest: '/manifest.json',
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/icons/icon-192x192.png',
+  },
 };
 
 export default function RootLayout({
@@ -23,9 +27,7 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:ital,wght@0,200..0,900;1,200..1,900&display=swap" rel="stylesheet" />
         
         {/* PWA Meta Tags */}
-        <link id="manifest" rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#42A5F5" /> 
-        <link id="apple-touch-icon" rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <meta name='apple-mobile-web-app-capable' content='yes' />
         <meta name='apple-mobile-web-app-status-bar-style' content='default' />
         <meta name='apple-mobile-web-app-title' content='لازوردي Lite' />
@@ -33,7 +35,6 @@ export default function RootLayout({
         <meta name='mobile-web-app-capable' content='yes' />
         {/* End PWA Meta Tags */}
 
-        <link id="favicon" rel="icon" href="/favicon.ico" sizes="any" />
       </head>
       <body className="font-body antialiased min-h-screen flex flex-col">
         <AppProviders>
@@ -43,5 +44,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-    

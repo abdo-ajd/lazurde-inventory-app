@@ -1,7 +1,11 @@
 {
-  "name": "لازوردي للمخزون Lite",
-  "short_name": "لازوردي Lite",
-  "description": "نظام إدارة مخزون للشركات الصغيرة والمتوسطة، يعمل دون اتصال بالإنترنت.",
+  "name": "لازوردي للمخزون",
+  "short_name": "لازوردي",
+  "description": "نظام إدارة مخزون للشركات الصغيرة والمتوسطة",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fcfcfc",
+  "theme_color": "#42A5F5",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
@@ -15,10 +19,5 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ],
-  "start_url": "/dashboard",
-  "display": "standalone",
-  "background_color": "#E0F7FA",
-  "theme_color": "#42A5F5",
-  "orientation": "portrait-primary"
+  ]
 }
