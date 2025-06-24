@@ -118,7 +118,7 @@ export default function ProductList({ searchTerm }: ProductListProps) {
               </Link>
               <CardContent className="p-3 flex-grow flex flex-col">
                 <div className="flex-grow">
-                  <h3 className="font-semibold text-sm truncate" title={product.name}>{product.name}</h3>
+                  <h3 className="font-semibold text-xs truncate" title={product.name}>{product.name}</h3>
                   <div className="flex justify-between items-center mt-1">
                       <p className="text-xs font-normal text-foreground">
                         السعر: {product.price}
@@ -135,6 +135,16 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                 <div className="flex justify-center items-center mt-2 gap-2">
                   {hasRole(['admin', 'employee', 'employee_return']) && (
                     <>
+                      <Button 
+                        variant="outline"
+                        size="default"
+                        onClick={() => handleSale(product, 'نقدي')}
+                        title="بيع نقدي"
+                        disabled={product.quantity === 0}
+                        className="flex-1 h-auto p-2"
+                      >
+                        <HandCoins className="h-5 w-5"/>
+                      </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button 
@@ -155,16 +165,6 @@ export default function ProductList({ searchTerm }: ProductListProps) {
                           ))}
                         </DropdownMenuContent>
                       </DropdownMenu>
-                      <Button 
-                        variant="outline"
-                        size="default"
-                        onClick={() => handleSale(product, 'نقدي')}
-                        title="بيع نقدي"
-                        disabled={product.quantity === 0}
-                        className="flex-1 h-auto p-2"
-                      >
-                        <HandCoins className="h-5 w-5"/>
-                      </Button>
                     </>
                   )}
                 </div>
