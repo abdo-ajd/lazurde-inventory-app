@@ -7,14 +7,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProducts } from '@/contexts/ProductContext';
 import { useSales } from '@/contexts/SalesContext';
 import { useEffect, useRef, useState } from 'react';
-import { Save, RotateCcw, Download, Upload, Trash2, Smartphone, DownloadCloud, AlertTriangle, CreditCard, Edit } from 'lucide-react';
+import { Save, RotateCcw, Download, Upload, Trash2, Smartphone, DownloadCloud, AlertTriangle, CreditCard, Edit, Settings2 } from 'lucide-react';
 import { DEFAULT_APP_SETTINGS, LOCALSTORAGE_KEYS, DEFAULT_ADMIN_USER } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import type { User, Product, Sale, AppSettings as AppSettingsType } from '@/lib/types';
@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { getImage as getImageFromDB, blobToDataUri } from '@/lib/indexedDBService';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as ShadcnDialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
+import { Slider } from '@/components/ui/slider';
 
 
 const hslColorSchema = z.string().regex(/^(\d{1,3})\s+(\d{1,3}%)\s+(\d{1,3}%)$/, {
@@ -34,6 +35,10 @@ const settingsSchema = z.object({
     primary: hslColorSchema,
     background: hslColorSchema,
     accent: hslColorSchema,
+  }),
+  displaySettings: z.object({
+    imageGridItems: z.number().min(8).max(48),
+    posGridItems: z.number().min(10).max(60),
   }),
 });
 
@@ -128,6 +133,7 @@ export default function AppSettingsPage() {
     defaultValues: {
         storeName: settings.storeName,
         themeColors: settings.themeColors,
+        displaySettings: settings.displaySettings || DEFAULT_APP_SETTINGS.displaySettings,
     },
   });
   
@@ -137,6 +143,7 @@ export default function AppSettingsPage() {
     form.reset({
         storeName: settings.storeName,
         themeColors: settings.themeColors,
+        displaySettings: settings.displaySettings || DEFAULT_APP_SETTINGS.displaySettings,
     });
   }, [settings, form]);
 
@@ -178,7 +185,8 @@ export default function AppSettingsPage() {
   const onSubmit = (data: SettingsFormValues) => {
     updateSettings({
         storeName: data.storeName,
-        themeColors: data.themeColors, 
+        themeColors: data.themeColors,
+        displaySettings: data.displaySettings,
     });
   };
 
@@ -449,6 +457,66 @@ export default function AppSettingsPage() {
               />
             </CardContent>
           </Card>
+
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings2 className="h-5 w-5 text-primary" />
+                إعدادات العرض
+              </CardTitle>
+              <CardDescription>
+                تحكم في عدد العناصر المعروضة في الشاشات المختلفة.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-8 pt-6">
+              <FormField
+                control={form.control}
+                name="displaySettings.imageGridItems"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>عدد المنتجات في صفحة الصور الرئيسية</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center gap-4">
+                        <Slider
+                          defaultValue={[field.value]}
+                          onValueChange={(value) => field.onChange(value[0])}
+                          max={48}
+                          min={8}
+                          step={4}
+                          className="flex-1"
+                        />
+                        <span className="font-bold text-primary w-12 text-center tabular-nums">{field.value}</span>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="displaySettings.posGridItems"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>عدد المنتجات في صفحة نقطة البيع (الفاتورة)</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center gap-4">
+                        <Slider
+                          defaultValue={[field.value]}
+                          onValueChange={(value) => field.onChange(value[0])}
+                          max={60}
+                          min={10}
+                          step={5}
+                          className="flex-1"
+                        />
+                        <span className="font-bold text-primary w-12 text-center tabular-nums">{field.value}</span>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
           
           <div className="mt-8 flex flex-col sm:flex-row justify-between gap-4">
             <Button type="submit" className="w-full sm:w-auto">
@@ -585,5 +653,3 @@ export default function AppSettingsPage() {
     </div>
   );
 }
-
-    

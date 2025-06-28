@@ -54,6 +54,10 @@ export interface AppSettings {
     accent: string;
   };
   bankServices?: { name: string; color: string; }[];
+  displaySettings?: {
+    imageGridItems: number;
+    posGridItems: number;
+  };
 }
 
 export interface NavItem {

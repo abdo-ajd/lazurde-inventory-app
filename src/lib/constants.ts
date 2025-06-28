@@ -29,6 +29,10 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
     { name: 'موبي كاش', color: 'hsl(24, 94%, 53%)' }, // Orange
     { name: 'نقدي', color: 'hsl(120, 60%, 35%)' }, // Cash - A distinct green
   ],
+  displaySettings: {
+    imageGridItems: 24,
+    posGridItems: 30,
+  },
 };
 
 export const INITIAL_PRODUCTS: Product[] = [
@@ -50,7 +54,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     costPrice: 300,
     quantity: 8,
     imageUrl: 'https://placehold.co/300x450.png',
-    barcodeValue: '', // Empty barcode value
+    barcodeValue: '123456789013', // Empty barcode value
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -61,7 +65,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     costPrice: 180,
     quantity: 25,
     imageUrl: 'https://placehold.co/300x450.png',
-    barcodeValue: 'ABC987654321', // Another sample
+    barcodeValue: '123456789014', // Another sample
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },

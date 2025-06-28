@@ -1,11 +1,13 @@
 // src/components/pos/PosProductGrid.tsx
 "use client";
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useProducts } from '@/contexts/ProductContext';
 import { usePos } from '@/contexts/PosContext';
+import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { Card, CardContent } from '@/components/ui/card';
-import { PackageSearch } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { PackageSearch, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Product } from '@/lib/types';
 import { hexToRgba } from '@/lib/utils'; // Import the new utility
@@ -34,6 +36,10 @@ function isColorDark(hexColor?: string): boolean {
 export default function PosProductGrid() {
   const { products } = useProducts();
   const { addItemToCart, posSearchTerm } = usePos();
+  const { settings } = useAppSettings();
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = settings.displaySettings?.posGridItems || 30;
   
   const filteredProducts = useMemo(() => {
     if (!products) return [];
@@ -42,50 +48,87 @@ export default function PosProductGrid() {
     );
   }, [products, posSearchTerm]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [posSearchTerm, itemsPerPage]);
+
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return filteredProducts.slice(start, end);
+  }, [filteredProducts, currentPage, itemsPerPage]);
+  
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+
   return (
     <div className="flex flex-col h-full">
       {filteredProducts.length > 0 ? (
-        <div className="flex-1 p-4 overflow-y-auto">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-            {filteredProducts.map((product) => {
-              const isDark = isColorDark(product.color);
-              const bgColor = product.color ? hexToRgba(product.color, 0.6) : undefined;
+        <>
+          <div className="flex-1 p-4 overflow-y-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+              {paginatedProducts.map((product) => {
+                const isDark = isColorDark(product.color);
+                const bgColor = product.color ? hexToRgba(product.color, 0.4) : undefined;
 
-              return (
-                <Card 
-                  key={product.id} 
-                  className="cursor-pointer hover:border-primary transition-all duration-200"
-                  onClick={() => addItemToCart(product)}
-                  onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && addItemToCart(product)}
-                  tabIndex={0}
-                  style={bgColor ? { backgroundColor: bgColor } : {}}
-                >
-                  <CardContent className="p-4 text-center">
-                    <h3 
-                      className="font-semibold text-sm truncate"
-                      style={isDark ? { color: 'white' } : {}}
-                    >
-                      {product.name}
-                    </h3>
-                    <p 
-                      className="text-xs mt-1"
-                      style={isDark ? { color: 'rgba(255,255,255,0.8)' } : { color: 'hsl(var(--muted-foreground))' }}
-                    >
-                      {product.price} LYD
-                    </p>
-                    <Badge 
-                      variant={isDark ? 'outline' : 'secondary'} 
-                      className="mt-2 text-xs"
-                      style={isDark ? { borderColor: 'rgba(255,255,255,0.5)', color: 'white' } : {}}
-                    >
-                      المتوفر: {product.quantity}
-                    </Badge>
-                  </CardContent>
-                </Card>
-              )
-            })}
+                return (
+                  <Card 
+                    key={product.id} 
+                    className="cursor-pointer hover:border-primary transition-all duration-200"
+                    onClick={() => addItemToCart(product)}
+                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && addItemToCart(product)}
+                    tabIndex={0}
+                    style={bgColor ? { backgroundColor: bgColor } : {}}
+                  >
+                    <CardContent className="p-4 text-center">
+                      <h3 
+                        className="font-semibold text-sm truncate"
+                        style={isDark ? { color: 'white' } : {}}
+                      >
+                        {product.name}
+                      </h3>
+                      <p 
+                        className="text-xs mt-1"
+                        style={isDark ? { color: 'rgba(255,255,255,0.8)' } : { color: 'hsl(var(--muted-foreground))' }}
+                      >
+                        {product.price} LYD
+                      </p>
+                      <Badge 
+                        variant={isDark ? 'outline' : 'secondary'} 
+                        className="mt-2 text-xs"
+                        style={isDark ? { borderColor: 'rgba(255,255,255,0.5)', color: 'white' } : {}}
+                      >
+                        المتوفر: {product.quantity}
+                      </Badge>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
           </div>
-        </div>
+           {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 p-2 border-t shrink-0">
+              <Button
+                onClick={() => setCurrentPage((p) => p - 1)}
+                disabled={currentPage === 1}
+                variant="outline"
+                size="sm"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <span className="text-xs font-medium text-muted-foreground tabular-nums">
+                صفحة {currentPage} / {totalPages}
+              </span>
+              <Button
+                onClick={() => setCurrentPage((p) => p + 1)}
+                disabled={currentPage >= totalPages}
+                variant="outline"
+                size="sm"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
           <PackageSearch size={48} className="mb-2" />

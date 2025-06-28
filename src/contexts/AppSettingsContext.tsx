@@ -36,6 +36,9 @@ export const AppSettingsProvider = ({ children }: { children: ReactNode }) => {
       if (newSettings.themeColors) {
         updatedSettings.themeColors = { ...prev.themeColors, ...newSettings.themeColors };
       }
+      if (newSettings.displaySettings) {
+        updatedSettings.displaySettings = { ...(prev.displaySettings || DEFAULT_APP_SETTINGS.displaySettings!), ...newSettings.displaySettings };
+      }
       return updatedSettings;
     });
     toast({ title: "تم حفظ الإعدادات بنجاح" });
@@ -48,18 +51,30 @@ export const AppSettingsProvider = ({ children }: { children: ReactNode }) => {
 
 
   useEffect(() => {
-    const currentSettings = settings || DEFAULT_APP_SETTINGS;
-    applyTheme(currentSettings.themeColors);
+    // This effect handles both applying the theme and migrating old settings formats.
+    const effectiveSettings = { ...DEFAULT_APP_SETTINGS, ...settings };
     
-    // Update document title dynamically
-    if (typeof document !== 'undefined') {
-        document.title = currentSettings.storeName || 'لازوردي للمخزون';
+    // Migrate old settings: If `displaySettings` is missing, add it from defaults.
+    // This check prevents an infinite loop as it only runs once if the structure is outdated.
+    if (settings && !settings.displaySettings) {
+        setSettings(currentSettings => ({
+            ...currentSettings,
+            displaySettings: DEFAULT_APP_SETTINGS.displaySettings,
+        }));
     }
 
-  }, [settings, applyTheme]);
+    applyTheme(effectiveSettings.themeColors);
+    
+    if (typeof document !== 'undefined') {
+        document.title = effectiveSettings.storeName || 'لازوردي للمخزون';
+    }
+
+  }, [settings, applyTheme, setSettings]);
+  
+  const settingsToProvide = { ...DEFAULT_APP_SETTINGS, ...settings, displaySettings: { ...DEFAULT_APP_SETTINGS.displaySettings!, ...settings?.displaySettings } };
 
   return (
-    <AppSettingsContext.Provider value={{ settings: settings || DEFAULT_APP_SETTINGS, updateSettings, resetToDefaults, applyTheme }}>
+    <AppSettingsContext.Provider value={{ settings: settingsToProvide, updateSettings, resetToDefaults, applyTheme }}>
       {children}
     </AppSettingsContext.Provider>
   );
