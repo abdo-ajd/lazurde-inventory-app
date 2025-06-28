@@ -12,8 +12,8 @@ import { useAuth } from './AuthContext';
 
 interface SalesContextType {
   sales: Sale[];
-  addSale: (items: Omit<SaleItem, 'productName' | 'pricePerUnit'>[], paymentMethod?: string) => Promise<Sale | null>;
-  returnSale: (saleId: string) => Promise<boolean>;
+  addSale: (items: Omit<SaleItem, 'productName' | 'pricePerUnit' | 'returnedQuantity'>[], paymentMethod?: string) => Promise<Sale | null>;
+  processReturn: (saleId: string, itemsToReturn: { productId: string; quantity: number }[]) => Promise<boolean>;
   getSaleById: (saleId: string) => Sale | undefined;
   replaceAllSales: (newSales: Sale[]) => void;
   currentDiscount: number;
@@ -33,7 +33,7 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
     return num % 1 !== 0 ? parseFloat(num.toFixed(2)) : num;
   };
 
-  const addSale = async (rawItems: Omit<SaleItem, 'productName' | 'pricePerUnit'>[], paymentMethod: string = 'نقدي'): Promise<Sale | null> => {
+  const addSale = async (rawItems: Omit<SaleItem, 'productName' | 'pricePerUnit' | 'returnedQuantity'>[], paymentMethod: string = 'نقدي'): Promise<Sale | null> => {
     if (!currentUser) {
       toast({ title: "خطأ", description: "يجب تسجيل الدخول لتسجيل عملية بيع.", variant: "destructive" });
       return null;
@@ -57,6 +57,7 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
         productName: product.name,
         quantity: rawItem.quantity,
         pricePerUnit: product.price,
+        returnedQuantity: 0,
       });
       currentOriginalTotalAmount += product.price * rawItem.quantity;
       if (hasRole(['admin'])) {
@@ -128,33 +129,74 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
     return newSale;
   };
   
-  const returnSale = async (saleId: string): Promise<boolean> => {
-    const currentSalesData = sales || [];
-    const saleToReturn = currentSalesData.find(s => s.id === saleId);
-    if (!saleToReturn) {
+  const processReturn = async (saleId: string, itemsToReturn: { productId: string; quantity: number }[]): Promise<boolean> => {
+    const currentSales = sales || [];
+    const saleIndex = currentSales.findIndex(s => s.id === saleId);
+    if (saleIndex === -1) {
       toast({ title: "خطأ", description: "عملية البيع غير موجودة.", variant: "destructive" });
       return false;
     }
-    if (saleToReturn.status === 'returned') {
-      toast({ title: "معلومة", description: "عملية البيع هذه تم إرجاعها بالفعل."});
-      return false;
+    
+    const originalSale = currentSales[saleIndex];
+    if (originalSale.status === 'returned') {
+        toast({ title: "معلومة", description: "لا يمكن تعديل عملية بيع مرتجعة بالكامل."});
+        return false;
+    }
+    
+    // Create a mutable copy to work with
+    const saleToUpdate = JSON.parse(JSON.stringify(originalSale));
+    let somethingWasReturned = false;
+
+    for (const itemToReturn of itemsToReturn) {
+        if (itemToReturn.quantity <= 0) continue;
+
+        const saleItem = saleToUpdate.items.find((i: SaleItem) => i.productId === itemToReturn.productId);
+        if (!saleItem) continue;
+
+        const maxReturnable = saleItem.quantity - (saleItem.returnedQuantity || 0);
+        const actualReturnQty = Math.min(itemToReturn.quantity, maxReturnable);
+
+        if (actualReturnQty > 0) {
+            saleItem.returnedQuantity = (saleItem.returnedQuantity || 0) + actualReturnQty;
+            somethingWasReturned = true;
+            await updateProductQuantity(itemToReturn.productId, actualReturnQty); // Add stock back
+        }
     }
 
-    for (const item of saleToReturn.items) {
-      const success = await updateProductQuantity(item.productId, item.quantity); // Return items to stock
-      if (!success) {
-        toast({ title: "خطأ في الإرجاع", description: `فشل تحديث كمية المنتج "${item.productName}"، ولكن سيتم إكمال عملية الإرجاع.`, variant: "destructive" });
-      }
+    if (!somethingWasReturned) {
+        toast({ title: "لم يتم الإرجاع", description: "لم يتم تحديد كميات صالحة للإرجاع." });
+        return false;
     }
 
-    setSales(prevSales =>
-      (prevSales || []).map(s =>
-        s.id === saleId ? { ...s, status: 'returned', returnedDate: new Date().toISOString() } : s
-      )
-    );
-    toast({ title: "نجاح", description: `تم إرجاع عملية البيع بنجاح.` });
+    // Recalculate totals based on net quantities sold
+    const newOriginalTotalAmount = saleToUpdate.items.reduce((sum: number, item: SaleItem) => {
+        const netQuantity = item.quantity - item.returnedQuantity;
+        return sum + (netQuantity * item.pricePerUnit);
+    }, 0);
+    
+    // Pro-rate the discount
+    const originalTotalBeforeReturn = saleToUpdate.items.reduce((sum: number, item: SaleItem) => sum + item.quantity * item.pricePerUnit, 0);
+    const discountRatio = originalTotalBeforeReturn > 0 ? saleToUpdate.discountAmount / originalTotalBeforeReturn : 0;
+    const newDiscountAmount = newOriginalTotalAmount * discountRatio;
+    
+    saleToUpdate.totalAmount = formatNumber(newOriginalTotalAmount - newDiscountAmount);
+    
+    // Check if the whole sale is now returned
+    const allItemsReturned = saleToUpdate.items.every((item: SaleItem) => (item.returnedQuantity || 0) === item.quantity);
+    if (allItemsReturned) {
+        saleToUpdate.status = 'returned';
+        saleToUpdate.returnedDate = new Date().toISOString();
+        saleToUpdate.totalAmount = 0; // If all items are returned, net total is 0.
+    }
+
+    const newSales = [...currentSales];
+    newSales[saleIndex] = saleToUpdate;
+    setSales(newSales);
+    
+    toast({ title: "نجاح", description: "تم تحديث عملية البيع وإرجاع المنتجات." });
     return true;
   };
+
 
   const getSaleById = (saleId: string): Sale | undefined => {
     return (sales || []).find(s => s.id === saleId);
@@ -165,7 +207,7 @@ export const SalesProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <SalesContext.Provider value={{ sales: sales || [], addSale, returnSale, getSaleById, replaceAllSales, currentDiscount, setCurrentDiscount }}>
+    <SalesContext.Provider value={{ sales: sales || [], addSale, processReturn, getSaleById, replaceAllSales, currentDiscount, setCurrentDiscount }}>
       {children}
     </SalesContext.Provider>
   );
@@ -178,5 +220,3 @@ export const useSales = () => {
   }
   return context;
 };
-
-    

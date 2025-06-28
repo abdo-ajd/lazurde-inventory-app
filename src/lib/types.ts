@@ -28,6 +28,7 @@ export interface SaleItem {
   productName: string; // Denormalized for easier display
   quantity: number;
   pricePerUnit: number; // Price at the time of sale
+  returnedQuantity: number;
 }
 
 export interface Sale {

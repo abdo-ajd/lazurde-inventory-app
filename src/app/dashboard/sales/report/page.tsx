@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProducts } from '@/contexts/ProductContext';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { CalendarIcon, Undo2, Search, FileText } from 'lucide-react';
@@ -19,7 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription as ShadcnDialogDescription, DialogClose } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import type { Sale } from '@/lib/types';
+import type { Sale, SaleItem } from '@/lib/types';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,7 +36,7 @@ interface ReportData {
 }
 
 export default function SalesReportPage() {
-  const { sales, returnSale } = useSales();
+  const { sales, processReturn } = useSales();
   const { hasRole } = useAuth();
   const { getProductById } = useProducts();
   const { settings } = useAppSettings();
@@ -47,9 +48,48 @@ export default function SalesReportPage() {
   const [isMonthlyReportOpen, setIsMonthlyReportOpen] = useState(false);
   const [isWeeklyReportOpen, setIsWeeklyReportOpen] = useState(false);
 
+  const [saleToAdjust, setSaleToAdjust] = useState<Sale | null>(null);
+  const [returnQuantities, setReturnQuantities] = useState<Record<string, number>>({});
+  const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
+
+
   useEffect(() => {
     setIsClient(true);
   }, []);
+  
+  const openReturnDialog = (sale: Sale) => {
+    setSaleToAdjust(sale);
+    setReturnQuantities({}); // Reset quantities when opening
+    setIsReturnDialogOpen(true);
+  };
+  
+  const handleReturnQuantityChange = (productId: string, value: string) => {
+    const quantity = parseInt(value, 10);
+    setReturnQuantities(prev => ({
+      ...prev,
+      [productId]: isNaN(quantity) ? 0 : quantity
+    }));
+  };
+
+  const handleConfirmReturn = async () => {
+    if (!saleToAdjust) return;
+
+    const itemsToReturn = Object.entries(returnQuantities)
+      .map(([productId, quantity]) => ({ productId, quantity }))
+      .filter(item => item.quantity > 0);
+
+    if (itemsToReturn.length === 0) {
+      toast({ variant: "destructive", title: "خطأ", description: "الرجاء إدخال كمية لإرجاعها." });
+      return;
+    }
+
+    const success = await processReturn(saleToAdjust.id, itemsToReturn);
+    if (success) {
+      setIsReturnDialogOpen(false);
+      setSaleToAdjust(null);
+    }
+  };
+
 
   const serviceColorMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -74,7 +114,7 @@ export default function SalesReportPage() {
   };
   
   const calculateReportData = useCallback((salesToProcess: Sale[]): ReportData => {
-    const activeSales = salesToProcess.filter(sale => sale.status === 'active');
+    const activeSales = salesToProcess.filter(sale => sale.status === 'active' || sale.status === 'returned');
     
     const totalDiscount = activeSales.reduce((sum, sale) => sum + (sale.discountAmount ?? 0), 0);
     const totalFinalAmount = activeSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
@@ -84,7 +124,8 @@ export default function SalesReportPage() {
       totalProfit = activeSales.reduce((totalProfitSum, sale) => {
         const saleCostOfGoods = sale.items.reduce((costSum, item) => {
           const product = getProductById(item.productId);
-          return costSum + ((product?.costPrice || 0) * item.quantity);
+          const netQuantity = item.quantity - (item.returnedQuantity || 0);
+          return costSum + ((product?.costPrice || 0) * netQuantity);
         }, 0);
         return totalProfitSum + (sale.totalAmount - saleCostOfGoods);
       }, 0);
@@ -92,13 +133,14 @@ export default function SalesReportPage() {
     
     const totalsByMethod: { [key: string]: number } = {};
     activeSales.forEach(sale => {
-        const method = sale.paymentMethod || 'نقدي';
-        totalsByMethod[method] = (totalsByMethod[method] || 0) + sale.totalAmount;
+      // This part is tricky with partial returns. We'll credit the original payment method.
+      const method = sale.paymentMethod || 'نقدي';
+      totalsByMethod[method] = (totalsByMethod[method] || 0) + sale.totalAmount;
     });
 
     return {
       totalSales: formatNumber(totalFinalAmount),
-      totalDiscount: formatNumber(totalDiscount),
+      totalDiscount: formatNumber(totalDiscount), // This is the original discount, might not be accurate after returns.
       totalProfit: formatNumber(totalProfit),
       totalsByMethod: Object.entries(totalsByMethod).reduce((acc, [key, value]) => {
         acc[key] = formatNumber(value);
@@ -158,10 +200,6 @@ export default function SalesReportPage() {
     return format(parseISO(isoString), 'hh:mm a', { locale: enGB });
   };
   
-  const handleReturnSale = async (saleId: string) => {
-    await returnSale(saleId);
-  };
-
   const renderReportDialogContent = (title: string, description: string, data: ReportData) => (
     <>
         <DialogHeader>
@@ -177,24 +215,24 @@ export default function SalesReportPage() {
                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: serviceColorMap.get(method) || 'hsl(var(--foreground))' }}/>
                            <span className="font-medium">{method}</span>
                         </div>
-                        <span className="font-semibold">{total} LYD</span>
+                        <span className="font-semibold">{total.toFixed(2)} LYD</span>
                     </div>
                 ))}
             </div>
             <div className="flex justify-between items-center p-3 rounded-lg bg-muted text-base">
-                <span className="font-medium">إجمالي المبيعات</span>
-                <span className="font-bold text-lg">{data.totalSales} LYD</span>
+                <span className="font-medium">إجمالي المبيعات (الصافي)</span>
+                <span className="font-bold text-lg">{data.totalSales.toFixed(2)} LYD</span>
             </div>
             {data.totalDiscount > 0 && (
               <div className="flex justify-between items-center p-3 rounded-lg bg-muted text-base">
-                  <span className="font-medium">إجمالي الخصومات</span>
+                  <span className="font-medium">إجمالي الخصومات (الأصلي)</span>
                   <span className="font-bold text-lg text-orange-600">{data.totalDiscount} LYD</span>
               </div>
             )}
             {hasRole(['admin']) && (
                 <div className="flex justify-between items-center p-3 rounded-lg bg-green-100 dark:bg-green-900 border border-green-200 dark:border-green-800 text-base">
-                <span className="font-medium text-green-800 dark:text-green-200">إجمالي الربح</span>
-                <span className={`font-bold text-lg ${data.totalProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>{data.totalProfit} LYD</span>
+                <span className="font-medium text-green-800 dark:text-green-200">إجمالي الربح (الصافي)</span>
+                <span className={`font-bold text-lg ${data.totalProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>{data.totalProfit.toFixed(2)} LYD</span>
                 </div>
             )}
         </div>
@@ -220,6 +258,49 @@ export default function SalesReportPage() {
   return (
     <div className="space-y-6">
       {/* ===== DIALOGS ===== */}
+       <Dialog open={isReturnDialogOpen} onOpenChange={setIsReturnDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>إرجاع منتجات من الفاتورة</DialogTitle>
+            <ShadcnDialogDescription>
+              حدد الكمية التي تريد إرجاعها لكل منتج.
+            </ShadcnDialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+            {saleToAdjust?.items.map(item => {
+              const returnedSoFar = item.returnedQuantity || 0;
+              const maxReturnable = item.quantity - returnedSoFar;
+              if (maxReturnable <= 0) return null;
+
+              return (
+                <div key={item.productId} className="flex items-center justify-between gap-4 border-b pb-2">
+                  <div>
+                    <p className="font-medium">{item.productName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      تم بيع: {item.quantity} | تم إرجاع: {returnedSoFar}
+                    </p>
+                  </div>
+                  <Input
+                    type="number"
+                    min="0"
+                    max={maxReturnable}
+                    value={returnQuantities[item.productId] || ''}
+                    onChange={(e) => handleReturnQuantityChange(item.productId, e.target.value)}
+                    className="w-24 h-9"
+                    placeholder="0"
+                  />
+                </div>
+              );
+            })}
+          </div>
+          <DialogFooter className="gap-2 sm:justify-start">
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">إلغاء</Button>
+            </DialogClose>
+            <Button type="button" onClick={handleConfirmReturn}>تأكيد الإرجاع</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog open={isDailyReportOpen} onOpenChange={setIsDailyReportOpen}>
         <DialogContent>{renderReportDialogContent(`ملخص المبيعات ليوم ${selectedDate ? format(selectedDate, 'PPP', { locale: arSA }) : ''}`, 'هذا هو ملخص المبيعات والخصومات والأرباح لليوم المحدد.', dailyReportData)}</DialogContent>
       </Dialog>
@@ -280,12 +361,27 @@ export default function SalesReportPage() {
                     return (
                     <TableRow key={sale.id} className={sale.status === 'returned' ? 'opacity-60' : ''}>
                       <TableCell className="px-2 py-3">{formatSaleTime(sale.saleDate)}</TableCell>
-                      <TableCell className="px-2 py-3"><ul className="list-disc list-inside text-xs">{sale.items.map(item => (<li key={item.productId}>{item.productName}</li>))}</ul></TableCell>
+                      <TableCell className="px-2 py-3">
+                        <ul className="list-disc list-inside text-xs space-y-1">
+                          {sale.items.map(item => {
+                            const returnedQty = item.returnedQuantity || 0;
+                            const netQty = item.quantity - returnedQty;
+                            return (
+                               <li key={item.productId} className={netQty <= 0 ? 'line-through text-muted-foreground' : ''}>
+                                {item.productName} 
+                                <span className="text-muted-foreground text-[10px] mr-1">
+                                    (بيع: {item.quantity}{returnedQty > 0 ? `, رجع: ${returnedQty}`: ''})
+                                </span>
+                               </li>
+                            )
+                          })}
+                         </ul>
+                      </TableCell>
                       <TableCell className="px-2 py-3">
                         <div className="flex items-center justify-center w-full gap-0.5 sm:gap-1">
                           {/* Container for Payment Method (appears on the right in RTL) */}
                           <div className="w-14 sm:w-20 flex-shrink-0 flex justify-start"> {/* justify-start = align right in RTL */}
-                            {sale.paymentMethod && sale.status === 'active' && salePaymentColor && (
+                            {sale.paymentMethod && (
                               <Badge style={{ backgroundColor: salePaymentColor, color: '#fff' }} className="border-none text-xs">
                                 {sale.paymentMethod}
                               </Badge>
@@ -301,11 +397,11 @@ export default function SalesReportPage() {
                           
                           {/* Container for Discount (appears on the left in RTL) */}
                           <div className="w-12 sm:w-16 flex-shrink-0 flex justify-end"> {/* justify-end = align left in RTL */}
-                            {sale.discountAmount > 0 && sale.status === 'active' && (
+                            {sale.discountAmount > 0 && (
                               <TooltipProvider delayDuration={100}>
                                 <Tooltip>
                                   <TooltipTrigger asChild><Badge variant="outline" className="text-xs font-mono border-orange-500/50 text-orange-600 dark:text-orange-400 cursor-help">-{formatNumber(sale.discountAmount)}</Badge></TooltipTrigger>
-                                  <TooltipContent side="top"><p>خصم: {formatNumber(sale.discountAmount)} LYD</p></TooltipContent>
+                                  <TooltipContent side="top"><p>الخصم الأصلي: {formatNumber(sale.discountAmount)} LYD</p></TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
                             )}
@@ -314,12 +410,22 @@ export default function SalesReportPage() {
                       </TableCell>
                       <TableCell className="text-center px-2 py-3">
                         <div className="flex items-center justify-center gap-2">
-                            <Badge variant={sale.status === 'active' ? 'success' : 'destructive'} className={`${sale.status === 'active' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'} text-xs`}>{sale.status === 'active' ? 'نشط' : 'مرجع'}</Badge>
+                            <Badge variant={sale.status === 'active' ? 'success' : 'destructive'} className={`${sale.status === 'active' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'} text-xs`}>
+                               {sale.status === 'active' ? 'نشط' : 'مرجع'}
+                            </Badge>
                             {hasRole(['admin', 'employee_return']) && sale.status === 'active' && (
-                                <Dialog>
-                                    <DialogTrigger asChild><Button variant="outline" size="icon" title="إرجاع العملية" className="h-7 w-7"><Undo2 className="h-3.5 w-3.5 text-orange-500" /></Button></DialogTrigger>
-                                    <DialogContent><DialogHeader><DialogTitle>تأكيد الإرجاع</DialogTitle><ShadcnDialogDescription>هل أنت متأكد أنك تريد إرجاع هذه العملية؟ سيتم إعادة المنتجات إلى المخزون.</ShadcnDialogDescription></DialogHeader><DialogFooter className="gap-2 sm:justify-start pt-2"><DialogClose asChild><Button type="button" variant="secondary">إلغاء</Button></DialogClose><Button type="button" variant="destructive" onClick={() => handleReturnSale(sale.id)}>تأكيد الإرجاع</Button></DialogFooter></DialogContent>
-                                </Dialog>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="outline" size="icon" title="تعديل/إرجاع" className="h-7 w-7" onClick={() => openReturnDialog(sale)}>
+                                                <Undo2 className="h-3.5 w-3.5 text-orange-500" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">
+                                            <p>تعديل الفاتورة أو إرجاع منتجات</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
                             )}
                         </div>
                       </TableCell>
@@ -338,7 +444,7 @@ export default function SalesReportPage() {
                                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
                                     </div>
                                 </TableCell>
-                                <TableCell colSpan={2} className="text-left py-2">{total} LYD</TableCell>
+                                <TableCell colSpan={2} className="text-left py-2">{total.toFixed(2)} LYD</TableCell>
                             </TableRow>
                         )
                     })}
@@ -346,15 +452,15 @@ export default function SalesReportPage() {
                         <TableCell colSpan={2} className="text-right px-2 py-3">الإجماليات الكلية لليوم:</TableCell>
                         <TableCell colSpan={2} className="text-left px-2 py-3">
                            <div className="flex flex-col items-start gap-1">
-                                <span>إجمالي المبيعات: {dailyReportData.totalSales} LYD</span>
+                                <span>إجمالي المبيعات (الصافي): {dailyReportData.totalSales.toFixed(2)} LYD</span>
                                 {dailyReportData.totalDiscount > 0 && (
                                     <span className="text-orange-600 dark:text-orange-400 text-sm">
-                                        (إجمالي الخصومات: {dailyReportData.totalDiscount})
+                                        (إجمالي الخصومات الأصلية: {dailyReportData.totalDiscount})
                                     </span>
                                 )}
                                 {hasRole(['admin']) && (
                                     <span className={`text-sm ${dailyReportData.totalProfit >= 0 ? 'text-green-600 dark:text-green-500' : 'text-destructive'}`}>
-                                        (إجمالي الربح: {dailyReportData.totalProfit})
+                                        (إجمالي الربح الصافي: {dailyReportData.totalProfit.toFixed(2)})
                                     </span>
                                 )}
                             </div>
@@ -377,5 +483,3 @@ declare module "@/components/ui/badge" {
     variant?: "default" | "secondary" | "destructive" | "outline" | "success";
   }
 }
-
-    
