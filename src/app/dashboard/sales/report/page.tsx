@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CalendarIcon, Undo2, Search, FileText, RotateCcw } from 'lucide-react';
+import { CalendarIcon, Undo2, Search, FileText, RotateCcw, MinusCircle, PlusCircle } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format, parseISO, startOfDay, endOfDay, isValid, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfYear, endOfYear } from 'date-fns';
@@ -63,11 +63,19 @@ export default function SalesReportPage() {
     setIsReturnDialogOpen(true);
   };
   
-  const handleReturnQuantityChange = (productId: string, value: string) => {
-    const quantity = parseInt(value, 10);
+  const handleReturnQuantityChange = (productId: string, newQuantity: number) => {
+    if (!saleToAdjust) return;
+    const saleItem = saleToAdjust.items.find(i => i.productId === productId);
+    if (!saleItem) return;
+
+    const returnedSoFar = saleItem.returnedQuantity || 0;
+    const maxReturnable = saleItem.quantity - returnedSoFar;
+
+    const clampedQuantity = Math.max(0, Math.min(newQuantity, maxReturnable));
+
     setReturnQuantities(prev => ({
-      ...prev,
-      [productId]: isNaN(quantity) ? 0 : quantity
+        ...prev,
+        [productId]: clampedQuantity,
     }));
   };
 
@@ -297,15 +305,15 @@ export default function SalesReportPage() {
                       تم بيع: {item.quantity} | تم إرجاع: {returnedSoFar}
                     </p>
                   </div>
-                  <Input
-                    type="number"
-                    min="0"
-                    max={maxReturnable}
-                    value={returnQuantities[item.productId] || ''}
-                    onChange={(e) => handleReturnQuantityChange(item.productId, e.target.value)}
-                    className="w-24 h-9"
-                    placeholder="0"
-                  />
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleReturnQuantityChange(item.productId, (returnQuantities[item.productId] || 0) - 1)}>
+                      <MinusCircle className="h-4 w-4" />
+                    </Button>
+                    <span className="w-8 text-center text-base font-bold tabular-nums">{returnQuantities[item.productId] || 0}</span>
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleReturnQuantityChange(item.productId, (returnQuantities[item.productId] || 0) + 1)}>
+                      <PlusCircle className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               );
             })}
