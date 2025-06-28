@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CalendarIcon, Undo2, Search, FileText } from 'lucide-react';
+import { CalendarIcon, Undo2, Search, FileText, RotateCcw } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format, parseISO, startOfDay, endOfDay, isValid, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfYear, endOfYear } from 'date-fns';
@@ -88,6 +88,23 @@ export default function SalesReportPage() {
       setIsReturnDialogOpen(false);
       setSaleToAdjust(null);
     }
+  };
+
+  const handleFullReturn = async (saleToReturn: Sale) => {
+    if (!saleToReturn) return;
+
+    const itemsToReturn = saleToReturn.items.map(item => ({ 
+        productId: item.productId, 
+        quantity: item.quantity - (item.returnedQuantity || 0) // Return all remaining items
+    })).filter(i => i.quantity > 0);
+
+    if (itemsToReturn.length === 0) {
+      toast({ title: "لا يوجد شيء للإرجاع", description: "جميع منتجات هذه الفاتورة تم إرجاعها بالفعل." });
+      return;
+    }
+
+    const success = await processReturn(saleToReturn.id, itemsToReturn);
+    // The context will show its own toast, and the component will re-render.
   };
 
 
@@ -352,7 +369,7 @@ export default function SalesReportPage() {
                     <TableHead className="px-2 py-3 min-w-[80px]">وقت البيع</TableHead>
                     <TableHead className="px-2 py-3 min-w-[120px] sm:min-w-[150px]">المنتجات</TableHead>
                     <TableHead className="text-center px-2 py-3 min-w-[110px] sm:min-w-[120px]">الإجمالي النهائي</TableHead>
-                    <TableHead className="text-center px-2 py-3 min-w-[90px] sm:min-w-[120px]">الحالة</TableHead>
+                    <TableHead className="text-center px-2 py-3 min-w-[90px] sm:min-w-[120px]">الإجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -414,18 +431,53 @@ export default function SalesReportPage() {
                                {sale.status === 'active' ? 'نشط' : 'مرجع'}
                             </Badge>
                             {hasRole(['admin', 'employee_return']) && sale.status === 'active' && (
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button variant="outline" size="icon" title="تعديل/إرجاع" className="h-7 w-7" onClick={() => openReturnDialog(sale)}>
-                                                <Undo2 className="h-3.5 w-3.5 text-orange-500" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="top">
-                                            <p>تعديل الفاتورة أو إرجاع منتجات</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
+                                <>
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="outline" size="icon" title="إرجاع جزئي" className="h-7 w-7" onClick={() => openReturnDialog(sale)}>
+                                                    <Undo2 className="h-3.5 w-3.5 text-orange-500" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">
+                                                <p>إرجاع منتجات محددة</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                    
+                                    <Dialog>
+                                        <DialogTrigger asChild>
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="destructive" size="icon" title="إرجاع كامل" className="h-7 w-7">
+                                                            <RotateCcw className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent side="top">
+                                                        <p>إرجاع الفاتورة بالكامل</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>تأكيد الإرجاع الكامل</DialogTitle>
+                                                <ShadcnDialogDescription>
+                                                    هل أنت متأكد أنك تريد إرجاع جميع المنتجات المتبقية في هذه الفاتورة؟ لا يمكن التراجع عن هذا الإجراء.
+                                                </ShadcnDialogDescription>
+                                            </DialogHeader>
+                                            <DialogFooter className="gap-2 sm:justify-start pt-2">
+                                                <DialogClose asChild>
+                                                    <Button type="button" variant="secondary">إلغاء</Button>
+                                                </DialogClose>
+                                                <DialogClose asChild>
+                                                    <Button type="button" variant="destructive" onClick={() => handleFullReturn(sale)}>تأكيد الإرجاع</Button>
+                                                </DialogClose>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
+                                </>
                             )}
                         </div>
                       </TableCell>
