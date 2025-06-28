@@ -36,6 +36,29 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       return null;
     }
 
+    let finalBarcodeValue = productData.barcodeValue;
+
+    if (finalBarcodeValue) {
+      // If a barcode was manually entered, check if it's unique
+      if (currentProducts.some(p => p.barcodeValue === finalBarcodeValue)) {
+        toast({ title: "خطأ", description: "هذا الباركود موجود بالفعل لمنتج آخر.", variant: "destructive" });
+        return null;
+      }
+    } else {
+      // If no barcode was entered, generate one automatically
+      const maxBarcode = currentProducts.reduce((max, p) => {
+        // Only consider purely numeric barcodes for auto-incrementing
+        if (p.barcodeValue && /^\d+$/.test(p.barcodeValue)) {
+          const barcodeNum = parseInt(p.barcodeValue, 10);
+          if (barcodeNum > max) {
+            return barcodeNum;
+          }
+        }
+        return max;
+      }, 0);
+      finalBarcodeValue = String(maxBarcode + 1);
+    }
+
     const newProductId = `prod_${Date.now()}`;
     let finalImageUrl = productData.imageUrl;
 
@@ -57,6 +80,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     const newProduct: Product = {
       id: newProductId,
       ...productData,
+      barcodeValue: finalBarcodeValue,
       imageUrl: finalImageUrl || '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -68,6 +92,14 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateProduct = async (productId: string, updates: ProductUpdatePayload): Promise<Product | null> => {
+    const currentProducts = products || [];
+
+    // Check for barcode uniqueness if it's being updated and is not empty
+    if (updates.barcodeValue && currentProducts.some(p => p.id !== productId && p.barcodeValue === updates.barcodeValue)) {
+      toast({ title: "خطأ", description: "هذا الباركود موجود بالفعل لمنتج آخر.", variant: "destructive" });
+      return null;
+    }
+    
     // This function now receives a payload that might not include `imageUrl`.
     // If `updates.imageUrl` is undefined, it means no change was intended for the image.
     
