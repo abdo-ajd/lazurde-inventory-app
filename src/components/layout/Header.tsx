@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppSettings } from '@/contexts/AppSettingsContext';
-import { LogOut, Settings, Users, BarChart3, Sun, Moon, PlusCircle, Search as SearchIcon, ListOrdered, Package, Barcode as BarcodeIcon, MinusCircle } from 'lucide-react';
+import { LogOut, Settings, Users, BarChart3, Sun, Moon, PlusCircle, Search as SearchIcon, ListOrdered, Package, Barcode as BarcodeIcon, MinusCircle, FileText } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -161,6 +161,7 @@ export default function Header() {
 
   const navIconsList = [
     { href: '/dashboard', label: 'المنتجات (صور)', icon: Package, roles: ['admin', 'employee', 'employee_return'] },
+    { href: '/dashboard/pos', label: 'نقطة البيع (فاتورة)', icon: FileText, roles: ['admin', 'employee', 'employee_return'] },
     { href: '/dashboard/products', label: 'إدارة المنتجات (قائمة)', icon: ListOrdered, roles: ['admin'] },
     { href: '/dashboard/sales/report', label: 'تقرير المبيعات', icon: BarChart3, roles: ['admin', 'employee', 'employee_return'] },
     { href: '/dashboard/users', label: 'إدارة المستخدمين', icon: Users, roles: ['admin'] },
@@ -191,7 +192,7 @@ export default function Header() {
                 <Tooltip key={item.href}>
                     <TooltipTrigger asChild>
                     <Button 
-                        variant={pathname === item.href || (item.href === '/dashboard/products' && pathname.startsWith('/dashboard/products/')) ? "secondary" : "ghost"} 
+                        variant={pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard') ? "secondary" : "ghost"} 
                         size="icon" 
                         asChild
                     >
