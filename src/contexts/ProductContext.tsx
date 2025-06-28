@@ -9,7 +9,7 @@ import { LOCALSTORAGE_KEYS, INITIAL_PRODUCTS } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import { saveImage, deleteImage, dataUriToBlob, clearImages } from '@/lib/indexedDBService';
 
-type ProductUpdatePayload = Partial<Pick<Product, "name" | "price" | "quantity" | "imageUrl" | "barcodeValue" | "costPrice">>;
+type ProductUpdatePayload = Partial<Pick<Product, "name" | "price" | "quantity" | "imageUrl" | "barcodeValue" | "costPrice" | "color">>;
 
 interface ProductContextType {
   products: Product[];

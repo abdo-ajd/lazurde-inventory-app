@@ -16,6 +16,15 @@ import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useProductImage } from '@/hooks/useProductImage'; // Import the hook
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
+
+const PREDEFINED_PRODUCT_COLORS: string[] = [
+  '#ffffff', '#f28b82', '#fbbc04', '#fff475', 
+  '#a7ffeb', '#cbf0f8', '#aecbfa', '#d7aefb', 
+  '#fdcfe8', '#e6c9a8', '#e8eaed', '#b3b3b3',
+  '#9aa0a6', '#5f6368', '#ff8a65', '#4285f4',
+];
 
 const productSchema = z.object({
   name: z.string().min(1, { message: "اسم المنتج مطلوب" }),
@@ -24,6 +33,7 @@ const productSchema = z.object({
   quantity: z.coerce.number().int().min(0, { message: "الكمية يجب أن تكون رقمًا صحيحًا موجبًا" }),
   imageUrl: z.string().optional().or(z.literal('')), // This will store DataURI for new images, or be empty for IDB, or store external URL
   barcodeValue: z.string().optional().or(z.literal('')),
+  color: z.string().optional(),
 });
 
 export type ProductFormValues = z.infer<typeof productSchema>;
@@ -117,6 +127,7 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
       quantity: initialData?.quantity || 0,
       imageUrl: initialData?.imageUrl || '', // Form's imageUrl holds the value to be submitted
       barcodeValue: initialData?.barcodeValue || '',
+      color: initialData?.color || undefined,
     },
   });
   const { toast } = useToast();
@@ -144,6 +155,7 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
       quantity: initialData?.quantity || 0,
       imageUrl: initialData?.imageUrl || '',
       barcodeValue: initialData?.barcodeValue || '',
+      color: initialData?.color || undefined,
     });
     setNewlySelectedImagePreview(null);
     setImageInteracted(false); // Reset interaction state on data change
@@ -391,6 +403,54 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
                   </FormControl>
                   <FormDescription>
                     أدخل قيمة الباركود الفريدة للمنتج إذا كانت متوفرة.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="color"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>لون المنتج (اختياري)</FormLabel>
+                  <FormControl>
+                    <div>
+                      <ScrollArea className="w-full whitespace-nowrap rounded-md border">
+                        <div className="flex w-max space-x-4 p-2">
+                          {PREDEFINED_PRODUCT_COLORS.map((color) => (
+                            <button
+                              key={color}
+                              type="button"
+                              title={color}
+                              className={cn(
+                                "h-8 w-8 rounded-full border-2 transition-all duration-150 ease-in-out hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                                field.value === color ? 'ring-2 ring-primary ring-offset-2 scale-110' : 'border-muted'
+                              )}
+                              style={{ backgroundColor: color }}
+                              onClick={() => field.onChange(color)}
+                            />
+                          ))}
+                        </div>
+                        <ScrollBar orientation="horizontal" />
+                      </ScrollArea>
+                      {field.value && (
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="sm" 
+                          className="mt-2 text-destructive hover:bg-destructive/10"
+                          onClick={() => field.onChange(undefined)}
+                        >
+                          <XCircle className="ml-2 h-4 w-4" />
+                          إزالة اللون المحدد
+                        </Button>
+                      )}
+                    </div>
+                  </FormControl>
+                  <FormDescription>
+                    اختر لونًا لتمييز المنتج في شاشة نقطة البيع.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

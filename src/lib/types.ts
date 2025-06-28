@@ -19,6 +19,7 @@ export interface Product {
   barcodeValue?: string; 
   createdAt: string;
   updatedAt: string;
+  color?: string;
 }
 
 export type SaleStatus = 'active' | 'returned';
