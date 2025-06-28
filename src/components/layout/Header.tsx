@@ -208,14 +208,17 @@ export default function Header() {
   return (
     <TooltipProvider delayDuration={100}>
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 print:hidden">
-      <div className="container flex h-14 max-w-screen-2xl items-center justify-between px-4 md:px-6">
-        <div className="flex items-center gap-4">
+      <div className="container grid h-14 grid-cols-[1fr_auto_1fr] max-w-screen-2xl items-center px-4 md:px-6">
+        
+        {/* Column 1: Left-aligned content */}
+        <div className="flex items-center justify-start gap-4">
           <Link href="/dashboard" className="text-xl font-bold text-primary font-headline">
             {settings.storeName}
           </Link>
         </div>
 
-        <div className="flex-1 flex justify-center">
+        {/* Column 2: Centered navigation */}
+        <div className="flex justify-center">
             <nav className="flex items-center gap-1 sm:gap-2">
             {navIconsList.map(item => (
                 hasRole(item.roles) && (
@@ -240,8 +243,8 @@ export default function Header() {
             </nav>
         </div>
 
-
-        <div className="flex items-center gap-1 sm:gap-2">
+        {/* Column 3: Right-aligned content */}
+        <div className="flex items-center justify-end gap-1 sm:gap-2">
           {showHeaderProductSearch && !showPosHeaderInputs && (
             <div className="relative hidden md:flex items-center">
               <SearchIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
