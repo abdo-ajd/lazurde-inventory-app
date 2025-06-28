@@ -3,14 +3,11 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { AppProviders } from '@/contexts/AppProviders';
 
+// Icons are now handled by manual <link> tags in the <head> to force a cache break.
 export const metadata: Metadata = {
   title: 'لازوردي للمخزون',
   description: 'نظام إدارة مخزون للشركات الصغيرة والمتوسطة',
   manifest: '/manifest.json',
-  icons: {
-    icon: '/favicon.ico',
-    apple: '/icons/icon-192x192.png',
-  },
 };
 
 export default function RootLayout({
@@ -21,7 +18,9 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl">
       <head>
-        {/* Favicon and Apple Touch Icon are now handled by Next.js metadata above */}
+        {/* Explicitly setting favicon with a version to break cache */}
+        <link rel="icon" href="/favicon.ico?v=2" type="image/x-icon" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
