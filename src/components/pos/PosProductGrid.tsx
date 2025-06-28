@@ -1,4 +1,3 @@
-
 // src/components/pos/PosProductGrid.tsx
 "use client";
 
@@ -9,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { PackageSearch } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Product } from '@/lib/types';
+import { hexToRgba } from '@/lib/utils'; // Import the new utility
 
 // Helper function to determine if a hex color is dark
 function isColorDark(hexColor?: string): boolean {
@@ -49,6 +49,8 @@ export default function PosProductGrid() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
             {filteredProducts.map((product) => {
               const isDark = isColorDark(product.color);
+              const bgColor = product.color ? hexToRgba(product.color, 0.6) : undefined;
+
               return (
                 <Card 
                   key={product.id} 
@@ -56,7 +58,7 @@ export default function PosProductGrid() {
                   onClick={() => addItemToCart(product)}
                   onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && addItemToCart(product)}
                   tabIndex={0}
-                  style={product.color ? { backgroundColor: product.color } : {}}
+                  style={bgColor ? { backgroundColor: bgColor } : {}}
                 >
                   <CardContent className="p-4 text-center">
                     <h3 

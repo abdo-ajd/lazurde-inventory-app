@@ -1,4 +1,3 @@
-
 // src/components/products/ProductForm.tsx
 "use client";
 
@@ -20,10 +19,10 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
 const PREDEFINED_PRODUCT_COLORS: string[] = [
-  '#ffffff', '#f28b82', '#fbbc04', '#fff475', 
-  '#a7ffeb', '#cbf0f8', '#aecbfa', '#d7aefb', 
-  '#fdcfe8', '#e6c9a8', '#e8eaed', '#b3b3b3',
-  '#9aa0a6', '#5f6368', '#ff8a65', '#4285f4',
+  '#ffffff', '#f28b82', '#fbbc04', '#fff475', '#a7ffeb', '#cbf0f8', '#aecbfa', '#d7aefb', 
+  '#fdcfe8', '#e6c9a8', '#e8eaed', '#b3b3b3', '#ffcdd2', '#ffb74d', '#c8e6c9', '#b2dfdb',
+  '#bbdefb', '#e1bee7', '#ffccbc', '#d7ccc8', '#cfd8dc', '#f44336', '#ff9800', '#ffeb3b',
+  '#4caf50', '#009688', '#2196f3', '#673ab7', '#e91e63', '#9c27b0', '#3f51b5', '#03a9f4'
 ];
 
 const productSchema = z.object({
