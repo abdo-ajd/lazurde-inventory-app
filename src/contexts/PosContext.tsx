@@ -71,6 +71,13 @@ export const PosProvider = ({ children }: { children: ReactNode }) => {
             return [...prevItems, newItem];
         }
     });
+
+    try {
+        const audio = new Audio('/sounds/add-to-cart.mp3');
+        audio.play().catch(error => console.warn("Error playing add to cart sound:", error));
+    } catch (error) {
+        console.warn("Could not play add to cart sound:", error);
+    }
   };
 
   const updateItemQuantity = (productId: string, newQuantity: number) => {

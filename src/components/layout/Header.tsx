@@ -287,6 +287,17 @@ export default function Header() {
           )}
           {showPosHeaderInputs && (
             <div className="relative hidden md:flex items-center gap-1">
+               <div className="relative">
+                <SearchIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                    type="search"
+                    placeholder="ابحث عن منتج..."
+                    value={posSearchTerm}
+                    onChange={handlePosSearchChange}
+                    className="h-9 w-full md:w-32 lg:w-48 pr-10 text-sm"
+                    aria-label="البحث عن منتج لإضافته للفاتورة"
+                />
+              </div>
               <div className="relative">
                 <BarcodeIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
@@ -298,17 +309,6 @@ export default function Header() {
                     onKeyDown={handlePosBarcodeKeyDown}
                     className="h-9 w-full md:w-32 lg:w-40 pr-10 pl-4 py-2 text-sm"
                     aria-label="إدخال الباركود لإضافته للفاتورة"
-                />
-              </div>
-              <div className="relative">
-                <SearchIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                    type="search"
-                    placeholder="ابحث عن منتج..."
-                    value={posSearchTerm}
-                    onChange={handlePosSearchChange}
-                    className="h-9 w-full md:w-32 lg:w-48 pr-10 text-sm"
-                    aria-label="البحث عن منتج لإضافته للفاتورة"
                 />
               </div>
             </div>

@@ -25,7 +25,7 @@ export default function PosProductGrid() {
     <div className="flex flex-col h-full">
       {filteredProducts.length > 0 ? (
         <div className="flex-1 p-4 overflow-y-auto">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
             {filteredProducts.map((product) => (
               <Card 
                 key={product.id} 
