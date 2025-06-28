@@ -46,7 +46,7 @@ export default function DashboardLayout({
   }
   
   return (
-    <NextThemesProvider attribute="class" defaultTheme="system" enableSystem>
+    <NextThemesProvider attribute="class" defaultTheme="light" enableSystem={false}>
       <PosProvider>
         <div className="flex flex-col min-h-screen bg-background">
           <Header />
