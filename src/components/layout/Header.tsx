@@ -1,4 +1,3 @@
-
 // src/components/layout/Header.tsx
 "use client";
 
@@ -199,7 +198,6 @@ export default function Header() {
 
   const showHeaderProductSearch = pathname === '/dashboard' || pathname.startsWith('/dashboard/products');
   const showDashboardBarcodeScanner = pathname === '/dashboard' && hasRole(['admin', 'employee', 'employee_return']);
-  const showHeaderAddProduct = pathname === '/dashboard' && hasRole(['admin']);
   const showPosHeaderInputs = pathname === '/dashboard/pos' && hasRole(['admin', 'employee', 'employee_return']);
   
   const userAvatarSrc = "https://images.unsplash.com/photo-1633409361618-c73427e4e206?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxpY29ufGVufDB8fHx8MTc1MDMyMjQ3M3ww&ixlib=rb-4.1.0&q=80&w=1080";
@@ -315,13 +313,6 @@ export default function Header() {
                 />
               </div>
             </div>
-          )}
-          {showHeaderAddProduct && (
-            <Button asChild size="sm" className="hidden md:inline-flex h-9">
-              <Link href="/dashboard/products/add">
-                <PlusCircle className="ml-1 h-4 w-4" /> إضافة
-              </Link>
-            </Button>
           )}
 
           <Tooltip>
