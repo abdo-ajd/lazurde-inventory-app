@@ -1,10 +1,12 @@
+
 // src/contexts/PosContext.tsx
 "use client";
 
 import type { Product, SaleItem } from '@/lib/types';
-import { createContext, useContext, ReactNode, useState } from 'react';
+import { createContext, useContext, ReactNode, useState, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { useProducts } from './ProductContext'; // Import hook
+import { useProducts } from './ProductContext';
+import { usePathname } from 'next/navigation';
 
 interface PosContextType {
   cartItems: SaleItem[];
@@ -13,14 +15,32 @@ interface PosContextType {
   removeItemFromCart: (productId: string) => void;
   clearCart: () => void;
   cartTotal: number;
+  posSearchTerm: string;
+  setPosSearchTerm: (term: string) => void;
 }
 
 const PosContext = createContext<PosContextType | undefined>(undefined);
 
 export const PosProvider = ({ children }: { children: ReactNode }) => {
   const [cartItems, setCartItems] = useState<SaleItem[]>([]);
-  const { getProductById } = useProducts(); // Get product context functions
+  const [posSearchTerm, setPosSearchTerm] = useState('');
+  const { getProductById } = useProducts(); 
   const { toast } = useToast();
+  const pathname = usePathname();
+
+  const clearCart = useCallback(() => {
+    setCartItems([]);
+    setPosSearchTerm('');
+  }, []);
+
+  useEffect(() => {
+    if (pathname !== '/dashboard/pos') {
+      if (cartItems.length > 0 || posSearchTerm) {
+        clearCart();
+      }
+    }
+  }, [pathname, cartItems, posSearchTerm, clearCart]);
+
 
   const addItemToCart = (product: Product) => {
     if (product.quantity <= 0) {
@@ -37,17 +57,16 @@ export const PosProvider = ({ children }: { children: ReactNode }) => {
                 toast({ variant: 'destructive', title: "الكمية لا تسمح", description: `لا يمكن إضافة المزيد من المنتج "${product.name}".`});
                 return prevItems;
             }
-            // Increment quantity
             return prevItems.map(item => 
                 item.productId === product.id ? { ...item, quantity: item.quantity + 1 } : item
             );
         } else {
-            // Add new item
             const newItem: SaleItem = {
                 productId: product.id,
                 productName: product.name,
                 pricePerUnit: product.price,
                 quantity: 1,
+                returnedQuantity: 0,
             };
             return [...prevItems, newItem];
         }
@@ -76,15 +95,11 @@ export const PosProvider = ({ children }: { children: ReactNode }) => {
   const removeItemFromCart = (productId: string) => {
     setCartItems(prevItems => prevItems.filter(item => item.productId !== productId));
   };
-  
-  const clearCart = () => {
-    setCartItems([]);
-  };
 
   const cartTotal = cartItems.reduce((total, item) => total + (item.pricePerUnit * item.quantity), 0);
   
   return (
-    <PosContext.Provider value={{ cartItems, addItemToCart, updateItemQuantity, removeItemFromCart, clearCart, cartTotal }}>
+    <PosContext.Provider value={{ cartItems, addItemToCart, updateItemQuantity, removeItemFromCart, clearCart, cartTotal, posSearchTerm, setPosSearchTerm }}>
       {children}
     </PosContext.Provider>
   );

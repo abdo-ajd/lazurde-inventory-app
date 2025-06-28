@@ -22,9 +22,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Input } from '@/components/ui/input';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useProducts } from '@/contexts/ProductContext';
-import { useSales } from '@/contexts/SalesContext'; // Import useSales
+import { useSales } from '@/contexts/SalesContext';
 import { useToast } from '@/hooks/use-toast';
 import type { UserRole } from '@/lib/types';
+import { usePos } from '@/contexts/PosContext';
 
 
 export default function Header() {
@@ -38,13 +39,16 @@ export default function Header() {
   const pathname = usePathname();
 
   const { getProductByBarcode } = useProducts();
-  const { addSale, currentDiscount, setCurrentDiscount } = useSales(); // Get currentDiscount and setCurrentDiscount
+  const { addSale, currentDiscount, setCurrentDiscount } = useSales();
   const { toast } = useToast();
+  const { addItemToCart, posSearchTerm, setPosSearchTerm } = usePos();
 
   const [headerSearchValue, setHeaderSearchValue] = useState(searchParams.get('q') || '');
   const [scannedBarcode, setScannedBarcode] = useState('');
-  // Removed local discountValue state, will use currentDiscount from SalesContext
+  const [posScannedBarcode, setPosScannedBarcode] = useState('');
+  
   const barcodeInputRef = useRef<HTMLInputElement>(null);
+  const posBarcodeInputRef = useRef<HTMLInputElement>(null);
 
   const roleTranslations: Record<UserRole, string> = {
     admin: 'مدير',
@@ -60,14 +64,15 @@ export default function Header() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (pathname === '/dashboard' && hasRole(['admin', 'employee', 'employee_return']) && currentUser) {
-      const timer = setTimeout(() => {
-        if (barcodeInputRef.current) {
-          barcodeInputRef.current.focus();
-        }
-      }, 100);
-      return () => clearTimeout(timer);
+    let timer: NodeJS.Timeout;
+    if (hasRole(['admin', 'employee', 'employee_return']) && currentUser) {
+      if (pathname === '/dashboard') {
+        timer = setTimeout(() => barcodeInputRef.current?.focus(), 100);
+      } else if (pathname === '/dashboard/pos') {
+        timer = setTimeout(() => posBarcodeInputRef.current?.focus(), 100);
+      }
     }
+    return () => clearTimeout(timer);
   }, [pathname, currentUser, hasRole]);
 
   const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -95,7 +100,6 @@ export default function Header() {
     if (product) {
       if (product.quantity > 0) {
         if (currentUser) {
-          // addSale will now use currentDiscount from SalesContext internally
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const saleResult = await addSale([{ productId: product.id, quantity: 1 }]);
         } else {
@@ -108,7 +112,6 @@ export default function Header() {
       toast({ variant: "destructive", title: "لم يتم العثور على المنتج", description: "الباركود المدخل غير صحيح أو المنتج غير موجود." });
     }
     setScannedBarcode(''); 
-    // No need to clear currentDiscount from context here, it should persist
   };
 
   const handleBarcodeKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -121,7 +124,6 @@ export default function Header() {
   const handleDiscountKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       event.preventDefault();
-      // If barcode is also filled, trigger scan. Otherwise, just sets discount.
       if (scannedBarcode.trim()) {
         handleBarcodeScan(); 
       }
@@ -131,6 +133,33 @@ export default function Header() {
   const handleDiscountInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
     setCurrentDiscount(isNaN(value) || value < 0 ? 0 : value);
+  };
+  
+  const handlePosSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setPosSearchTerm(e.target.value);
+  };
+
+  const handlePosBarcodeScan = () => {
+    if (!posScannedBarcode.trim()) return;
+    const product = getProductByBarcode(posScannedBarcode.trim());
+    if (product) {
+        addItemToCart(product);
+    } else {
+        toast({
+            variant: "destructive",
+            title: "لم يتم العثور على المنتج",
+            description: "الباركود المدخل غير صحيح أو المنتج غير موجود.",
+        });
+    }
+    setPosScannedBarcode('');
+    posBarcodeInputRef.current?.focus();
+  };
+
+  const handlePosBarcodeKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      handlePosBarcodeScan();
+    }
   };
 
 
@@ -171,6 +200,7 @@ export default function Header() {
   const showHeaderProductSearch = pathname === '/dashboard' || pathname.startsWith('/dashboard/products');
   const showDashboardBarcodeScanner = pathname === '/dashboard' && hasRole(['admin', 'employee', 'employee_return']);
   const showHeaderAddProduct = pathname === '/dashboard' && hasRole(['admin']);
+  const showPosHeaderInputs = pathname === '/dashboard/pos' && hasRole(['admin', 'employee', 'employee_return']);
   
   const userAvatarSrc = "https://images.unsplash.com/photo-1633409361618-c73427e4e206?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxpY29ufGVufDB8fHx8MTc1MDMyMjQ3M3ww&ixlib=rb-4.1.0&q=80&w=1080";
 
@@ -212,7 +242,7 @@ export default function Header() {
 
 
         <div className="flex items-center gap-1 sm:gap-2">
-          {showHeaderProductSearch && (
+          {showHeaderProductSearch && !showPosHeaderInputs && (
             <div className="relative hidden md:flex items-center">
               <SearchIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -245,12 +275,40 @@ export default function Header() {
                 <Input
                     type="number"
                     placeholder="خصم..."
-                    value={currentDiscount === 0 ? '' : String(currentDiscount)} // Display empty if 0 for better UX
+                    value={currentDiscount === 0 ? '' : String(currentDiscount)}
                     onChange={handleDiscountInputChange}
                     onKeyDown={handleDiscountKeyDown}
                     className="h-9 w-20 md:w-20 lg:w-24 pr-9 pl-2 py-2 text-sm appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     aria-label="إدخال قيمة الخصم"
                     min="0"
+                />
+              </div>
+            </div>
+          )}
+          {showPosHeaderInputs && (
+            <div className="relative hidden md:flex items-center gap-1">
+              <div className="relative">
+                <BarcodeIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                    ref={posBarcodeInputRef}
+                    type="text"
+                    placeholder="امسح باركود..."
+                    value={posScannedBarcode}
+                    onChange={(e) => setPosScannedBarcode(e.target.value)}
+                    onKeyDown={handlePosBarcodeKeyDown}
+                    className="h-9 w-full md:w-32 lg:w-40 pr-10 pl-4 py-2 text-sm"
+                    aria-label="إدخال الباركود لإضافته للفاتورة"
+                />
+              </div>
+              <div className="relative">
+                <SearchIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                    type="search"
+                    placeholder="ابحث عن منتج..."
+                    value={posSearchTerm}
+                    onChange={handlePosSearchChange}
+                    className="h-9 w-full md:w-32 lg:w-48 pr-10 text-sm"
+                    aria-label="البحث عن منتج لإضافته للفاتورة"
                 />
               </div>
             </div>

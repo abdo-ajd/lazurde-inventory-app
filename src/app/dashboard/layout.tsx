@@ -1,3 +1,4 @@
+
 // src/app/dashboard/layout.tsx
 "use client";
 
@@ -7,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/layout/Header';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { PosProvider } from '@/contexts/PosContext';
 
 
 export default function DashboardLayout({
@@ -45,14 +47,16 @@ export default function DashboardLayout({
   
   return (
     <NextThemesProvider attribute="class" defaultTheme="system" enableSystem>
-      <div className="flex flex-col min-h-screen bg-background">
-        <Header />
-        <div className="w-full flex-1 px-4 md:px-6 pt-6 pb-8 md:py-8">
-          <main className="w-full">
-            {children}
-          </main>
+      <PosProvider>
+        <div className="flex flex-col min-h-screen bg-background">
+          <Header />
+          <div className="w-full flex-1 px-4 md:px-6 pt-6 pb-8 md:py-8">
+            <main className="w-full">
+              {children}
+            </main>
+          </div>
         </div>
-      </div>
+      </PosProvider>
     </NextThemesProvider>
   );
 }
