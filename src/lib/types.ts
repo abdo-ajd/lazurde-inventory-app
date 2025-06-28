@@ -54,10 +54,6 @@ export interface AppSettings {
     accent: string;
   };
   bankServices?: { name: string; color: string; }[];
-  displaySettings?: {
-    imageGridSize: number; // Scale from 1 (small) to 5 (large)
-    posGridSize: number;   // Scale from 1 (small) to 5 (large)
-  };
 }
 
 export interface NavItem {
@@ -72,4 +68,5 @@ export interface NavItem {
     
 
     
+
 

@@ -22,7 +22,6 @@ import { cn } from '@/lib/utils';
 import { getImage as getImageFromDB, blobToDataUri } from '@/lib/indexedDBService';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as ShadcnDialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
-import { Slider } from '@/components/ui/slider';
 
 
 const hslColorSchema = z.string().regex(/^(\d{1,3})\s+(\d{1,3}%)\s+(\d{1,3}%)$/, {
@@ -35,10 +34,6 @@ const settingsSchema = z.object({
     primary: hslColorSchema,
     background: hslColorSchema,
     accent: hslColorSchema,
-  }),
-  displaySettings: z.object({
-    imageGridSize: z.number().min(1).max(5),
-    posGridSize: z.number().min(1).max(5),
   }),
 });
 
@@ -133,7 +128,6 @@ export default function AppSettingsPage() {
     defaultValues: {
         storeName: settings.storeName,
         themeColors: settings.themeColors,
-        displaySettings: settings.displaySettings || DEFAULT_APP_SETTINGS.displaySettings,
     },
   });
   
@@ -143,7 +137,6 @@ export default function AppSettingsPage() {
     form.reset({
         storeName: settings.storeName,
         themeColors: settings.themeColors,
-        displaySettings: settings.displaySettings || DEFAULT_APP_SETTINGS.displaySettings,
     });
   }, [settings, form]);
 
@@ -186,7 +179,6 @@ export default function AppSettingsPage() {
     updateSettings({
         storeName: data.storeName,
         themeColors: data.themeColors,
-        displaySettings: data.displaySettings,
     });
   };
 
@@ -454,68 +446,6 @@ export default function AppSettingsPage() {
                 control={form.control}
                 name="themeColors.accent"
                 render={({ field }) => <Input type="hidden" {...field} />}
-              />
-            </CardContent>
-          </Card>
-
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings2 className="h-5 w-5 text-primary" />
-                إعدادات العرض
-              </CardTitle>
-              <CardDescription>
-                تحكم في حجم عرض المنتجات في الشاشات المختلفة.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-8 pt-6">
-              <FormField
-                control={form.control}
-                name="displaySettings.imageGridSize"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>حجم عرض المنتجات في الصفحة الرئيسية</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm text-muted-foreground">صغير</span>
-                        <Slider
-                          defaultValue={[field.value]}
-                          onValueChange={(value) => field.onChange(value[0])}
-                          max={5}
-                          min={1}
-                          step={1}
-                          className="flex-1"
-                        />
-                        <span className="text-sm text-muted-foreground">كبير</span>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="displaySettings.posGridSize"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>حجم عرض المنتجات في صفحة الفاتورة</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm text-muted-foreground">صغير</span>
-                        <Slider
-                          defaultValue={[field.value]}
-                          onValueChange={(value) => field.onChange(value[0])}
-                          max={5}
-                          min={1}
-                          step={1}
-                          className="flex-1"
-                        />
-                         <span className="text-sm text-muted-foreground">كبير</span>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
               />
             </CardContent>
           </Card>

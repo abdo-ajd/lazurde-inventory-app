@@ -5,7 +5,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useProducts } from '@/contexts/ProductContext';
 import { usePos } from '@/contexts/PosContext';
-import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PackageSearch, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -37,7 +36,6 @@ function isColorDark(hexColor?: string): boolean {
 export default function PosProductGrid() {
   const { products } = useProducts();
   const { addItemToCart, posSearchTerm } = usePos();
-  const { settings } = useAppSettings();
   
   const filteredProducts = useMemo(() => {
     if (!products) return [];
@@ -46,23 +44,11 @@ export default function PosProductGrid() {
     );
   }, [products, posSearchTerm]);
 
-  const posGridClasses = useMemo(() => {
-    const size = settings.displaySettings?.posGridSize || 3;
-    switch (size) {
-      case 1: return "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8";
-      case 2: return "grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7";
-      case 3: return "grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"; // Default
-      case 4: return "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5";
-      case 5: return "grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4";
-      default: return "grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6";
-    }
-  }, [settings.displaySettings?.posGridSize]);
-
   return (
     <div className="flex flex-col h-full">
       {filteredProducts.length > 0 ? (
         <div className="flex-1 p-4 overflow-y-auto">
-          <div className={cn("gap-4", posGridClasses)}>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
             {filteredProducts.map((product) => {
               const isDark = isColorDark(product.color);
               const bgColor = product.color ? hexToRgba(product.color, 0.4) : undefined;

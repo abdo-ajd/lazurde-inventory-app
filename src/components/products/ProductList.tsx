@@ -21,7 +21,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn } from '@/lib/utils';
 
 
 interface ProductListProps {
@@ -73,19 +72,6 @@ export default function ProductList({ searchTerm }: ProductListProps) {
     );
   }, [products, searchTerm]);
   
-  const imageGridClasses = useMemo(() => {
-    const size = settings.displaySettings?.imageGridSize || 3;
-    switch (size) {
-      case 1: return "grid-cols-2 sm:grid-cols-4 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 2xl:grid-cols-14";
-      case 2: return "grid-cols-2 sm:grid-cols-4 md:grid-cols-7 lg:grid-cols-9 xl:grid-cols-11 2xl:grid-cols-13";
-      case 3: return "grid-cols-2 sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12";
-      case 4: return "grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-10";
-      case 5: return "grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8";
-      default: return "grid-cols-2 sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12";
-    }
-  }, [settings.displaySettings?.imageGridSize]);
-
-
   const handleSale = async (product: Product, paymentMethod: string) => {
     if (product.quantity > 0) {
       await addSale([{ productId: product.id, quantity: 1 }], paymentMethod);
@@ -96,7 +82,7 @@ export default function ProductList({ searchTerm }: ProductListProps) {
   if (!isClient) {
     return (
       <div className="space-y-6">
-        <div className={cn("gap-3", imageGridClasses)}>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 gap-3">
             {[...Array(24)].map((_, i) => ( 
             <div key={i} className="rounded-lg border bg-card text-card-foreground shadow-sm animate-pulse">
                 <div className="p-0 relative aspect-[3/4] w-full bg-muted rounded-t-lg"></div>
@@ -118,7 +104,7 @@ export default function ProductList({ searchTerm }: ProductListProps) {
   return (
     <div className="space-y-4">
       {filteredProducts.length > 0 ? (
-        <div className={cn("gap-3", imageGridClasses)}>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 gap-3">
           {filteredProducts.map((product) => (
             <Card key={product.id} className="flex flex-col overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200">
               <Link href={`/dashboard/products/${product.id}`} passHref aria-label={`عرض تفاصيل ${product.name}`}>

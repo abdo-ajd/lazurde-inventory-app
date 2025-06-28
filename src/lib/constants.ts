@@ -29,10 +29,6 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
     { name: 'موبي كاش', color: 'hsl(24, 94%, 53%)' }, // Orange
     { name: 'نقدي', color: 'hsl(120, 60%, 35%)' }, // Cash - A distinct green
   ],
-  displaySettings: {
-    imageGridSize: 3, // Default size scale (1-5, where 1=small, 5=large)
-    posGridSize: 3,   // Default size scale (1-5)
-  },
 };
 
 export const INITIAL_PRODUCTS: Product[] = [
@@ -76,4 +72,5 @@ export const INITIAL_SALES: Sale[] = []; // Start with no sales
     
 
     
+
 
