@@ -109,13 +109,6 @@ const suggestedImages = [
   '/suggested-images/16.jpg',
 ];
 
-const handleNumberInputWheel = (e: React.WheelEvent<HTMLInputElement>) => {
-    // Prevents the value from changing on mouse wheel scroll
-    (e.target as HTMLElement).blur();
-    e.stopPropagation();
-};
-
-
 export default function ProductForm({ onSubmit, initialData, isEditMode = false, isLoading = false }: ProductFormProps) {
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -355,7 +348,7 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
                     <FormItem>
                     <FormLabel htmlFor="price">سعر البيع (LYD)</FormLabel>
                     <FormControl>
-                        <Input id="price" type="number" onWheel={handleNumberInputWheel} placeholder="مثال: 350.00" {...field} step="0.01" disabled={isProcessingImage} />
+                        <Input id="price" type="number" placeholder="مثال: 350.00" {...field} step="0.01" disabled={isProcessingImage} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -368,7 +361,7 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
                     <FormItem>
                     <FormLabel htmlFor="costPrice">سعر التكلفة (LYD)</FormLabel>
                     <FormControl>
-                        <Input id="costPrice" type="number" onWheel={handleNumberInputWheel} placeholder="مثال: 200.00" {...field} step="0.01" disabled={isProcessingImage} />
+                        <Input id="costPrice" type="number" placeholder="مثال: 200.00" {...field} step="0.01" disabled={isProcessingImage} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -382,7 +375,7 @@ export default function ProductForm({ onSubmit, initialData, isEditMode = false,
                 <FormItem>
                   <FormLabel htmlFor="quantity">الكمية المتوفرة</FormLabel>
                   <FormControl>
-                    <Input id="quantity" type="number" onWheel={handleNumberInputWheel} placeholder="مثال: 10" {...field} disabled={isProcessingImage} />
+                    <Input id="quantity" type="number" placeholder="مثال: 10" {...field} disabled={isProcessingImage} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
