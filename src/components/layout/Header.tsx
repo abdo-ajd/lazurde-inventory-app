@@ -162,8 +162,8 @@ export default function Header() {
   const navIconsList = [
     { href: '/dashboard', label: 'المنتجات (صور)', icon: Package, roles: ['admin', 'employee', 'employee_return'] },
     { href: '/dashboard/pos', label: 'نقطة البيع (فاتورة)', icon: FileText, roles: ['admin', 'employee', 'employee_return'] },
-    { href: '/dashboard/products', label: 'إدارة المنتجات (قائمة)', icon: ListOrdered, roles: ['admin'] },
     { href: '/dashboard/sales/report', label: 'تقرير المبيعات', icon: BarChart3, roles: ['admin', 'employee', 'employee_return'] },
+    { href: '/dashboard/products', label: 'إدارة المنتجات (قائمة)', icon: ListOrdered, roles: ['admin'] },
     { href: '/dashboard/users', label: 'إدارة المستخدمين', icon: Users, roles: ['admin'] },
     { href: '/dashboard/settings', label: 'إعدادات التطبيق', icon: Settings, roles: ['admin'] },
   ];
