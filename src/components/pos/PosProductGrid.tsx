@@ -1,3 +1,4 @@
+
 // src/components/pos/PosProductGrid.tsx
 "use client";
 
@@ -10,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { PackageSearch, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Product } from '@/lib/types';
-import { hexToRgba } from '@/lib/utils'; // Import the new utility
+import { hexToRgba, cn } from '@/lib/utils'; // Import the new utility
 
 // Helper function to determine if a hex color is dark
 function isColorDark(hexColor?: string): boolean {
@@ -37,9 +38,6 @@ export default function PosProductGrid() {
   const { products } = useProducts();
   const { addItemToCart, posSearchTerm } = usePos();
   const { settings } = useAppSettings();
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = settings.displaySettings?.posGridItems || 30;
   
   const filteredProducts = useMemo(() => {
     if (!products) return [];
@@ -48,87 +46,62 @@ export default function PosProductGrid() {
     );
   }, [products, posSearchTerm]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [posSearchTerm, itemsPerPage]);
-
-  const paginatedProducts = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    return filteredProducts.slice(start, end);
-  }, [filteredProducts, currentPage, itemsPerPage]);
-  
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const posGridClasses = useMemo(() => {
+    const size = settings.displaySettings?.posGridSize || 3;
+    switch (size) {
+      case 1: return "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8";
+      case 2: return "grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7";
+      case 3: return "grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"; // Default
+      case 4: return "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5";
+      case 5: return "grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4";
+      default: return "grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6";
+    }
+  }, [settings.displaySettings?.posGridSize]);
 
   return (
     <div className="flex flex-col h-full">
       {filteredProducts.length > 0 ? (
-        <>
-          <div className="flex-1 p-4 overflow-y-auto">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-              {paginatedProducts.map((product) => {
-                const isDark = isColorDark(product.color);
-                const bgColor = product.color ? hexToRgba(product.color, 0.4) : undefined;
+        <div className="flex-1 p-4 overflow-y-auto">
+          <div className={cn("gap-4", posGridClasses)}>
+            {filteredProducts.map((product) => {
+              const isDark = isColorDark(product.color);
+              const bgColor = product.color ? hexToRgba(product.color, 0.4) : undefined;
 
-                return (
-                  <Card 
-                    key={product.id} 
-                    className="cursor-pointer hover:border-primary transition-all duration-200"
-                    onClick={() => addItemToCart(product)}
-                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && addItemToCart(product)}
-                    tabIndex={0}
-                    style={bgColor ? { backgroundColor: bgColor } : {}}
-                  >
-                    <CardContent className="p-4 text-center">
-                      <h3 
-                        className="font-semibold text-sm truncate"
-                        style={isDark ? { color: 'white' } : {}}
-                      >
-                        {product.name}
-                      </h3>
-                      <p 
-                        className="text-xs mt-1"
-                        style={isDark ? { color: 'rgba(255,255,255,0.8)' } : { color: 'hsl(var(--muted-foreground))' }}
-                      >
-                        {product.price} LYD
-                      </p>
-                      <Badge 
-                        variant={isDark ? 'outline' : 'secondary'} 
-                        className="mt-2 text-xs"
-                        style={isDark ? { borderColor: 'rgba(255,255,255,0.5)', color: 'white' } : {}}
-                      >
-                        المتوفر: {product.quantity}
-                      </Badge>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
+              return (
+                <Card 
+                  key={product.id} 
+                  className="cursor-pointer hover:border-primary transition-all duration-200"
+                  onClick={() => addItemToCart(product)}
+                  onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && addItemToCart(product)}
+                  tabIndex={0}
+                  style={bgColor ? { backgroundColor: bgColor } : {}}
+                >
+                  <CardContent className="p-4 text-center">
+                    <h3 
+                      className="font-semibold text-sm truncate"
+                      style={isDark ? { color: 'white' } : {}}
+                    >
+                      {product.name}
+                    </h3>
+                    <p 
+                      className="text-xs mt-1"
+                      style={isDark ? { color: 'rgba(255,255,255,0.8)' } : { color: 'hsl(var(--muted-foreground))' }}
+                    >
+                      {product.price} LYD
+                    </p>
+                    <Badge 
+                      variant={isDark ? 'outline' : 'secondary'} 
+                      className="mt-2 text-xs"
+                      style={isDark ? { borderColor: 'rgba(255,255,255,0.5)', color: 'white' } : {}}
+                    >
+                      المتوفر: {product.quantity}
+                    </Badge>
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
-           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 p-2 border-t shrink-0">
-              <Button
-                onClick={() => setCurrentPage((p) => p - 1)}
-                disabled={currentPage === 1}
-                variant="outline"
-                size="sm"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <span className="text-xs font-medium text-muted-foreground tabular-nums">
-                صفحة {currentPage} / {totalPages}
-              </span>
-              <Button
-                onClick={() => setCurrentPage((p) => p + 1)}
-                disabled={currentPage >= totalPages}
-                variant="outline"
-                size="sm"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-        </>
+        </div>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
           <PackageSearch size={48} className="mb-2" />

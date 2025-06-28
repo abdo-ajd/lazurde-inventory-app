@@ -12,7 +12,7 @@ import { useAppSettings } from '@/contexts/AppSettingsContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { PackageSearch, CreditCard, HandCoins, ChevronLeft, ChevronRight } from 'lucide-react';
+import { PackageSearch, CreditCard, HandCoins } from 'lucide-react';
 import { useProductImage } from '@/hooks/useProductImage';
 import type { Product } from '@/lib/types';
 import {
@@ -21,6 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from '@/lib/utils';
 
 
 interface ProductListProps {
@@ -60,18 +61,11 @@ export default function ProductList({ searchTerm }: ProductListProps) {
   const { settings } = useAppSettings();
   const { addSale } = useSales();
   const [isClient, setIsClient] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const itemsPerPage = settings.displaySettings?.imageGridItems || 24;
 
   useEffect(() => {
     setIsClient(true);
   }, []);
   
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, itemsPerPage]);
-
   const filteredProducts = useMemo(() => {
     if (!products) return [];
     return products.filter(product =>
@@ -79,13 +73,17 @@ export default function ProductList({ searchTerm }: ProductListProps) {
     );
   }, [products, searchTerm]);
   
-  const paginatedProducts = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    return filteredProducts.slice(start, end);
-  }, [filteredProducts, currentPage, itemsPerPage]);
-
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const imageGridClasses = useMemo(() => {
+    const size = settings.displaySettings?.imageGridSize || 3;
+    switch (size) {
+      case 1: return "grid-cols-2 sm:grid-cols-4 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 2xl:grid-cols-14";
+      case 2: return "grid-cols-2 sm:grid-cols-4 md:grid-cols-7 lg:grid-cols-9 xl:grid-cols-11 2xl:grid-cols-13";
+      case 3: return "grid-cols-2 sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12";
+      case 4: return "grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-10";
+      case 5: return "grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8";
+      default: return "grid-cols-2 sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12";
+    }
+  }, [settings.displaySettings?.imageGridSize]);
 
 
   const handleSale = async (product: Product, paymentMethod: string) => {
@@ -98,8 +96,8 @@ export default function ProductList({ searchTerm }: ProductListProps) {
   if (!isClient) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 gap-3">
-            {[...Array(itemsPerPage)].map((_, i) => ( 
+        <div className={cn("gap-3", imageGridClasses)}>
+            {[...Array(24)].map((_, i) => ( 
             <div key={i} className="rounded-lg border bg-card text-card-foreground shadow-sm animate-pulse">
                 <div className="p-0 relative aspect-[3/4] w-full bg-muted rounded-t-lg"></div>
                 <div className="p-3 space-y-2">
@@ -120,100 +118,74 @@ export default function ProductList({ searchTerm }: ProductListProps) {
   return (
     <div className="space-y-4">
       {filteredProducts.length > 0 ? (
-        <>
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 gap-3">
-            {paginatedProducts.map((product) => (
-              <Card key={product.id} className="flex flex-col overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200">
-                <Link href={`/dashboard/products/${product.id}`} passHref aria-label={`عرض تفاصيل ${product.name}`}>
-                  <CardHeader className="p-0 relative aspect-[3/4] w-full cursor-pointer group">
-                    <ProductCardImage 
-                      productId={product.id} 
-                      productName={product.name} 
-                      fallbackImageUrl={product.imageUrl} 
-                    />
-                  </CardHeader>
-                </Link>
-                <CardContent className="p-3 flex-grow flex flex-col">
-                  <div className="flex-grow">
-                    <h3 className="font-semibold text-xs truncate" title={product.name}>{product.name}</h3>
-                    <div className="flex justify-between items-center mt-1">
-                        <p className="text-xs font-normal text-foreground">
-                          السعر: {product.price}
-                        </p>
-                        <Badge 
-                          variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}
-                          className="text-[10px] px-1.5 py-0 leading-tight"
-                          title={`الكمية: ${product.quantity}`}
-                        >
-                          {product.quantity}
-                        </Badge>
-                    </div>
+        <div className={cn("gap-3", imageGridClasses)}>
+          {filteredProducts.map((product) => (
+            <Card key={product.id} className="flex flex-col overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-200">
+              <Link href={`/dashboard/products/${product.id}`} passHref aria-label={`عرض تفاصيل ${product.name}`}>
+                <CardHeader className="p-0 relative aspect-[3/4] w-full cursor-pointer group">
+                  <ProductCardImage 
+                    productId={product.id} 
+                    productName={product.name} 
+                    fallbackImageUrl={product.imageUrl} 
+                  />
+                </CardHeader>
+              </Link>
+              <CardContent className="p-3 flex-grow flex flex-col">
+                <div className="flex-grow">
+                  <h3 className="font-semibold text-xs truncate" title={product.name}>{product.name}</h3>
+                  <div className="flex justify-between items-center mt-1">
+                      <p className="text-xs font-normal text-foreground">
+                        السعر: {product.price}
+                      </p>
+                      <Badge 
+                        variant={product.quantity === 0 ? "destructive" : product.quantity < 10 ? "secondary" : "default"}
+                        className="text-[10px] px-1.5 py-0 leading-tight"
+                        title={`الكمية: ${product.quantity}`}
+                      >
+                        {product.quantity}
+                      </Badge>
                   </div>
-                  <div className="flex justify-center items-center mt-2 gap-2">
-                    {hasRole(['admin', 'employee', 'employee_return']) && (
-                      <>
-                        <Button 
-                          variant="outline"
-                          size="default"
-                          onClick={() => handleSale(product, 'نقدي')}
-                          title="بيع نقدي"
-                          disabled={product.quantity === 0}
-                          className="flex-1 h-auto p-2"
-                        >
-                          <HandCoins className="h-5 w-5"/>
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button 
-                              variant="outline"
-                              size="default"
-                              disabled={product.quantity === 0 || !settings.bankServices || settings.bankServices.length === 0}
-                              className="border-secondary text-secondary-foreground hover:bg-secondary/80 flex-1 h-auto p-2"
-                              title="بيع بخدمة مصرفية"
-                            >
-                              <CreditCard className="h-5 w-5"/>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            {(settings.bankServices || []).map(service => (
-                              <DropdownMenuItem key={service.name} onSelect={() => handleSale(product, service.name)}>
-                                {service.name}
-                              </DropdownMenuItem>
-                            ))}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-4 mt-6">
-                <Button
-                    onClick={() => setCurrentPage(p => p - 1)}
-                    disabled={currentPage === 1}
-                    variant="outline"
-                >
-                     <ChevronRight className="ml-2 h-4 w-4" />
-                     السابق
-                </Button>
-                <span className="text-sm font-medium text-muted-foreground tabular-nums">
-                    صفحة {currentPage} / {totalPages}
-                </span>
-                <Button
-                    onClick={() => setCurrentPage(p => p + 1)}
-                    disabled={currentPage >= totalPages}
-                    variant="outline"
-                >
-                     التالي
-                     <ChevronLeft className="mr-2 h-4 w-4" />
-                </Button>
-            </div>
-          )}
-        </>
+                </div>
+                <div className="flex justify-center items-center mt-2 gap-2">
+                  {hasRole(['admin', 'employee', 'employee_return']) && (
+                    <>
+                      <Button 
+                        variant="outline"
+                        size="default"
+                        onClick={() => handleSale(product, 'نقدي')}
+                        title="بيع نقدي"
+                        disabled={product.quantity === 0}
+                        className="flex-1 h-auto p-2"
+                      >
+                        <HandCoins className="h-5 w-5"/>
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            variant="outline"
+                            size="default"
+                            disabled={product.quantity === 0 || !settings.bankServices || settings.bankServices.length === 0}
+                            className="border-secondary text-secondary-foreground hover:bg-secondary/80 flex-1 h-auto p-2"
+                            title="بيع بخدمة مصرفية"
+                          >
+                            <CreditCard className="h-5 w-5"/>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          {(settings.bankServices || []).map(service => (
+                            <DropdownMenuItem key={service.name} onSelect={() => handleSale(product, service.name)}>
+                              {service.name}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       ) : (
         <Card>
           <CardContent className="text-center py-20 text-muted-foreground">

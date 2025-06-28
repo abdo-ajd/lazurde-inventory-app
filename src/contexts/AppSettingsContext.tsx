@@ -51,16 +51,25 @@ export const AppSettingsProvider = ({ children }: { children: ReactNode }) => {
 
 
   useEffect(() => {
-    // This effect handles both applying the theme and migrating old settings formats.
     const effectiveSettings = { ...DEFAULT_APP_SETTINGS, ...settings };
     
-    // Migrate old settings: If `displaySettings` is missing, add it from defaults.
-    // This check prevents an infinite loop as it only runs once if the structure is outdated.
-    if (settings && !settings.displaySettings) {
-        setSettings(currentSettings => ({
-            ...currentSettings,
-            displaySettings: DEFAULT_APP_SETTINGS.displaySettings,
-        }));
+    // Migration for users from "items per page" to "item size" setting.
+    const needsMigration = settings?.displaySettings && ('imageGridItems' in settings.displaySettings);
+    if (needsMigration) {
+      console.log("Migrating display settings...");
+      setSettings(currentSettings => {
+        const { displaySettings, ...rest } = currentSettings;
+        return {
+          ...rest,
+          displaySettings: DEFAULT_APP_SETTINGS.displaySettings,
+        };
+      });
+    } else if (!settings?.displaySettings) {
+      // For new users or corrupted settings, ensure displaySettings exists.
+      setSettings(currentSettings => ({
+        ...currentSettings,
+        displaySettings: DEFAULT_APP_SETTINGS.displaySettings,
+      }));
     }
 
     applyTheme(effectiveSettings.themeColors);

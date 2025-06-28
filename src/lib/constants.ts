@@ -30,8 +30,8 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
     { name: 'نقدي', color: 'hsl(120, 60%, 35%)' }, // Cash - A distinct green
   ],
   displaySettings: {
-    imageGridItems: 24,
-    posGridItems: 30,
+    imageGridSize: 3, // Default size scale (1-5, where 1=small, 5=large)
+    posGridSize: 3,   // Default size scale (1-5)
   },
 };
 
@@ -76,3 +76,4 @@ export const INITIAL_SALES: Sale[] = []; // Start with no sales
     
 
     
+

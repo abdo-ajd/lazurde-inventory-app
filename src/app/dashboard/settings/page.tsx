@@ -37,8 +37,8 @@ const settingsSchema = z.object({
     accent: hslColorSchema,
   }),
   displaySettings: z.object({
-    imageGridItems: z.number().min(8).max(48),
-    posGridItems: z.number().min(10).max(60),
+    imageGridSize: z.number().min(1).max(5),
+    posGridSize: z.number().min(1).max(5),
   }),
 });
 
@@ -465,27 +465,28 @@ export default function AppSettingsPage() {
                 إعدادات العرض
               </CardTitle>
               <CardDescription>
-                تحكم في عدد العناصر المعروضة في الشاشات المختلفة.
+                تحكم في حجم عرض المنتجات في الشاشات المختلفة.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-8 pt-6">
               <FormField
                 control={form.control}
-                name="displaySettings.imageGridItems"
+                name="displaySettings.imageGridSize"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>عدد المنتجات في صفحة الصور الرئيسية</FormLabel>
+                    <FormLabel>حجم عرض المنتجات في الصفحة الرئيسية</FormLabel>
                     <FormControl>
                       <div className="flex items-center gap-4">
+                        <span className="text-sm text-muted-foreground">صغير</span>
                         <Slider
                           defaultValue={[field.value]}
                           onValueChange={(value) => field.onChange(value[0])}
-                          max={48}
-                          min={8}
-                          step={4}
+                          max={5}
+                          min={1}
+                          step={1}
                           className="flex-1"
                         />
-                        <span className="font-bold text-primary w-12 text-center tabular-nums">{field.value}</span>
+                        <span className="text-sm text-muted-foreground">كبير</span>
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -494,21 +495,22 @@ export default function AppSettingsPage() {
               />
               <FormField
                 control={form.control}
-                name="displaySettings.posGridItems"
+                name="displaySettings.posGridSize"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>عدد المنتجات في صفحة نقطة البيع (الفاتورة)</FormLabel>
+                    <FormLabel>حجم عرض المنتجات في صفحة الفاتورة</FormLabel>
                     <FormControl>
                       <div className="flex items-center gap-4">
+                        <span className="text-sm text-muted-foreground">صغير</span>
                         <Slider
                           defaultValue={[field.value]}
                           onValueChange={(value) => field.onChange(value[0])}
-                          max={60}
-                          min={10}
-                          step={5}
+                          max={5}
+                          min={1}
+                          step={1}
                           className="flex-1"
                         />
-                        <span className="font-bold text-primary w-12 text-center tabular-nums">{field.value}</span>
+                         <span className="text-sm text-muted-foreground">كبير</span>
                       </div>
                     </FormControl>
                     <FormMessage />
