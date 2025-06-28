@@ -2,11 +2,11 @@
 import type { User, Product, AppSettings, Sale } from './types';
 
 export const LOCALSTORAGE_KEYS = {
-  USERS: 'lazurde_users',
-  PRODUCTS: 'lazurde_products',
-  SALES: 'lazurde_sales',
-  APP_SETTINGS: 'lazurde_app_settings',
-  AUTH_USER: 'lazurde_auth_user',
+  USERS: 'lahemir_users',
+  PRODUCTS: 'lahemir_products',
+  SALES: 'lahemir_sales',
+  APP_SETTINGS: 'lahemir_app_settings',
+  AUTH_USER: 'lahemir_auth_user',
 };
 
 export const DEFAULT_ADMIN_USER: User = {
@@ -17,7 +17,7 @@ export const DEFAULT_ADMIN_USER: User = {
 };
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
-  storeName: 'متجر لازوردي للعبايات',
+  storeName: 'Lahemir',
   themeColors: {
     primary: '207 89% 61%',
     background: '0 0% 98%', 
@@ -72,5 +72,6 @@ export const INITIAL_SALES: Sale[] = []; // Start with no sales
     
 
     
+
 
 

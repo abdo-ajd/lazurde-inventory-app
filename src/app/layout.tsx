@@ -5,7 +5,7 @@ import { AppProviders } from '@/contexts/AppProviders';
 
 // Icons are now handled by manual <link> tags in the <head> to force a cache break.
 export const metadata: Metadata = {
-  title: 'لازوردي للمخزون',
+  title: 'إدارة المخزون',
   description: 'نظام إدارة مخزون للشركات الصغيرة والمتوسطة',
   manifest: '/manifest.json',
 };
@@ -31,7 +31,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#42A5F5" /> 
         <meta name='apple-mobile-web-app-capable' content='yes' />
         <meta name='apple-mobile-web-app-status-bar-style' content='default' />
-        <meta name='apple-mobile-web-app-title' content='لازوردي Lite' />
+        <meta name='apple-mobile-web-app-title' content='إدارة المخزون' />
         <meta name='format-detection' content='telephone=no' />
         <meta name='mobile-web-app-capable' content='yes' />
         {/* End PWA Meta Tags */}

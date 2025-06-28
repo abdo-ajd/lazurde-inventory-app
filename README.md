@@ -1,7 +1,7 @@
 # Firebase Studio
 
 This is a NextJS starter in Firebase Studio.
-# lazurde-inventory-app
+# Inventory Management App
 
 ## Pushing Updates to GitHub
 

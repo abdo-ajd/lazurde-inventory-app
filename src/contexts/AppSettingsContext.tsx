@@ -52,7 +52,7 @@ export const AppSettingsProvider = ({ children }: { children: ReactNode }) => {
     applyTheme(effectiveSettings.themeColors);
     
     if (typeof document !== 'undefined') {
-        document.title = effectiveSettings.storeName || 'لازوردي للمخزون';
+        document.title = effectiveSettings.storeName || 'إدارة المخزون';
     }
 
   }, [settings, applyTheme]);

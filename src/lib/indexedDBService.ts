@@ -2,7 +2,7 @@
 // src/lib/indexedDBService.ts
 'use client';
 
-const DB_NAME = "LazurdePOS_DB";
+const DB_NAME = "LahemirPOS_DB";
 const STORE_NAME = "productImages";
 const DB_VERSION = 1;
 
