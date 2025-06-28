@@ -7,7 +7,10 @@ export const metadata: Metadata = {
   title: 'لازوردي للمخزون',
   description: 'نظام إدارة مخزون للشركات الصغيرة والمتوسطة',
   manifest: '/manifest.json',
-  // icons are now handled in the <head> tag below for better cache-busting.
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/icons/icon-192x192.png',
+  },
 };
 
 export default function RootLayout({
@@ -18,8 +21,7 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl">
       <head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        {/* Favicon and Apple Touch Icon are now handled by Next.js metadata above */}
 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
