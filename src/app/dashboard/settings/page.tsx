@@ -182,9 +182,12 @@ export default function AppSettingsPage() {
     script.async = true;
     script.defer = true;
     script.onload = () => {
-        gapi.load('client', () => {
-            setIsGapiLoaded(true);
-        });
+        // gapi.load('client', () => { // client is sufficient for init
+        //     setIsGapiLoaded(true);
+        // });
+        // Instead of loading client here, we just set the flag
+        // The full loading happens inside the backup function to ensure it's awaited
+        setIsGapiLoaded(true);
     };
     script.onerror = () => {
         toast({ variant: 'destructive', title: 'فشل التحميل', description: 'لا يمكن تحميل مكتبة Google API. يرجى التحقق من اتصالك بالإنترنت.' });
@@ -370,75 +373,112 @@ export default function AppSettingsPage() {
 
     setIsBackupInProgress(true);
 
-    gapi.load('client:auth2', async () => {
-      try {
-        await gapi.client.init({
-          clientId: settings.googleClientId,
-          scope: 'https://www.googleapis.com/auth/drive.file',
-          discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"]
+    try {
+      await new Promise<void>((resolve, reject) => {
+        gapi.load('client:auth2', {
+          callback: resolve,
+          onerror: reject,
+          timeout: 5000,
+          ontimeout: () => reject(new Error('Timeout loading GAPI client')),
         });
-        
-        const googleAuth = gapi.auth2.getAuthInstance();
-        if (!googleAuth.isSignedIn.get()) {
-          await googleAuth.signIn();
-        }
-        
-        toast({ title: 'جارٍ التحضير...', description: 'يتم الآن إنشاء ملف النسخة الاحتياطية.' });
-
-        const productsWithImages = await Promise.all(
-          (productsFromContext || []).map(async (p) => {
-            if (!p.imageUrl) {
-              try {
-                const imageBlob = await getImageFromDB(p.id);
-                if (imageBlob) return { ...p, imageUrl: await blobToDataUri(imageBlob) };
-              } catch (error) { console.error(`Failed to get image for product ${p.id}`, error); }
-            }
-            return p;
-          })
-        );
-        
-        const backupData: BackupData = {
-          users: users || [], products: productsWithImages, sales: sales || [],
-          settings: { ...settings, googleClientId: '' }, // Do not backup client ID
-        };
-
-        const fileContent = JSON.stringify(backupData, null, 2);
-        const fileName = `lahemir_backup_${new Date().toISOString().split('T')[0]}.json`;
-
-        toast({ title: 'جارٍ الرفع...', description: 'يتم الآن رفع النسخة الاحتياطية إلى Google Drive.' });
-        
-        await gapi.client.drive.files.create({
-            resource: {
-                name: fileName,
-                mimeType: 'application/json',
-            },
-            media: {
-                mimeType: 'application/json',
-                body: fileContent,
-            },
-            fields: 'id',
-        });
-        
-        toast({ title: 'نجاح', description: 'تم إنشاء النسخة الاحتياطية بنجاح في Google Drive.' });
-
-      } catch (error: any) {
-        console.error("Google Drive backup error:", error);
-        let errorMessage = "فشل رفع الملف. تحقق من إعدادات Google API.";
-        if (error.result?.error?.message) {
-            errorMessage = error.result.error.message;
-        } else if (error.message) {
-            errorMessage = error.message;
-        }
-        
-        if (errorMessage.includes("API not enabled") || (error.result?.error?.code === 403)) {
-            errorMessage = "فشل الرفع. يرجى التأكد من تفعيل Google Drive API في مشروعك على Google Cloud Console.";
-        }
-        
-        toast({ variant: 'destructive', title: 'فشل النسخ الاحتياطي', description: errorMessage });
-      } finally {
-        setIsBackupInProgress(false);
+      });
+      
+      await gapi.client.init({
+        clientId: settings.googleClientId,
+        scope: 'https://www.googleapis.com/auth/drive.file',
+      });
+      
+      const googleAuth = gapi.auth2.getAuthInstance();
+      if (!googleAuth) {
+        throw new Error('Failed to get Google Auth instance.');
       }
-    });
+      
+      let googleUser = googleAuth.currentUser.get();
+
+      if (!googleAuth.isSignedIn.get()) {
+        googleUser = await googleAuth.signIn();
+      }
+      
+      const authResponse = googleUser.getAuthResponse();
+      if (!authResponse?.access_token) {
+        throw new Error('Failed to retrieve access token from Google.');
+      }
+      const accessToken = authResponse.access_token;
+
+      toast({ title: 'جارٍ التحضير...', description: 'يتم الآن إنشاء ملف النسخة الاحتياطية.' });
+
+      const productsWithImages = await Promise.all(
+        (productsFromContext || []).map(async (p) => {
+          if (!p.imageUrl) {
+            try {
+              const imageBlob = await getImageFromDB(p.id);
+              if (imageBlob) return { ...p, imageUrl: await blobToDataUri(imageBlob) };
+            } catch (error) { console.error(`Failed to get image for product ${p.id}`, error); }
+          }
+          return p;
+        })
+      );
+      
+      const backupData: BackupData = {
+        users: users || [], products: productsWithImages, sales: sales || [],
+        settings: { ...settings, googleClientId: '' }, // Do not backup client ID
+      };
+
+      const fileContent = JSON.stringify(backupData, null, 2);
+      const fileName = `lahemir_backup_${new Date().toISOString().split('T')[0]}.json`;
+
+      const metadata = {
+        name: fileName,
+        mimeType: 'application/json',
+      };
+      
+      const form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+      form.append('file', new Blob([fileContent], { type: 'application/json' }));
+
+      toast({ title: 'جارٍ الرفع...', description: 'يتم الآن رفع النسخة الاحتياطية إلى Google Drive.' });
+      
+      const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: form,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw { result: errorData };
+      }
+      
+      await response.json();
+
+      toast({ title: 'نجاح', description: 'تم إنشاء النسخة الاحتياطية بنجاح في Google Drive.' });
+
+    } catch (error: any) {
+      console.error("Google Drive backup error:", error);
+      let errorMessage = "فشل رفع الملف. تحقق من إعدادات Google API.";
+
+      if (error.error === 'popup_closed_by_user' || error.type === 'popup_closed_by_user') {
+        errorMessage = "تم إغلاق نافذة تسجيل الدخول. يرجى المحاولة مرة أخرى والسماح بالنوافذ المنبثقة.";
+      } else if (error.error === 'access_denied') {
+        errorMessage = "تم رفض الوصول. يرجى التأكد من الموافقة على الأذونات المطلوبة لـ Google Drive.";
+      } else if (error.details) {
+        errorMessage = error.details;
+      } else if (error.result?.error?.message) {
+          const gapiError = error.result.error;
+          errorMessage = `${gapiError.message} (Code: ${gapiError.code})`;
+          if (gapiError.code === 403) {
+            errorMessage = "فشل الرفع (403). تأكد من تفعيل Google Drive API ومن صحة إعدادات المصادقة (Client ID، العناوين المعتمدة).";
+          }
+      } else if (error.message) {
+          errorMessage = error.message;
+      }
+      
+      toast({ variant: 'destructive', title: 'فشل النسخ الاحتياطي', duration: 9000, description: errorMessage });
+    } finally {
+      setIsBackupInProgress(false);
+    }
   };
 
 
@@ -582,7 +622,7 @@ export default function AppSettingsPage() {
                                 </FormControl>
                                 <FormDescription>
                                     يمكنك الحصول على Client ID من <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Google Cloud Console</a>.
-                                     تأكد من إضافة النطاقات المطلوبة (`drive.file`, `profile`, `email`) وتحديد مصدر JavaScript المعتمد.
+                                     تأكد من تفعيل Google Drive API وإضافة العناوين المعتمدة.
                                 </FormDescription>
                                 <FormMessage />
                             </FormItem>
@@ -733,3 +773,5 @@ export default function AppSettingsPage() {
     </div>
   );
 }
+
+    
