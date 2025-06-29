@@ -7,7 +7,7 @@
  */
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
-import {crypto} from 'crypto';
+import crypto from 'crypto';
 
 // Simple in-memory store. Data will be lost on server restart.
 const backupStore = new Map<string, string>();
