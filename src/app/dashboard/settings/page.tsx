@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProducts } from '@/contexts/ProductContext';
 import { useSales } from '@/contexts/SalesContext';
 import { useEffect, useRef, useState } from 'react';
-import { Save, RotateCcw, Download, Upload, Trash2, Smartphone, DownloadCloud, AlertTriangle, CreditCard, Edit, Settings2 } from 'lucide-react';
+import { Save, RotateCcw, Download, Upload, Trash2, Smartphone, DownloadCloud, AlertTriangle, CreditCard, Edit, Settings2, Cloud } from 'lucide-react';
 import { DEFAULT_APP_SETTINGS, LOCALSTORAGE_KEYS, DEFAULT_ADMIN_USER } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import type { User, Product, Sale, AppSettings as AppSettingsType } from '@/lib/types';
@@ -35,6 +35,7 @@ const settingsSchema = z.object({
     background: hslColorSchema,
     accent: hslColorSchema,
   }),
+  googleClientId: z.string().optional().or(z.literal('')),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -119,6 +120,8 @@ export default function AppSettingsPage() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [canInstallPWA, setCanInstallPWA] = useState(false);
   const [isPWAInstalled, setIsPWAInstalled] = useState(false);
+  const [isGapiLoaded, setIsGapiLoaded] = useState(false);
+  const [isBackupInProgress, setIsBackupInProgress] = useState(false);
 
   const isDefaultAdmin = currentUser?.id === DEFAULT_ADMIN_USER.id;
 
@@ -128,6 +131,7 @@ export default function AppSettingsPage() {
     defaultValues: {
         storeName: settings.storeName,
         themeColors: settings.themeColors,
+        googleClientId: settings.googleClientId || '',
     },
   });
   
@@ -137,6 +141,7 @@ export default function AppSettingsPage() {
     form.reset({
         storeName: settings.storeName,
         themeColors: settings.themeColors,
+        googleClientId: settings.googleClientId || '',
     });
   }, [settings, form]);
 
@@ -171,6 +176,26 @@ export default function AppSettingsPage() {
     };
   }, [toast]);
   
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://apis.google.com/js/api.js";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+        setIsGapiLoaded(true);
+    };
+    script.onerror = () => {
+        toast({ variant: 'destructive', title: 'فشل التحميل', description: 'لا يمكن تحميل مكتبة Google API. يرجى التحقق من اتصالك بالإنترنت.' });
+    }
+    document.body.appendChild(script);
+    
+    return () => {
+        if(document.body.contains(script)){
+            document.body.removeChild(script);
+        }
+    };
+  }, [toast]);
+
   if (!hasRole(['admin'])) {
     // Logic to redirect or show access denied message if not admin
   }
@@ -179,6 +204,7 @@ export default function AppSettingsPage() {
     updateSettings({
         storeName: data.storeName,
         themeColors: data.themeColors,
+        googleClientId: data.googleClientId || '',
     });
   };
 
@@ -328,6 +354,92 @@ export default function AppSettingsPage() {
     toast({ title: "نجاح", description: "تم استعادة البيانات بنجاح!" });
   };
 
+  const handleGoogleDriveBackup = async () => {
+    if (isBackupInProgress) return;
+
+    if (!isGapiLoaded) {
+      toast({ variant: 'destructive', title: 'خطأ', description: 'مكتبة Google API لم يتم تحميلها بعد. يرجى الانتظار قليلاً.' });
+      return;
+    }
+    if (!settings.googleClientId) {
+      toast({ variant: 'destructive', title: 'خطأ', description: 'يرجى إدخال Google Client ID أولاً.' });
+      return;
+    }
+
+    setIsBackupInProgress(true);
+
+    gapi.load('client:auth2', async () => {
+      try {
+        await gapi.client.init({
+          clientId: settings.googleClientId,
+          scope: 'https://www.googleapis.com/auth/drive.file',
+          discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"]
+        });
+        
+        const googleAuth = gapi.auth2.getAuthInstance();
+        if (!googleAuth.isSignedIn.get()) {
+          await googleAuth.signIn();
+        }
+        
+        toast({ title: 'جارٍ التحضير...', description: 'يتم الآن إنشاء ملف النسخة الاحتياطية.' });
+
+        const productsWithImages = await Promise.all(
+          (productsFromContext || []).map(async (p) => {
+            if (!p.imageUrl) {
+              try {
+                const imageBlob = await getImageFromDB(p.id);
+                if (imageBlob) return { ...p, imageUrl: await blobToDataUri(imageBlob) };
+              } catch (error) { console.error(`Failed to get image for product ${p.id}`, error); }
+            }
+            return p;
+          })
+        );
+        
+        const backupData: BackupData = {
+          users: users || [], products: productsWithImages, sales: sales || [],
+          settings: { ...settings, googleClientId: '' }, // Do not backup client ID
+        };
+
+        const fileContent = JSON.stringify(backupData, null, 2);
+        const fileName = `lahemir_backup_${new Date().toISOString().split('T')[0]}.json`;
+        const fileMetadata = { 'name': fileName, 'mimeType': 'application/json' };
+        const boundary = 'foo_bar_baz';
+        const multipartRequestBody =
+          `--${boundary}\r\n` +
+          `Content-Type: application/json; charset=UTF-8\r\n\r\n` +
+          `${JSON.stringify(fileMetadata)}\r\n` +
+          `--${boundary}\r\n` +
+          `Content-Type: application/json\r\n\r\n` +
+          `${fileContent}\r\n` +
+          `--${boundary}--`;
+
+        toast({ title: 'جارٍ الرفع...', description: 'يتم الآن رفع النسخة الاحتياطية إلى Google Drive.' });
+        
+        const request = gapi.client.request({
+            'path': '/upload/drive/v3/files',
+            'method': 'POST',
+            'params': {'uploadType': 'multipart'},
+            'headers': { 'Content-Type': `multipart/related; boundary=${boundary}` },
+            'body': multipartRequestBody
+        });
+        
+        const response = await new Promise<any>((resolve, reject) => request.then(resolve, reject));
+
+        if (response.status === 200) {
+             toast({ title: 'نجاح', description: 'تم إنشاء النسخة الاحتياطية بنجاح في Google Drive.' });
+        } else {
+             throw new Error(`Upload failed with status: ${response.status}`);
+        }
+
+      } catch (error: any) {
+        console.error("Google Drive backup error:", error);
+        const errorMessage = error?.result?.error?.message || error?.message || "فشل رفع الملف.";
+        toast({ variant: 'destructive', title: 'فشل النسخ الاحتياطي', description: `حدث خطأ: ${errorMessage}` });
+      } finally {
+        setIsBackupInProgress(false);
+      }
+    });
+  };
 
 
   return (
@@ -450,6 +562,42 @@ export default function AppSettingsPage() {
             </CardContent>
           </Card>
           
+           {hasRole(['admin']) && (
+             <Card className="mt-6">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Cloud /> النسخ الاحتياطي السحابي (Google Drive)</CardTitle>
+                    <CardDescription>
+                        اربط حسابك في Google Drive لإنشاء نسخ احتياطية آمنة.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <FormField
+                        control={form.control}
+                        name="googleClientId"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel htmlFor="googleClientId">Google Client ID</FormLabel>
+                                <FormControl>
+                                    <Input id="googleClientId" placeholder="أدخل Google Client ID هنا..." {...field} />
+                                </FormControl>
+                                <FormDescription>
+                                    يمكنك الحصول على Client ID من <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Google Cloud Console</a>.
+                                     تأكد من إضافة النطاقات المطلوبة (`drive.file`, `profile`, `email`) وتحديد مصدر JavaScript المعتمد.
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </CardContent>
+                <CardFooter>
+                     <Button type="button" onClick={handleGoogleDriveBackup} disabled={!settings.googleClientId || !isGapiLoaded || isBackupInProgress}>
+                        <DownloadCloud className="ml-2 h-4 w-4" />
+                        {isBackupInProgress ? 'جاري النسخ...' : (isGapiLoaded ? 'النسخ الاحتياطي إلى Google Drive' : 'جاري تحميل المكتبة...')}
+                     </Button>
+                </CardFooter>
+            </Card>
+           )}
+
           <div className="mt-8 flex flex-col sm:flex-row justify-between gap-4">
             <Button type="submit" className="w-full sm:w-auto">
               <Save className="ml-2 h-4 w-4" /> حفظ جميع الإعدادات
@@ -526,7 +674,7 @@ export default function AppSettingsPage() {
 
       <Card className="mt-6">
         <CardHeader>
-            <CardTitle>النسخ الاحتياطي والاستعادة</CardTitle>
+            <CardTitle>النسخ الاحتياطي المحلي والاستعادة</CardTitle>
             <CardDescription>
                 قم بإنشاء نسخة احتياطية من جميع بياناتك (منتجات، صور، مبيعات، إعدادات) في ملف واحد، أو قم باستعادة بياناتك من ملف نسخة احتياطية.
             </CardDescription>
