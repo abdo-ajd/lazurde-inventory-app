@@ -54,7 +54,6 @@ export interface AppSettings {
     accent: string;
   };
   bankServices?: { name: string; color: string; }[];
-  googleClientId?: string;
 }
 
 export interface NavItem {
@@ -69,6 +68,7 @@ export interface NavItem {
     
 
     
+
 
 
 

@@ -38,7 +38,8 @@ export const AppSettingsProvider = ({ children }: { children: ReactNode }) => {
       }
       return updatedSettings;
     });
-    toast({ title: "تم حفظ الإعدادات بنجاح" });
+    // This toast is now shown in the form submit handler to avoid showing it on restore.
+    // toast({ title: "تم حفظ الإعدادات بنجاح" });
   };
   
   const resetToDefaults = () => {

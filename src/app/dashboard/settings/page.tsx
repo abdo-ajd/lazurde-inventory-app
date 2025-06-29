@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProducts } from '@/contexts/ProductContext';
 import { useSales } from '@/contexts/SalesContext';
 import { useEffect, useRef, useState } from 'react';
-import { Save, RotateCcw, Download, Upload, Trash2, Smartphone, DownloadCloud, AlertTriangle, CreditCard, Edit, Settings2, Cloud } from 'lucide-react';
+import { Save, RotateCcw, Download, Upload, Trash2, Smartphone, DownloadCloud, AlertTriangle, CreditCard, Edit, Settings2, Cloud, Copy, Link as LinkIcon, Loader2 } from 'lucide-react';
 import { DEFAULT_APP_SETTINGS, LOCALSTORAGE_KEYS, DEFAULT_ADMIN_USER } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
 import type { User, Product, Sale, AppSettings as AppSettingsType } from '@/lib/types';
@@ -22,6 +22,8 @@ import { cn } from '@/lib/utils';
 import { getImage as getImageFromDB, blobToDataUri } from '@/lib/indexedDBService';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription as ShadcnDialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { createBackup, getBackup } from '@/ai/flows/backup-flow';
 
 
 const hslColorSchema = z.string().regex(/^(\d{1,3})\s+(\d{1,3}%)\s+(\d{1,3}%)$/, {
@@ -35,7 +37,6 @@ const settingsSchema = z.object({
     background: hslColorSchema,
     accent: hslColorSchema,
   }),
-  googleClientId: z.string().optional().or(z.literal('')),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -120,8 +121,12 @@ export default function AppSettingsPage() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [canInstallPWA, setCanInstallPWA] = useState(false);
   const [isPWAInstalled, setIsPWAInstalled] = useState(false);
-  const [isGapiLoaded, setIsGapiLoaded] = useState(false);
-  const [isBackupInProgress, setIsBackupInProgress] = useState(false);
+  
+  // State for Link Backup feature
+  const [isLinkBackupInProgress, setIsLinkBackupInProgress] = useState(false);
+  const [isLinkRestoreInProgress, setIsLinkRestoreInProgress] = useState(false);
+  const [backupId, setBackupId] = useState<string | null>(null);
+  const [restoreId, setRestoreId] = useState('');
 
   const isDefaultAdmin = currentUser?.id === DEFAULT_ADMIN_USER.id;
 
@@ -131,7 +136,6 @@ export default function AppSettingsPage() {
     defaultValues: {
         storeName: settings.storeName,
         themeColors: settings.themeColors,
-        googleClientId: settings.googleClientId || '',
     },
   });
   
@@ -141,7 +145,6 @@ export default function AppSettingsPage() {
     form.reset({
         storeName: settings.storeName,
         themeColors: settings.themeColors,
-        googleClientId: settings.googleClientId || '',
     });
   }, [settings, form]);
 
@@ -176,31 +179,6 @@ export default function AppSettingsPage() {
     };
   }, [toast]);
   
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://apis.google.com/js/api.js";
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
-        // gapi.load('client', () => { // client is sufficient for init
-        //     setIsGapiLoaded(true);
-        // });
-        // Instead of loading client here, we just set the flag
-        // The full loading happens inside the backup function to ensure it's awaited
-        setIsGapiLoaded(true);
-    };
-    script.onerror = () => {
-        toast({ variant: 'destructive', title: 'فشل التحميل', description: 'لا يمكن تحميل مكتبة Google API. يرجى التحقق من اتصالك بالإنترنت.' });
-    }
-    document.body.appendChild(script);
-    
-    return () => {
-        if(document.body.contains(script)){
-            document.body.removeChild(script);
-        }
-    };
-  }, [toast]);
-
   if (!hasRole(['admin'])) {
     // Logic to redirect or show access denied message if not admin
   }
@@ -209,7 +187,6 @@ export default function AppSettingsPage() {
     updateSettings({
         storeName: data.storeName,
         themeColors: data.themeColors,
-        googleClientId: data.googleClientId || '',
     });
   };
 
@@ -358,127 +335,75 @@ export default function AppSettingsPage() {
 
     toast({ title: "نجاح", description: "تم استعادة البيانات بنجاح!" });
   };
-
-  const handleGoogleDriveBackup = async () => {
-    if (isBackupInProgress) return;
-
-    if (!isGapiLoaded) {
-      toast({ variant: 'destructive', title: 'خطأ', description: 'مكتبة Google API لم يتم تحميلها بعد. يرجى الانتظار قليلاً.' });
-      return;
-    }
-    if (!settings.googleClientId) {
-      toast({ variant: 'destructive', title: 'خطأ', description: 'يرجى إدخال Google Client ID أولاً.' });
-      return;
-    }
-
-    setIsBackupInProgress(true);
+  
+  const handleCreateBackupLink = async () => {
+    setIsLinkBackupInProgress(true);
+    setBackupId(null);
+    toast({ title: "جاري التحضير...", description: "يتم الآن تجميع ورفع بيانات النسخة الاحتياطية." });
 
     try {
-      await new Promise<void>((resolve, reject) => {
-        gapi.load('auth2', {
-          callback: resolve,
-          onerror: reject,
-          timeout: 5000,
-          ontimeout: () => reject(new Error('Timeout loading GAPI auth2 library')),
-        });
-      });
-      
-      await gapi.auth2.init({
-        client_id: settings.googleClientId,
-        scope: 'https://www.googleapis.com/auth/drive.file',
-      });
-      
-      const googleAuth = gapi.auth2.getAuthInstance();
-      if (!googleAuth) {
-        throw new Error('Failed to get Google Auth instance.');
-      }
-      
-      let googleUser = googleAuth.currentUser.get();
+        const productsWithImages = await Promise.all(
+          (productsFromContext || []).map(async (p) => {
+            if (!p.imageUrl) {
+              try {
+                const imageBlob = await getImageFromDB(p.id);
+                if (imageBlob) return { ...p, imageUrl: await blobToDataUri(imageBlob) };
+              } catch (error) { console.error(`Failed to get image for product ${p.id}`, error); }
+            }
+            return p;
+          })
+        );
+        
+        const backupData: BackupData = {
+          users: users || [],
+          products: productsWithImages,
+          sales: sales || [],
+          settings: settings,
+        };
 
-      if (!googleAuth.isSignedIn.get()) {
-        googleUser = await googleAuth.signIn();
-      }
-      
-      const authResponse = googleUser.getAuthResponse();
-      if (!authResponse?.access_token) {
-        throw new Error('Failed to retrieve access token from Google.');
-      }
-      const accessToken = authResponse.access_token;
-
-      toast({ title: 'جارٍ التحضير...', description: 'يتم الآن إنشاء ملف النسخة الاحتياطية.' });
-
-      const productsWithImages = await Promise.all(
-        (productsFromContext || []).map(async (p) => {
-          if (!p.imageUrl) {
-            try {
-              const imageBlob = await getImageFromDB(p.id);
-              if (imageBlob) return { ...p, imageUrl: await blobToDataUri(imageBlob) };
-            } catch (error) { console.error(`Failed to get image for product ${p.id}`, error); }
-          }
-          return p;
-        })
-      );
-      
-      const backupData: BackupData = {
-        users: users || [], products: productsWithImages, sales: sales || [],
-        settings: { ...settings, googleClientId: '' }, // Do not backup client ID
-      };
-
-      const fileContent = JSON.stringify(backupData, null, 2);
-      const fileName = `lahemir_backup_${new Date().toISOString().split('T')[0]}.json`;
-
-      const metadata = {
-        name: fileName,
-        mimeType: 'application/json',
-      };
-      
-      const form = new FormData();
-      form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-      form.append('file', new Blob([fileContent], { type: 'application/json' }));
-
-      toast({ title: 'جارٍ الرفع...', description: 'يتم الآن رفع النسخة الاحتياطية إلى Google Drive.' });
-      
-      const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-        body: form,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw { result: errorData };
-      }
-      
-      await response.json();
-
-      toast({ title: 'نجاح', description: 'تم إنشاء النسخة الاحتياطية بنجاح في Google Drive.' });
-
-    } catch (error: any) {
-      console.error("Google Drive backup error:", error);
-      let errorMessage = "فشل رفع الملف. تحقق من إعدادات Google API.";
-
-      if (error.error === 'popup_closed_by_user' || error.type === 'popup_closed_by_user') {
-        errorMessage = "تم إغلاق نافذة تسجيل الدخول. يرجى المحاولة مرة أخرى والسماح بالنوافذ المنبثقة.";
-      } else if (error.error === 'access_denied') {
-        errorMessage = "تم رفض الوصول. يرجى التأكد من الموافقة على الأذونات المطلوبة لـ Google Drive.";
-      } else if (error.details) {
-        errorMessage = error.details;
-      } else if (error.result?.error?.message) {
-          const gapiError = error.result.error;
-          errorMessage = `${gapiError.message} (Code: ${gapiError.code})`;
-          if (gapiError.code === 403) {
-            errorMessage = "فشل الرفع (403). تأكد من تفعيل Google Drive API ومن صحة إعدادات المصادقة (Client ID، العناوين المعتمدة).";
-          }
-      } else if (error.message) {
-          errorMessage = error.message;
-      }
-      
-      toast({ variant: 'destructive', title: 'فشل النسخ الاحتياطي', duration: 9000, description: errorMessage });
+        const jsonString = JSON.stringify(backupData);
+        const generatedId = await createBackup(jsonString);
+        setBackupId(generatedId);
+        toast({ title: "تم إنشاء الرمز بنجاح", description: "احتفظ بالرمز في مكان آمن لاستخدامه لاحقًا." });
+    } catch (error) {
+        console.error("Link backup error:", error);
+        toast({ variant: 'destructive', title: 'فشل إنشاء الرمز', description: 'حدث خطأ غير متوقع أثناء إنشاء النسخة الاحتياطية.' });
     } finally {
-      setIsBackupInProgress(false);
+        setIsLinkBackupInProgress(false);
     }
+  };
+  
+  const handleRestoreFromLink = async () => {
+    if (!restoreId.trim()) {
+        toast({ variant: "destructive", title: "مطلوب", description: "الرجاء إدخال رمز النسخة الاحتياطية." });
+        return;
+    }
+    setIsLinkRestoreInProgress(true);
+    toast({ title: "جاري الاستعادة...", description: "يتم الآن جلب البيانات من الخادم." });
+    
+    try {
+        const jsonData = await getBackup(restoreId.trim());
+        if (jsonData) {
+            await handleRestore(jsonData);
+            // Success toast is handled by handleRestore
+            setRestoreId(''); // Clear input on success
+        } else {
+            toast({ variant: 'destructive', title: 'فشل الاستعادة', description: 'الرمز غير صحيح أو أن النسخة الاحتياطية قد انتهت صلاحيتها.' });
+        }
+    } catch (error) {
+        console.error("Link restore error:", error);
+        toast({ variant: 'destructive', title: 'فشل الاستعادة', description: 'حدث خطأ غير متوقع أثناء استعادة البيانات.' });
+    } finally {
+        setIsLinkRestoreInProgress(false);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+        toast({title: "تم النسخ", description: "تم نسخ الرمز إلى الحافظة."});
+    }, (err) => {
+        toast({variant: "destructive", title: "فشل النسخ", description: "لم نتمكن من نسخ الرمز."});
+    });
   };
 
 
@@ -600,48 +525,14 @@ export default function AppSettingsPage() {
                 render={({ field }) => <Input type="hidden" {...field} />}
               />
             </CardContent>
+             <CardFooter className="pt-4">
+                <Button type="submit">
+                  <Save className="ml-2 h-4 w-4" /> حفظ الإعدادات
+                </Button>
+            </CardFooter>
           </Card>
-          
-           {hasRole(['admin']) && (
-             <Card className="mt-6">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Cloud /> النسخ الاحتياطي السحابي (Google Drive)</CardTitle>
-                    <CardDescription>
-                        اربط حسابك في Google Drive لإنشاء نسخ احتياطية آمنة.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <FormField
-                        control={form.control}
-                        name="googleClientId"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel htmlFor="googleClientId">Google Client ID</FormLabel>
-                                <FormControl>
-                                    <Input id="googleClientId" placeholder="أدخل Google Client ID هنا..." {...field} />
-                                </FormControl>
-                                <FormDescription>
-                                    يمكنك الحصول على Client ID من <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Google Cloud Console</a>.
-                                     تأكد من تفعيل Google Drive API وإضافة العناوين المعتمدة.
-                                </FormDescription>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </CardContent>
-                <CardFooter>
-                     <Button type="button" onClick={handleGoogleDriveBackup} disabled={!settings.googleClientId || !isGapiLoaded || isBackupInProgress}>
-                        <DownloadCloud className="ml-2 h-4 w-4" />
-                        {isBackupInProgress ? 'جاري النسخ...' : (isGapiLoaded ? 'النسخ الاحتياطي إلى Google Drive' : 'جاري تحميل المكتبة...')}
-                     </Button>
-                </CardFooter>
-            </Card>
-           )}
 
           <div className="mt-8 flex flex-col sm:flex-row justify-between gap-4">
-            <Button type="submit" className="w-full sm:w-auto">
-              <Save className="ml-2 h-4 w-4" /> حفظ جميع الإعدادات
-            </Button>
             <Button type="button" variant="outline" onClick={handleReset} className="w-full sm:w-auto">
               <RotateCcw className="ml-2 h-4 w-4" /> استعادة الإعدادات الافتراضية
             </Button>
@@ -711,6 +602,57 @@ export default function AppSettingsPage() {
         </Card>
       )}
 
+      {hasRole(['admin']) && (
+        <Card className="mt-6">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><LinkIcon className="h-5 w-5 text-primary" /> النسخ الاحتياطي عبر الرمز (تجريبي)</CardTitle>
+                <CardDescription>
+                    إنشاء رمز فريد لنسخ بياناتك احتياطيًا على الخادم، واستخدامه لاحقًا لاستعادة بياناتك.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div>
+                    <h3 className="font-semibold mb-2">1. إنشاء نسخة احتياطية</h3>
+                    <Button onClick={handleCreateBackupLink} disabled={isLinkBackupInProgress}>
+                        {isLinkBackupInProgress ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <DownloadCloud className="ml-2 h-4 w-4" />}
+                        {isLinkBackupInProgress ? 'جاري إنشاء الرمز...' : 'إنشاء رمز جديد'}
+                    </Button>
+                    {backupId && (
+                        <div className="mt-4 space-y-3">
+                            <Alert>
+                                <AlertTriangle className="h-4 w-4" />
+                                <AlertTitle>هام جدا!</AlertTitle>
+                                <AlertDescription>
+                                    انسخ هذا الرمز واحتفظ به في مكان آمن. الرمز صالح لمدة 24 ساعة فقط وسيتم حذفه من الخادم بعد ذلك.
+                                </AlertDescription>
+                            </Alert>
+                            <div className="flex items-center gap-2 rounded-md border bg-muted p-2">
+                                <span className="flex-1 font-mono text-center text-lg tracking-widest">{backupId}</span>
+                                <Button variant="ghost" size="icon" onClick={() => copyToClipboard(backupId)}>
+                                    <Copy className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+                <div className="border-t pt-6">
+                     <h3 className="font-semibold mb-2">2. استعادة من نسخة احتياطية</h3>
+                     <div className="flex flex-col sm:flex-row gap-2">
+                         <Input 
+                             placeholder="أدخل رمز النسخة الاحتياطية هنا..."
+                             value={restoreId}
+                             onChange={(e) => setRestoreId(e.target.value)}
+                             disabled={isLinkRestoreInProgress}
+                         />
+                         <Button onClick={handleRestoreFromLink} disabled={isLinkRestoreInProgress} className="w-full sm:w-auto">
+                            {isLinkRestoreInProgress ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Upload className="ml-2 h-4 w-4" />}
+                            {isLinkRestoreInProgress ? 'جاري الاستعادة...' : 'استعادة البيانات'}
+                         </Button>
+                     </div>
+                </div>
+            </CardContent>
+        </Card>
+      )}
 
       <Card className="mt-6">
         <CardHeader>
