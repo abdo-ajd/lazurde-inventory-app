@@ -375,16 +375,16 @@ export default function AppSettingsPage() {
 
     try {
       await new Promise<void>((resolve, reject) => {
-        gapi.load('client:auth2', {
+        gapi.load('auth2', {
           callback: resolve,
           onerror: reject,
           timeout: 5000,
-          ontimeout: () => reject(new Error('Timeout loading GAPI client')),
+          ontimeout: () => reject(new Error('Timeout loading GAPI auth2 library')),
         });
       });
       
-      await gapi.client.init({
-        clientId: settings.googleClientId,
+      await gapi.auth2.init({
+        client_id: settings.googleClientId,
         scope: 'https://www.googleapis.com/auth/drive.file',
       });
       
