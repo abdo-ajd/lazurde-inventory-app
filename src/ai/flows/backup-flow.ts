@@ -6,7 +6,7 @@
  * - getBackup - A flow that retrieves a stored JSON string using its unique ID.
  */
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit/zod';
+import {z} from 'zod';
 import {crypto} from 'crypto';
 
 // Simple in-memory store. Data will be lost on server restart.
