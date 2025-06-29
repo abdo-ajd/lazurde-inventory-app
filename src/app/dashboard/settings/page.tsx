@@ -182,7 +182,9 @@ export default function AppSettingsPage() {
     script.async = true;
     script.defer = true;
     script.onload = () => {
-        setIsGapiLoaded(true);
+        gapi.load('client', () => {
+            setIsGapiLoaded(true);
+        });
     };
     script.onerror = () => {
         toast({ variant: 'destructive', title: 'فشل التحميل', description: 'لا يمكن تحميل مكتبة Google API. يرجى التحقق من اتصالك بالإنترنت.' });
@@ -402,39 +404,37 @@ export default function AppSettingsPage() {
 
         const fileContent = JSON.stringify(backupData, null, 2);
         const fileName = `lahemir_backup_${new Date().toISOString().split('T')[0]}.json`;
-        const fileMetadata = { 'name': fileName, 'mimeType': 'application/json' };
-        const boundary = 'foo_bar_baz';
-        const multipartRequestBody =
-          `--${boundary}\r\n` +
-          `Content-Type: application/json; charset=UTF-8\r\n\r\n` +
-          `${JSON.stringify(fileMetadata)}\r\n` +
-          `--${boundary}\r\n` +
-          `Content-Type: application/json\r\n\r\n` +
-          `${fileContent}\r\n` +
-          `--${boundary}--`;
 
         toast({ title: 'جارٍ الرفع...', description: 'يتم الآن رفع النسخة الاحتياطية إلى Google Drive.' });
         
-        const request = gapi.client.request({
-            'path': '/upload/drive/v3/files',
-            'method': 'POST',
-            'params': {'uploadType': 'multipart'},
-            'headers': { 'Content-Type': `multipart/related; boundary=${boundary}` },
-            'body': multipartRequestBody
+        await gapi.client.drive.files.create({
+            resource: {
+                name: fileName,
+                mimeType: 'application/json',
+            },
+            media: {
+                mimeType: 'application/json',
+                body: fileContent,
+            },
+            fields: 'id',
         });
         
-        const response = await new Promise<any>((resolve, reject) => request.then(resolve, reject));
-
-        if (response.status === 200) {
-             toast({ title: 'نجاح', description: 'تم إنشاء النسخة الاحتياطية بنجاح في Google Drive.' });
-        } else {
-             throw new Error(`Upload failed with status: ${response.status}`);
-        }
+        toast({ title: 'نجاح', description: 'تم إنشاء النسخة الاحتياطية بنجاح في Google Drive.' });
 
       } catch (error: any) {
         console.error("Google Drive backup error:", error);
-        const errorMessage = error?.result?.error?.message || error?.message || "فشل رفع الملف.";
-        toast({ variant: 'destructive', title: 'فشل النسخ الاحتياطي', description: `حدث خطأ: ${errorMessage}` });
+        let errorMessage = "فشل رفع الملف. تحقق من إعدادات Google API.";
+        if (error.result?.error?.message) {
+            errorMessage = error.result.error.message;
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+        
+        if (errorMessage.includes("API not enabled") || (error.result?.error?.code === 403)) {
+            errorMessage = "فشل الرفع. يرجى التأكد من تفعيل Google Drive API في مشروعك على Google Cloud Console.";
+        }
+        
+        toast({ variant: 'destructive', title: 'فشل النسخ الاحتياطي', description: errorMessage });
       } finally {
         setIsBackupInProgress(false);
       }
